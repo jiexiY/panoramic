@@ -7,6 +7,14 @@ import { startIncident } from "../src/scene.ts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
+test("scene review empty state uses room data labels", () => {
+  const monitor = source("src/SceneMonitor.tsx");
+  assert.match(monitor, /<span>ROOM DATA<\/span>/);
+  assert.match(monitor, /<h2>No room data<\/h2>/);
+  assert.match(monitor, /<Upload size=\{16\} \/> Add data/);
+  assert.doesNotMatch(monitor, /ROOM IMAGES|No room images yet|Add room image/);
+});
+
 test("product screens contain no rehearsal flow or competition labels", () => {
   for (const file of ["src/SceneMonitor.tsx", "src/FacilityWorkspace.tsx", "src/RoomMonitoring.tsx", "src/Workspace.tsx", "src/RoutePlanner.tsx", "src/SuitePlan.tsx"]) {
     assert.doesNotMatch(source(file), /illustrated rehearsal|STAGED DEMO|SAMPLE SESSION|Sample concern|Show sample route|fictional|New demo session|Load demo caregivers|sales competition/i, file);

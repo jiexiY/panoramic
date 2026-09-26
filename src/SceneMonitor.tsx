@@ -267,7 +267,7 @@ export default function SceneMonitor({
         <div className="scene-column">
           <section className="scene-panel" aria-label="Scene review">
             <div className="scene-top">
-              <span>ROOM IMAGES</span>
+              <span>ROOM DATA</span>
               {image && <b>{analysis ? "REVIEWED FRAME" : "SELECTED FRAME"}</b>}
             </div>
             <div className={`scene-canvas ${!image ? "empty" : ""}`}>
@@ -276,12 +276,12 @@ export default function SceneMonitor({
               ) : (
                 <div className="scene-placeholder">
                   <ScanLine size={48} strokeWidth={1.25} />
-                  <h2>No room images yet</h2>
+                  <h2>No room data</h2>
                   <button
                     className="primary"
                     onClick={() => setSetupOpen(true)}
                   >
-                    <Upload size={16} /> Add room image
+                    <Upload size={16} /> Add data
                   </button>
                 </div>
               )}
