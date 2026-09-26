@@ -1,5 +1,11 @@
 # Verification record
 
+## Entrance title motion — September 26, 2026
+
+- Added a one-time 1.4-second top-to-bottom soft-mask reveal to the Panoramic entrance heading, with opacity fade and an 18-pixel downward settle. The button and workspace remain stationary. No dependencies, layout changes, or provider requests were added.
+- Reduced-motion preferences disable the animation and mask, leaving the title immediately visible. Source-level regression coverage verifies direction, finite duration, visible end state, and this fallback.
+- All 55 tests and the TypeScript/Vite build passed. Local Chrome verified that the title settles fully visible and the entry button still opens the workspace.
+
 ## Panoramic rename — September 26, 2026
 
 - Renamed the existing GitHub repository to `jiexiY/panoramic` and Vercel project to `panoramic`; repository history and Vercel project ID remain unchanged. Updated the local Git remote and Vercel project link. Verified Vercel's Git connection references `jiexiY/panoramic`, repository ID `1388472646`, branch `main`.

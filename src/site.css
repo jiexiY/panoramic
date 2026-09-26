@@ -5,6 +5,21 @@
 .welcome-site { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; background: #f4f2ea; }
 .welcome-main { width: 100%; max-width: 590px; padding: 48px 24px; margin: auto; text-align: center; }
 .welcome-main h1 { font-family: inherit; font-size: clamp(46px, 7vw, 72px); line-height: 1.1; font-weight: 800; letter-spacing: -3px; color: #293e45; }
+.welcome-site .welcome-main h1 {
+  -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 60%);
+  mask-image: linear-gradient(to bottom, #000 40%, transparent 60%);
+  -webkit-mask-size: 100% 250%;
+  mask-size: 100% 250%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  animation: panoramic-reveal 1400ms cubic-bezier(.22, .61, .36, 1) both;
+}
+@keyframes panoramic-reveal {
+  from { opacity: 0; transform: translateY(-18px); -webkit-mask-position: 0 100%; mask-position: 0 100%; }
+  to { opacity: 1; transform: none; -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
 .entry-button { margin-top: 32px; }
 .workspace-loading { min-height: 70vh; padding-top: 100px; text-align: center; color: #546d6f; }
 .app-shell .page-heading h1 { font-family: inherit; font-size: clamp(28px, 2.7vw, 36px); font-weight: 650; line-height: 1.2; letter-spacing: -1px; }
@@ -30,4 +45,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .site-button { transition: none; }
+  .welcome-site .welcome-main h1 { animation: none; -webkit-mask-image: none; mask-image: none; }
 }

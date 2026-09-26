@@ -65,3 +65,12 @@ test("workspace starts empty and does not create a record on an empty account si
   assert.match(monitor, /No activity yet/);
   assert.doesNotMatch(workspace, /brand-icon|Prototype · fictional data only|Demo caregiver Alex|<footer>/);
 });
+
+test("product title has a finite top-down reveal with a reduced-motion fallback", () => {
+  const css = readFileSync(new URL("../src/site.css", import.meta.url), "utf8");
+  assert.match(css, /\.welcome-site \.welcome-main h1\s*\{[^}]*animation: panoramic-reveal 1400ms/);
+  assert.match(css, /@keyframes panoramic-reveal\s*\{\s*from\s*\{[^}]*opacity: 0;[^}]*translateY\(-18px\)[^}]*mask-position: 0 100%/);
+  assert.match(css, /to\s*\{[^}]*opacity: 1;[^}]*transform: none;[^}]*mask-position: 0 0/);
+  assert.doesNotMatch(css, /panoramic-reveal[^;]*infinite/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.welcome-site \.welcome-main h1\s*\{[^}]*animation: none;[^}]*mask-image: none/);
+});
