@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
 import {
   ArrowRight,
   Building2,
@@ -13,6 +13,7 @@ import CareTeamPanel from "./CareTeamPanel";
 import IncidentDesk from "./IncidentDesk";
 import RoomMonitoring from "./RoomMonitoring";
 import ObservationStatus from "./ObservationStatus";
+import { initialRecording, recordingIsOn, recordingReducer } from "./recordingObservation";
 import "./facility.css";
 import "./room-monitoring.css";
 
@@ -20,23 +21,25 @@ const FacilityMap = lazy(() => import("./FacilityMap"));
 type Props = {
   active: boolean;
   workflowScanning: boolean;
+  onStopWorkflow: () => void;
   team: CareTeam;
   onSignIn: () => void;
 };
 export default function FacilityWorkspace({
   active,
   workflowScanning,
+  onStopWorkflow,
   team,
   onSignIn,
 }: Props) {
   const [selected, setSelected] = useState<SpaceId | null>("A101");
   const [selectedId, setSelectedId] = useState("");
   const [filter, setFilter] = useState<"all" | "attention">("all");
-  const [recordingPlaying, setRecordingPlaying] = useState(false);
+  const [recording, recordingAction] = useReducer(recordingReducer, initialRecording);
   const [sidebar, setSidebar] = useState<"team" | "ai">("ai");
   const monitorRef = useRef<HTMLDivElement>(null);
   const incidentRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setSelectedId(""); }, [team.facilityId]);
+  useEffect(() => { setSelectedId(""); recordingAction({ type: "close" }); }, [team.facilityId]);
   const open = team.incidents.filter((i) => i.phase !== "resolved");
   const current =
     team.incidents.find((i) => i.id === selectedId) ??
@@ -51,6 +54,19 @@ export default function FacilityWorkspace({
       priorities[i.room] = i.priority;
   }
   const monitoringRoom = selected && selected !== "supervision" ? selected : "A101";
+  const recordingPending = active && monitoringRoom === "A101" && recording.mode === "loading";
+  const observationOn = active && (workflowScanning || recordingIsOn(recording, active, monitoringRoom));
+  useEffect(() => { if (!active) recordingAction({ type: "pause" }); }, [active]);
+  useEffect(() => { if (monitoringRoom !== "A101") recordingAction({ type: "close" }); }, [monitoringRoom]);
+  const toggleObservation = () => {
+    if (observationOn || recordingPending) {
+      recordingAction({ type: "pause" });
+      if (workflowScanning) onStopWorkflow();
+    } else {
+      setSelected("A101");
+      recordingAction({ type: "play" });
+    }
+  };
   const selectRoom = (room: SpaceId) => {
     setSelected(room);
     const incident = open.find(i => i.room === room);
@@ -95,7 +111,7 @@ export default function FacilityWorkspace({
               <span>
                 <Building2 size={16} /> Care-center floor
               </span>
-              <ObservationStatus on={active && (workflowScanning || (recordingPlaying && monitoringRoom === "A101"))} playback />
+              <ObservationStatus on={observationOn} pending={recordingPending} onToggle={toggleObservation} playback />
             </div>
             <Suspense
               fallback={
@@ -120,7 +136,7 @@ export default function FacilityWorkspace({
             </nav>
             <RoomMonitoring key={`${team.facilityId}:${monitoringRoom}`} room={monitoringRoom}
               priority={priorities[monitoringRoom] ?? "unassessed"} active={active} workflowScanning={workflowScanning}
-              onObservationChange={setRecordingPlaying} />
+              recording={recording} onRecordingAction={recordingAction} />
           </div>
           <div className="facility-bottom-grid">
             <section className="facility-card">

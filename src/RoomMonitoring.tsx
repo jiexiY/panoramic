@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, type Dispatch } from "react";
 import { BedDouble, Download, Play, ShowerHead, Square, X } from "lucide-react";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import ObservationStatus from "./ObservationStatus";
+import { recordingIsOn, type RecordingAction, type RecordingState } from "./recordingObservation";
 
 const trackingMedia = {
   gif: "/demo/bathroom-tracking.gif?v=opencv-2",
@@ -13,30 +14,26 @@ type Props = {
   priority: RoutePriority;
   active: boolean;
   workflowScanning: boolean;
-  onObservationChange: (on: boolean) => void;
+  recording: RecordingState;
+  onRecordingAction: Dispatch<RecordingAction>;
 };
 
-export default function RoomMonitoring({ room, priority, active, workflowScanning, onObservationChange }: Props) {
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [mediaReady, setMediaReady] = useState(false);
-  const [mediaError, setMediaError] = useState(false);
+export default function RoomMonitoring({ room, priority, active, workflowScanning, recording, onRecordingAction }: Props) {
+  const evidenceOpen = recording.mode !== "closed";
+  const playing = recording.mode === "loading" || recording.mode === "playing";
+  const mediaError = recording.mode === "error";
   const recordingRef = useRef<HTMLElement>(null);
   // A saved incident or database subscription is not an active observation source.
-  const observing = active && room === "A101" && evidenceOpen && playing && mediaReady && !mediaError;
+  const observing = recordingIsOn(recording, active, room);
   const workflowObserving = active && room === "A101" && workflowScanning;
 
-  useEffect(() => {
-    onObservationChange(observing);
-    return () => onObservationChange(false);
-  }, [observing, onObservationChange]);
-  useEffect(() => { if (!active) setPlaying(false); }, [active]);
-  useEffect(() => {
-    if (evidenceOpen) recordingRef.current?.scrollIntoView({
+  const openRecording = () => {
+    onRecordingAction({ type: "play" });
+    requestAnimationFrame(() => recordingRef.current?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
       block: "nearest",
-    });
-  }, [evidenceOpen]);
+    }));
+  };
 
   const level = routeLevels[priority];
   return (
@@ -53,41 +50,28 @@ export default function RoomMonitoring({ room, priority, active, workflowScannin
         <section ref={recordingRef} className="room-monitor-zone" aria-label={`${room} bathroom monitoring`}>
           <div className="room-zone-heading">
             <h3><ShowerHead size={16} /> Bathroom monitoring</h3>
-            <ObservationStatus on={observing || workflowObserving} playback />
+            <ObservationStatus on={observing || workflowObserving} pending={active && room === "A101" && recording.mode === "loading"} playback />
           </div>
           {room === "A101" ? (
             <>
-              {!evidenceOpen && <button className="secondary room-recording-button" onClick={() => {
-                setMediaReady(false);
-                setMediaError(false);
-                setEvidenceOpen(true);
-                setPlaying(true);
-              }}><Play size={15} /> Open bathroom recording</button>}
+              {!evidenceOpen && <button className="secondary room-recording-button" onClick={openRecording}><Play size={15} /> Open bathroom recording</button>}
               {evidenceOpen && <section className="facility-evidence" aria-label="Bathroom recording">
                 <div className="facility-panel-header">
                   <span>RECORDING REVIEW</span>
                   <div>
-                    <button className="text-button" onClick={() => {
-                      setMediaReady(false);
-                      setMediaError(false);
-                      setPlaying(!playing);
-                    }}>
+                    <button className="text-button" onClick={() => onRecordingAction({ type: playing ? "pause" : "play" })}>
                       {playing ? <Square size={14} /> : <Play size={14} />}{" "}
                       {playing ? "Show still" : "Play tracking"}
                     </button>
                     <a className="text-button" href={trackingMedia.gif} download="panoramic-bathroom-tracking.gif"><Download size={14} /> Download</a>
-                    <button className="text-button" aria-label="Close recording" onClick={() => {
-                      setEvidenceOpen(false);
-                      setPlaying(false);
-                      setMediaReady(false);
-                    }}><X size={16} /></button>
+                    <button className="text-button" aria-label="Close recording" onClick={() => onRecordingAction({ type: "close" })}><X size={16} /></button>
                   </div>
                 </div>
-                <img className="bathroom-gif" width={1040} height={794}
+                {!mediaError && <img key={recording.version} className="bathroom-gif" width={1040} height={794}
                   src={playing ? trackingMedia.gif : trackingMedia.still}
-                  onLoad={() => setMediaReady(true)}
-                  onError={() => { setMediaError(true); setMediaReady(false); }}
-                  alt="OpenCV tracking playback of annotated bathroom objects and a walking-route concern" />
+                  onLoad={() => onRecordingAction({ type: "loaded", version: recording.version })}
+                  onError={() => onRecordingAction({ type: "failed", version: recording.version })}
+                  alt="OpenCV tracking playback of annotated bathroom objects and a walking-route concern" />}
                 {mediaError && <p className="notice error" role="alert">Recording unavailable. Close and reopen it to try again.</p>}
                 <details className="evidence-caption">
                   <summary>Recording details</summary>

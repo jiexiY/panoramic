@@ -46,7 +46,7 @@ Daily notes are not part of this release. The previous implementation remains re
 
 ### Resident Floor
 
-Select a suite from the room list or the monitoring selector. Each suite has its own route-concern scale; A101's **Bathroom monitoring** contains **Open bathroom recording**. **Observation: On** (green) identifies active recording playback, with a Playback label; **Off** (red) applies when it is stopped, unavailable or closed. Saved concerns and database connectivity do not turn observation on.
+Select a suite using its number on the map, the room list or the monitoring selector. Suites have translucent grey overlays and their own route-concern scales; assessed concerns retain their risk colors. A101's **Bathroom monitoring** contains **Open bathroom recording**. The map's **Observation** switch manually starts or stops that recording, selecting A101 when necessary. **On** (green) identifies loaded recording playback, with a Playback label; **Off** (red) applies when it is stopped, unavailable or closed. Loading is shown as **Starting…**. Saved concerns and database connectivity do not turn observation on. This control does not connect cameras, run a model or create care-team alerts.
 
 Open [Resident Floor](https://panoramic-app.vercel.app/app/spatial) for four furnished sample suites and a dedicated caregiver/nurse supervision room. Rooms preserve the supplied reference plan's bedroom, kitchenette, closet, bath and entry relationships. The original 3D model supports selection, rotation, zoom, top-down view and room focus.
 

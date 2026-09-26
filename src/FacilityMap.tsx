@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Focus, Layers, Minus, Plus, RotateCcw } from "lucide-react";
-import { suiteIds, type SpaceId } from "./facility";
+import { suiteIds, type SpaceId, type SuiteId } from "./facility";
 import { routeLevels, type RoutePriority } from './routeRisk';
+import { suiteOverlaySize, suiteOverlayStyle } from "./floorPresentation";
 
 type Props = { selected: SpaceId | null; alert: boolean; roomPriorities?: Record<string,RoutePriority>; showRoute: boolean; onSelect: (id: SpaceId) => void; active: boolean };
 type MapControls = { view: (plan: boolean) => void; zoom: (factor: number) => void; focus: (id: SpaceId | null) => void; reset: () => void; update: (props: Props) => void };
@@ -11,6 +12,7 @@ const positions = [[0, -8.5, 0], [5, -8.5, 0], [4.5, 8.5, Math.PI], [9.5, 8.5, M
 
 export default function FacilityMap(props: Props) {
   const host = useRef<HTMLDivElement>(null);
+  const suiteLabels = useRef<Partial<Record<SuiteId, HTMLButtonElement>>>({});
   const runtime = useRef<MapControls | null>(null);
   const callback = useRef(props.onSelect); callback.current = props.onSelect;
   const [plan, setPlan] = useState(false);
@@ -47,6 +49,7 @@ export default function FacilityMap(props: Props) {
     const pickable: THREE.Object3D[] = [];
     const roomGroups = new Map<SpaceId, THREE.Group>();
     const roomFloors = new Map<SpaceId, THREE.MeshStandardMaterial>();
+    const roomOverlays = new Map<SuiteId, THREE.MeshBasicMaterial>();
     const outlines = new Map<SpaceId, THREE.LineBasicMaterial>();
     let bathFloor: THREE.MeshStandardMaterial;
     const box = (parent: THREE.Object3D, x: number, y: number, z: number, w: number, h: number, d: number, color: string, room?: SpaceId) => {
@@ -85,8 +88,6 @@ export default function FacilityMap(props: Props) {
       scene.add(group); roomGroups.set(id, group);
       const floor = box(group, 0, 0, 0, 4.5, .08, 7.3, "#d1c0a6", id);
       roomFloors.set(id, floor.material);
-      const edgeMat = new THREE.LineBasicMaterial({ color: "#aea99c" });
-      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(floor.geometry), edgeMat); edge.position.copy(floor.position); group.add(edge); outlines.set(id, edgeMat);
       box(group, -.08, .06, -.08, 4.66, .82, .14, "#e7e6df", id);
       box(group, -.08, .06, 0, .14, .72, 7.38, "#e7e6df", id);
       box(group, 4.44, .06, 0, .14, .72, 7.38, "#e7e6df", id);
@@ -120,8 +121,22 @@ export default function FacilityMap(props: Props) {
       const toilet = cylinder(group, 3.87, .13, 6.61, .22, .35, "#f7f7ef"); toilet.scale.z = 1.35;
       box(group, 2.69, .12, 6.68, .49, .40, .32, "#f0f1e8", id);
       plant(group, 1.78, .47);
-      label(group, id, 2.10, 3.90, 2.0);
-      label(group, "BATH", 3.40, 6.18, 1.35, "#5b6c6e");
+      // Translucent suite-sized layer: keep furniture visible, with a clear room boundary.
+      const overlayStyle = suiteOverlayStyle(undefined, false);
+      const overlayMaterial = new THREE.MeshBasicMaterial({
+        color: overlayStyle.color, transparent: true, opacity: overlayStyle.opacity,
+        side: THREE.DoubleSide, depthWrite: false, toneMapped: false,
+      });
+      const overlay = new THREE.Mesh(new THREE.PlaneGeometry(suiteOverlaySize.width, suiteOverlaySize.depth), overlayMaterial);
+      overlay.rotation.x = -Math.PI / 2;
+      overlay.position.set(suiteOverlaySize.width / 2, suiteOverlaySize.height, suiteOverlaySize.depth / 2);
+      overlay.renderOrder = 2;
+      overlay.userData.room = id;
+      group.add(overlay); pickable.push(overlay); roomOverlays.set(id, overlayMaterial);
+      const edgeMat = new THREE.LineBasicMaterial({ color: overlayStyle.border, transparent: true, opacity: 0.9 });
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(overlay.geometry), edgeMat);
+      edge.position.copy(overlay.position); edge.rotation.copy(overlay.rotation); edge.renderOrder = 3;
+      group.add(edge); outlines.set(id, edgeMat);
     });
     // A dedicated staff supervision room, connected to the central corridor.
     const station = new THREE.Group(); station.position.set(10.5, 0, -4); station.userData.room = "supervision";
@@ -149,7 +164,22 @@ export default function FacilityMap(props: Props) {
     const walkingLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(linePoints), new THREE.LineDashedMaterial({ color: "#652b26", dashSize: .17, gapSize: .12 }));
     walkingLine.computeLineDistances(); roomGroups.get("A101")!.add(walkingLine);
     const hazard = cylinder(roomGroups.get("A101")!, 3.36, .12, 6.15, .48, .024, "#994a38"); hazard.scale.z = .62;
-    const render = () => renderer.render(scene, camera);
+    const labelAnchor = new THREE.Vector3();
+    const render = () => {
+      renderer.render(scene, camera);
+      // Project DOM labels each time the camera moves so numbers stay legible at every zoom.
+      const width = container.clientWidth, height = container.clientHeight;
+      suiteIds.forEach(id => {
+        const element = suiteLabels.current[id], group = roomGroups.get(id);
+        if (!element || !group) return;
+        labelAnchor.set(suiteOverlaySize.width / 2, suiteOverlaySize.height + 0.03, suiteOverlaySize.depth / 2);
+        group.localToWorld(labelAnchor).project(camera);
+        const visible = labelAnchor.z >= -1 && labelAnchor.z <= 1 && Math.abs(labelAnchor.x) < 1 && Math.abs(labelAnchor.y) < 1;
+        element.style.visibility = visible ? "visible" : "hidden";
+        element.style.left = `${(labelAnchor.x + 1) * width / 2}px`;
+        element.style.top = `${(1 - labelAnchor.y) * height / 2}px`;
+      });
+    };
     let viewportFit = 1;
     const resize = () => {
       const { width, height } = container.getBoundingClientRect(); if (!width || !height) return;
@@ -179,7 +209,11 @@ export default function FacilityMap(props: Props) {
       reset,
       update: p => {
         roomFloors.forEach((mat, id) => { const priority=p.roomPriorities?.[id]; mat.color.set(id === "supervision" ? "#bdd1d2" : priority ? routeLevels[priority].color : id === "A101" && p.alert ? "#e5c9b5" : "#d1c0a6"); mat.emissive.set(id === p.selected ? "#334636" : "#000000"); mat.emissiveIntensity = .12; });
-        outlines.forEach((mat, id) => mat.color.set(id === p.selected ? "#395d4f" : p.roomPriorities?.[id] ? routeLevels[p.roomPriorities[id]].border : id === "A101" && p.alert ? "#652b26" : "#aaa69b"));
+        roomOverlays.forEach((mat, id) => {
+          const style = suiteOverlayStyle(p.roomPriorities?.[id] ?? (id === "A101" && p.alert ? "crossing" : undefined), id === p.selected);
+          mat.color.set(style.color); mat.opacity = style.opacity;
+          outlines.get(id)?.color.set(style.border);
+        });
         bathFloor.color.set(p.alert ? "#994a38" : "#bec7c1"); hazard.visible = p.alert; walkingLine.visible = p.alert && p.showRoute;
         if (p.active) resize(); render();
       },
@@ -195,7 +229,12 @@ export default function FacilityMap(props: Props) {
   useEffect(() => { runtime.current?.update(props); }, [props.selected, props.alert, props.showRoute, props.active, props.roomPriorities]);
   return <div className="facility-map-wrap">
     <div ref={host} className="facility-map-canvas" />
-    {failed && <p className="map-fallback" role="status">3D is unavailable in this browser. Select a room from the list to view its layout and response details.</p>}
+    <div className="map-suite-labels" role="group" aria-label="Suite numbers">
+      {suiteIds.map(id => <button key={id} ref={element => { if (element) suiteLabels.current[id] = element; else delete suiteLabels.current[id]; }}
+        className="map-suite-label" aria-label={`Select suite ${id}`} aria-pressed={props.selected === id}
+        onClick={() => props.onSelect(id)}>{id}</button>)}
+    </div>
+    {failed && <p className="map-fallback" role="status">3D is unavailable in this browser. Select a room from the list to view its monitoring and response details.</p>}
     <div className="map-controls" aria-label="Resident Floor controls">
       <button onClick={() => { setPlan(!plan); runtime.current?.view(!plan); }} aria-pressed={plan}><Layers size={15} />{plan ? "3D view" : "Floor plan"}</button>
       <button aria-label="Zoom in" onClick={() => runtime.current?.zoom(.84)}><Plus size={16} /></button>

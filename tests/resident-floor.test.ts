@@ -56,18 +56,21 @@ test("recording controls and route concern belong to room monitoring, not the fl
   assert.match(room, /routeLevels\[priority\]/);
 });
 
-test("observation only turns on for loaded, active playback and resets on hide or unmount", () => {
+test("manual observation controls real playback state and stops it when hidden", () => {
   const room = source("RoomMonitoring.tsx");
-  assert.match(room, /active && room === "A101" && evidenceOpen && playing && mediaReady && !mediaError/);
+  const facility = source("FacilityWorkspace.tsx");
+  assert.match(room, /recordingIsOn\(recording, active, room\)/);
   assert.match(room, /active && room === "A101" && workflowScanning/);
-  assert.match(room, /return \(\) => onObservationChange\(false\)/);
-  assert.match(room, /if \(!active\) setPlaying\(false\)/);
-  assert.match(room, /onError=\{\(\) => \{ setMediaError\(true\); setMediaReady\(false\); \}\}/);
+  assert.match(facility, /if \(!active\) recordingAction\(\{ type: "pause" \}\)/);
+  assert.match(facility, /if \(workflowScanning\) onStopWorkflow\(\)/);
+  assert.match(facility, /onToggle=\{toggleObservation\}/);
+  assert.match(room, /onError=\{\(\) => onRecordingAction\(\{ type: "failed", version: recording.version \}\)\}/);
   assert.doesNotMatch(source("FacilityWorkspace.tsx"), /No observations|Live updates|Saved observations/);
   const status = source("ObservationStatus.tsx");
   assert.match(status, /Observation:/);
   assert.match(status, /on \? "On" : "Off"/);
-  assert.match(status, /on && playback/);
+  assert.match(status, /\(on \|\| pending\) && playback/);
+  assert.match(status, /role="switch" aria-label="Floor observation" aria-checked=\{on \|\| pending\}/);
   assert.match(status, /aria-hidden="true"/);
   const css = source("room-monitoring.css");
   assert.match(css, /is-on i \{ background: #22e65f/);
