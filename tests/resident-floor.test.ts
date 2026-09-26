@@ -4,6 +4,14 @@ import { readFileSync } from "node:fs";
 
 const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
+test("Resident Floor omits the workflow launcher but retains A101 recording controls", () => {
+  const launcher = source("Workspace.tsx").split("\n").find(line => line.includes('className="playback-start"'));
+  assert.ok(launcher);
+  assert.ok(launcher.includes('["monitor","supervision"].includes(page)'));
+  assert.ok(!launcher.includes('"spatial"'));
+  assert.match(source("RoomMonitoring.tsx"), /Open bathroom recording/);
+});
+
 test("room sidebar omits the layout card while preserving the floor map and room monitoring", () => {
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /SuitePlan|room-detail|suite-plan-caption|>LAYOUT</);

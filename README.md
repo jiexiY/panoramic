@@ -40,7 +40,7 @@ Unsigned-in analysis remains local. Shared incidents, evidence and response hist
 
 ### Bathroom response
 
-Choose **Run bathroom workflow** in Scene review, Resident Floor or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
+Choose **Run bathroom workflow** in Scene review or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
 
 Daily notes are not part of this release. The previous implementation remains recoverable in Git history.
 
