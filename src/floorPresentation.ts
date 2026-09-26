@@ -1,6 +1,8 @@
 import { routeLevels, type RoutePriority } from "./routeRisk.ts";
 
-export const suiteOverlaySize = { width: 4.5, depth: 7.3, height: 1.18 };
+// Match the exterior wall bounds; the layer sits just 0.01 above the wall top (0.88).
+export const suiteOverlaySize = { width: 4.66, depth: 7.46, height: 0.89 };
+export const suiteOverlayCenter = { x: 2.25, z: 3.65 };
 
 export function suiteOverlayStyle(priority: RoutePriority | undefined, selected: boolean) {
   const concern = priority && routeLevels[priority].rank > 0 ? routeLevels[priority] : null;
