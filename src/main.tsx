@@ -246,6 +246,7 @@ function App() {
   const support = state.phase === "support";
   const warning = missing(state);
   const stage = state.phase === "prepare" ? 0 : support ? 1 : 2;
+  const progressStage = state.phase === "declined" ? -1 : stage;
   const confirm = (
     key:
       "planReviewed" | "caregiver" | "helper" | "coverage" | "consent" | "exit",
@@ -510,7 +511,9 @@ function App() {
                           : state.phase === "declined"
                             ? "Declined"
                             : state.phase === "complete"
-                              ? "Handoff saved"
+                              ? row
+                                ? "Handoff saved"
+                                : "Handoff closed locally"
                               : "Review handoff"}
                     </span>
                   </section>
@@ -519,12 +522,20 @@ function App() {
                       <li
                         key={label}
                         className={
-                          stage === i ? "active" : stage > i ? "done" : ""
+                          progressStage === i
+                            ? "active"
+                            : progressStage > i
+                              ? "done"
+                              : ""
                         }
-                        aria-current={stage === i ? "step" : undefined}
+                        aria-current={progressStage === i ? "step" : undefined}
                       >
                         <span>
-                          {stage > i ? <Check size={14} /> : `0${i + 1}`}
+                          {progressStage > i ? (
+                            <Check size={14} />
+                          ) : (
+                            `0${i + 1}`
+                          )}
                         </span>
                         <b>{label}</b>
                       </li>
@@ -905,7 +916,10 @@ function App() {
                             disabled={busy}
                             onClick={() => act({ type: "complete" })}
                           >
-                            Save & close handoff <Check size={16} />
+                            {row
+                              ? "Save & close handoff"
+                              : "Close local handoff"}{" "}
+                            <Check size={16} />
                           </button>
                         )}
                         {ended && (

@@ -2,6 +2,10 @@
 
 **Care, with someone beside you.**
 
+[Live prototype](https://steadyside.vercel.app) · [GitHub](https://github.com/jiexiY/steadyside)
+
+Release status: the local walkthrough is live. Supabase schema and client wiring are deployed; anonymous guest sign-in is still disabled pending owner approval, so guest cloud saving and cross-user API tests are not yet verified. Existing provisioned email/password accounts can use the sign-in path; that path has not been exercised with a real account in this build.
+
 A caregiver-facing prototype that makes bathing preparation, available support, and handoff explicit. Built with React, TypeScript, Supabase, and Vercel. This repository is a new implementation, not a renamed copy of the earlier shower simulator.
 
 ## The problem
