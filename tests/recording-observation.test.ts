@@ -56,3 +56,12 @@ test("suite labels remain selectable and track camera projection above the overl
   assert.match(map, /aria-label=\{\x60Select suite \$\{id\}\x60\}/);
   assert.match(map, /onClick=\{\(\) => props.onSelect\(id\)\}/);
 });
+
+test("suite labels stay anchored without hover or press animations", () => {
+  const css = readFileSync(new URL("../src/room-monitoring.css", import.meta.url), "utf8");
+  const staticLabelRule = css.match(/\.map-suite-label, \.map-suite-label:hover, \.map-suite-label:not\(:disabled\):active\s*\{([^}]+)\}/)?.[1];
+  assert.ok(staticLabelRule);
+  assert.match(staticLabelRule, /transform: translate\(-50%, -50%\)/);
+  assert.match(staticLabelRule, /transition: none/);
+  assert.match(staticLabelRule, /animation: none/);
+});

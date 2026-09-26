@@ -16,6 +16,7 @@
 .observation-toggle:focus-visible { outline: 2px solid #466879; outline-offset: 3px; }
 .map-suite-labels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .map-suite-label { position: absolute; visibility: hidden; transform: translate(-50%, -50%); pointer-events: auto; min-width: 60px; padding: 7px 10px; border: 1px solid #7d898f; border-radius: 5px; background: #edf0f0f2; color: #344851; font-size: 12px; line-height: 1.2; font-weight: 700; letter-spacing: .4px; box-shadow: 0 2px 6px #24323b14; }
+.map-suite-label, .map-suite-label:hover, .map-suite-label:not(:disabled):active { transform: translate(-50%, -50%); transition: none; animation: none; }
 .map-suite-label[aria-pressed=true] { background: #415864; border-color: #415864; color: #fff; }
 .map-suite-label:hover { outline: 2px solid #6e828c; outline-offset: 2px; }
 .map-suite-label:focus-visible { outline: 3px solid #466879; outline-offset: 3px; }
