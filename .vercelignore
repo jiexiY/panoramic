@@ -4,3 +4,8 @@ node_modules
 output
 tests
 scripts
+devpost-*.png
+devpost-submission.md
+.devpost-hackathon-state.json
+docs/archive
+output-*.png

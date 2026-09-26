@@ -1,5 +1,5 @@
 {
-  "name": "steadyside",
+  "name": "panoramic",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,10 +7,10 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/dev.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --experimental-strip-types --test --test-isolation=none tests/workflow.test.ts",
+    "test": "node --experimental-strip-types --test --test-isolation=none tests/*.test.ts",
     "test:cloud": "node --env-file=.env.local scripts/verify-cloud.mjs"
   },
   "dependencies": {

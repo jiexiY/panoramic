@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "types": [] },
+  "include": ["./gemini.ts", "../server/gemini.ts", "../src/scene.ts"]
+}

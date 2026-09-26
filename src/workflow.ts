@@ -80,7 +80,7 @@ export type Action =
         | "finish"
         | "complete";
     };
-export function initialState(scenario: "one" | "two" = "two"): State {
+export function emptyState(scenario: "one" | "two" = "two"): State {
   return {
     schema: 1,
     scenario,
@@ -103,6 +103,12 @@ export function initialState(scenario: "one" | "two" = "two"): State {
     paused: false,
     exit: false,
     concern: false,
+    events: [],
+  };
+}
+export function initialState(scenario: "one" | "two" = "two"): State {
+  return {
+    ...emptyState(scenario),
     events: [
       {
         at: new Date().toISOString(),
@@ -293,7 +299,7 @@ export function transition(
 }
 export function report(s: State): string {
   return [
-    "STEADYSIDE · FICTIONAL DEMO HANDOFF",
+    "PANORAMIC · FICTIONAL DEMO HANDOFF",
     `Status: ${s.phase}`,
     `Scenario: ${s.scenario === "two" ? "Two-person assessed assistance" : "One-person assessed assistance"}`,
     `Shift: ${s.shift}`,

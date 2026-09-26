@@ -1,0 +1,145 @@
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ClipboardList, DoorOpen, HeartHandshake, ScanLine, ShieldCheck, Users } from "lucide-react";
+import RoomIllustration from "./RoomIllustration";
+import SiteLink, { type Navigate } from "./SiteLink";
+import { resolveRoute, routeTitle, type WorkspacePage } from "./routes";
+
+const Workspace = lazy(() => import("./Workspace"));
+const locationState = () => ({ pathname: window.location.pathname, hash: window.location.hash });
+
+function Brand({ navigate }: { navigate: Navigate }) {
+  return <SiteLink to="/" navigate={navigate} className="site-brand" aria-label="SteadySide home"><span><HeartHandshake size={25} /></span>SteadySide</SiteLink>;
+}
+
+function TryLink({ navigate, className = "" }: { navigate: Navigate; className?: string }) {
+  return <SiteLink to="/welcome" navigate={navigate} className={"site-button " + className}>Try SteadySide now <ArrowRight size={17} /></SiteLink>;
+}
+
+const steps = [
+  { title: "Review the room", text: "Choose a staged room photo or a paused video frame. A frame is only sent for analysis when you ask.", icon: ScanLine },
+  { title: "Flag what needs checking", text: "Review labeled observations, a possible hazard, and what the image cannot tell you.", icon: ShieldCheck },
+  { title: "Find available support", text: "The workflow suggests a qualified, available demo caregiver. Being closest is not enough.", icon: Users },
+  { title: "Confirm the response", text: "Acknowledgment, arrival, and resolution are separate steps. Each needs a person's confirmation.", icon: Check },
+  { title: "Keep the handoff clear", text: "Record what was observed and what the caregiver did. Export the facts for the next handoff.", icon: ClipboardList },
+];
+
+function Landing({ navigate }: { navigate: Navigate }) {
+  return <div className="public-site" data-active-page="true">
+    <a className="skip" href="#public-main">Skip to content</a>
+    <header className="site-header">
+      <Brand navigate={navigate} />
+      <nav aria-label="Product navigation">
+        <SiteLink to="/#how-it-works" navigate={navigate}>How it works</SiteLink>
+        <SiteLink to="/#our-story" navigate={navigate}>Our story</SiteLink>
+        <TryLink navigate={navigate} />
+      </nav>
+    </header>
+    <main id="public-main" className="landing-main">
+      <section className="landing-hero">
+        <div className="hero-copy">
+          <p className="site-eyebrow">FOR RESIDENTIAL ELDERCARE</p>
+          <h1>When the room changes,<br /><em>care should know.</em></h1>
+          <p className="hero-description">Turn a possible hazard into a clear next step for the caregiver who can respond.</p>
+          <p className="hero-detail">SteadySide connects room observations, caregiver availability, and the response record in one workspace.</p>
+          <div className="hero-actions"><TryLink navigate={navigate} /><SiteLink to="/#how-it-works" navigate={navigate} className="site-text-link">See how it works <ArrowRight size={16} /></SiteLink></div>
+          <p className="hero-note">Interactive prototype · Fictional scenarios · No sign-up for the local walkthrough</p>
+        </div>
+        <div className="landing-preview" aria-label="Illustrated example of the SteadySide workflow, not a live analysis">
+          <div className="preview-top"><span><ScanLine size={16} /> Living area review</span><span>ILLUSTRATED EXAMPLE</span></div>
+          <div className="preview-room"><RoomIllustration /><div className="preview-spill"><span>Possible spill</span></div></div>
+          <div className="preview-response">
+            <div className="preview-alert"><ShieldCheck size={20} /><div><b>A room observation, with context.</b><p>Check the spill beside the chair and the box in the walking path.</p></div></div>
+            <div className="preview-person"><span>S</span><div><b>Sam <small>Available caregiver · fictional</small></b></div><span className="preview-status">Suggested</span></div>
+          </div>
+          <p className="preview-caption">Authored example. No camera feed or model result.</p>
+        </div>
+      </section>
+      <section className="landing-problem" aria-labelledby="problem-title">
+        <p className="site-eyebrow">THE GAP BETWEEN NOTICING AND RESPONDING</p>
+        <h2 id="problem-title">A staffing ratio doesn't tell you<br />who can help right now.</h2>
+        <div><p>A caregiver can be on shift and still be occupied with someone else. A spilled drink or an object in a walking path needs context, attention, and an available person—not just another alert.</p><p>SteadySide is designed around that handoff: what changed, where it is, who can respond, and what happened next.</p></div>
+      </section>
+      <section id="how-it-works" className="landing-section how-section">
+        <div className="section-heading"><div><p className="site-eyebrow">HOW IT WORKS</p><h2>One observation.<br />A complete response.</h2></div><p>Follow a room observation through five explicit steps. The prototype uses staged media or a clearly labeled illustrated rehearsal.</p></div>
+        <div className="landing-steps">{steps.map(({title,text,icon:Icon},i)=><article key={title}><div className="step-top"><span>0{i+1}</span><Icon size={23} /></div><h3>{title}</h3><p>{text}</p></article>)}</div>
+        <div className="care-session-note"><ClipboardList size={24} /><div><h3>Preparing for a care routine?</h3><p>The care-session workspace also covers room checks, consent, required helper presence, and a recorded handoff.</p></div></div>
+      </section>
+      <section id="our-story" className="landing-story">
+        <div><p className="site-eyebrow">WHY STEADYSIDE EXISTS</p><h2>It started with<br />my grandmother.</h2><span className="story-mark" aria-hidden="true"><HeartHandshake size={48} strokeWidth={1.2} /></span></div>
+        <div className="story-copy"><p>My grandmother was active and clear-minded. While living in a residential eldercare center, she spilled water in her room while her caregiver was away. She slipped and broke her hip.</p><p>Two weeks later, she died on my seventeenth birthday.</p><p>I keep coming back to the time between the spill and someone knowing. SteadySide grew from that question: how can we make a change in the environment visible, give caregivers the right context, and coordinate the help that is available?</p><p className="story-footnote">This is the motivation behind the project—not a claim that this prototype could have prevented her fall. Caregivers still need adequate staffing and support.</p></div>
+      </section>
+      <section id="prototype-details" className="landing-section details-section">
+        <div className="section-heading"><div><p className="site-eyebrow">INSIDE THE PROTOTYPE</p><h2>Clear roles for<br />each part of the system.</h2></div><p>The workspace is for taking action. The explanation, implementation status, and technical details live here.</p></div>
+        <div className="technology-list">
+          <article><span>01</span><h3>React + TypeScript</h3><p>The interface and workflow rules keep acknowledgment, arrival, resolution, and handoff distinct.</p><b>Working interface</b></article>
+          <article><span>02</span><h3>Gemini API</h3><p>A server-side integration requests observations and labeled boxes for one staged image. A separate request can draft a handoff for review. Successful live analysis is not yet verified.</p><b className="status-pending">Verification pending</b></article>
+          <article><span>03</span><h3>Supabase</h3><p>Authentication and storage are wired for care-session records. Guest saving is not enabled. Scene-review events stay in the browser tab and can be exported.</p><b className="status-pending">Saving needs setup</b></article>
+          <article><span>04</span><h3>Vercel</h3><p>Hosts the public site, the caregiver workspace, and the server-side analysis endpoint.</p><b>Deployed</b></article>
+        </div>
+        <div className="prototype-boundary"><ShieldCheck size={22} /><div><h3>What you're trying</h3><p>A fictional-data prototype—not a live care service. The illustrated rehearsal uses preset observations and makes no API requests. Live image analysis needs private demo access. There is no continuous monitoring, voice recognition, external emergency dispatch, or validated fall-prevention capability.</p><details><summary>Data and real-world use</summary><p>Use only staged, unoccupied rooms with no personal information. Google's free tier may use submitted content for product improvement. Do not upload residents or private care records. Real-world use would require clinical, accessibility, privacy, and security review, verified caregiver identities, and an organization's operating procedures.</p><p>Local scene records are cleared by refresh. Export before leaving. Guest access, if enabled later, is browser-specific and does not verify staff identity.</p></details></div></div>
+      </section>
+      <section className="landing-end"><div><p className="site-eyebrow">EXPLORE THE WORKSPACE</p><h2>See the response,<br />from start to handoff.</h2></div><div><TryLink navigate={navigate} /><p>Open SteadySide, then enter the demo care center.</p></div></section>
+    </main>
+    <footer className="site-footer"><Brand navigate={navigate} /><span>Residential care coordination · Prototype</span><a href="https://github.com/jiexiY/steadyside" target="_blank" rel="noreferrer">View project <ArrowUpRight size={15} /></a></footer>
+  </div>;
+}
+
+function Welcome({ navigate }: { navigate: Navigate }) {
+  return <div className="welcome-site" data-active-page="true">
+    <header className="welcome-header"><Brand navigate={navigate} /><SiteLink to="/" navigate={navigate} className="site-text-link"><ArrowLeft size={16} /> Back to website</SiteLink></header>
+    <main className="welcome-main">
+      <div className="welcome-emblem" aria-hidden="true"><HeartHandshake size={52} strokeWidth={1.3} /></div>
+      <p className="site-eyebrow">RESIDENTIAL CARE WORKSPACE</p>
+      <h1>Welcome to SteadySide.</h1>
+      <p className="welcome-subtitle">Your workspace for the next step in care.</p>
+      <section className="entry-card" aria-labelledby="entry-center">
+        <div className="entry-center"><span><DoorOpen size={25} /></span><div><h2 id="entry-center">Demo care center</h2><p>Caregiver workspace</p></div><span className="entry-pill">PROTOTYPE</span></div>
+        <div className="entry-person"><span>A</span><div><b>Alex · Demo caregiver</b><p>Fictional residents, staff, and care plans</p></div></div>
+        <SiteLink to="/app" navigate={navigate} className="site-button entry-button">Open care workspace <ArrowRight size={18} /></SiteLink>
+        <p className="entry-note">No account needed for this local walkthrough.</p>
+      </section>
+      <p className="welcome-privacy"><ShieldCheck size={15} /> Use staged media only. No real resident information.</p>
+    </main>
+    <footer className="welcome-footer"><span>SteadySide · Residential care</span><SiteLink to="/#prototype-details" navigate={navigate}>About this prototype</SiteLink></footer>
+  </div>;
+}
+
+export default function Site() {
+  const [location, setLocation] = useState(locationState);
+  const route = resolveRoute(location.pathname);
+  const [workspaceOpened, setWorkspaceOpened] = useState(route.surface === "workspace");
+  const lastPage = useRef<WorkspacePage>(route.surface === "workspace" ? route.page : "monitor");
+  const navigate = useCallback<Navigate>((to) => {
+    const target = new URL(to, window.location.origin);
+    if (target.origin !== window.location.origin) return;
+    const href = target.pathname + target.search + target.hash;
+    if (href !== window.location.pathname + window.location.search + window.location.hash) window.history.pushState(null, "", href);
+    setLocation(locationState());
+  }, []);
+  useEffect(() => {
+    const update = () => setLocation(locationState());
+    window.addEventListener("popstate", update);
+    window.addEventListener("hashchange", update);
+    return () => { window.removeEventListener("popstate", update); window.removeEventListener("hashchange", update); };
+  }, []);
+  useEffect(() => {
+    if (route.surface === "workspace") { setWorkspaceOpened(true); lastPage.current = route.page; }
+    document.title = routeTitle(route);
+  }, [location.pathname]);
+  useLayoutEffect(() => {
+    if (location.hash) {
+      const target = document.getElementById(location.hash.slice(1));
+      if (target) { target.scrollIntoView(); return; }
+    }
+    window.scrollTo(0, 0);
+    const heading = [...document.querySelectorAll<HTMLElement>('[data-active-page="true"] h1')].find(item => item.getClientRects().length > 0);
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus({ preventScroll: true });
+  }, [location]);
+  return <>
+    {route.surface === "landing" && <Landing navigate={navigate} />}
+    {route.surface === "welcome" && <Welcome navigate={navigate} />}
+    {(workspaceOpened || route.surface === "workspace") && <div hidden={route.surface !== "workspace"} data-active-page={route.surface === "workspace" ? "true" : undefined}><Suspense fallback={<main className="workspace-loading" role="status">Opening care workspace…</main>}><Workspace page={route.surface === "workspace" ? route.page : lastPage.current} navigate={navigate} /></Suspense></div>}
+    {route.surface === "not-found" && <main className="welcome-main" data-active-page="true"><h1>Page not found</h1><SiteLink to="/" navigate={navigate} className="site-button">Back to SteadySide <ArrowLeft size={16} /></SiteLink></main>}
+  </>;
+}

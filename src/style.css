@@ -1,15 +1,15 @@
 :root {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
-  color: #243b37;
-  background: #f6f7f3;
+  color: #293e45;
+  background: #f5f2ec;
   font-synthesis: none;
   font-weight: 400;
-  --ink: #193e37;
-  --green: #23594b;
-  --muted: #6a7872;
-  --line: #e3e8df;
-  --orange: #a56c35;
-  --lime: #e5edca;
+  --ink: #293e45;
+  --green: #466879;
+  --muted: #606e70;
+  --line: #d9ded9;
+  --orange: #98683a;
+  --lime: #fffdf8;
 }
 * {
   box-sizing: border-box;
@@ -105,7 +105,7 @@ small {
   position: fixed;
   inset: 0 auto 0 0;
   border-right: 1px solid var(--line);
-  background: #fbfcf8;
+  background: #e7ece5;
   padding: 31px 21px 20px;
   display: flex;
   flex-direction: column;
@@ -123,7 +123,7 @@ small {
 .brand-icon {
   display: grid;
   place-items: center;
-  background: var(--ink);
+  background: var(--green);
   color: var(--lime);
   border-radius: 11px;
   width: 40px;
@@ -133,7 +133,7 @@ small {
   font-size: 8px;
   letter-spacing: 2.2px;
   font-weight: 600;
-  color: #6d7b6f;
+  color: #536660;
   margin-top: 3px;
 }
 .workspace {
@@ -146,6 +146,7 @@ small {
   margin: 36px 0 30px;
   font-size: 12px;
   font-weight: 620;
+  background: #f4f6ef;
 }
 .workspace small {
   font-size: 10px;
@@ -174,7 +175,7 @@ small {
 }
 .nav-label {
   padding-left: 12px;
-  color: #859184;
+  color: #596d65;
   margin-bottom: 11px;
 }
 .rail nav {
@@ -190,16 +191,16 @@ small {
   text-align: left;
   border-radius: 7px;
   padding: 13px 12px;
-  color: #768177;
-  font-size: 12px;
+  color: #4e635e;
+  font-size: 13px;
   font-weight: 550;
 }
 .rail nav button[aria-current] {
-  background: #eaf0df;
-  color: #254e3b;
+  background: #d4e1e5;
+  color: #294f62;
 }
 .rail nav button:hover {
-  background: #eff2e9;
+  background: #dbe5dc;
 }
 .nav-dot {
   margin-left: auto;
@@ -212,36 +213,14 @@ small {
   margin-left: auto;
   font-size: 10px;
 }
-.rail-quote {
-  margin-top: auto;
-  padding: 35px 13px 20px;
-}
-.quote-mark {
-  font-family: Georgia, serif;
-  font-size: 65px;
-  height: 46px;
-  color: #bfcfaf;
-}
-.rail-quote p {
-  font-family: Georgia, serif;
-  font-size: 23px;
-  color: #546c54;
-  line-height: 1.3;
-  letter-spacing: -0.6px;
-}
-.rail-quote > span {
-  display: block;
-  font-size: 10px;
-  line-height: 1.7;
-  color: #88927f;
-  margin-top: 19px;
-}
 .rail-bottom {
-  display: flex;
+  display: grid;
+  grid-template-columns: 6px 1fr;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
-  color: #7e8979;
+  margin-top: auto;
+  font-size: 10px;
+  color: #536660;
   border-top: 1px solid var(--line);
   padding-top: 19px;
 }
@@ -265,14 +244,14 @@ small {
   justify-content: space-between;
   align-items: center;
   padding: 0 42px;
-  background: #fcfdf9;
+  background: #fffdf8;
 }
 .breadcrumbs {
   display: flex;
   align-items: center;
   gap: 13px;
-  font-size: 11px;
-  color: #8a9489;
+  font-size: 12px;
+  color: #657171;
 }
 .breadcrumbs b {
   font-weight: 500;

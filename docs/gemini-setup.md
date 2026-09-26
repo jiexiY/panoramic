@@ -1,0 +1,52 @@
+# Gemini: activate only after free-tier access is verified
+
+## Current status
+
+On September 26, 2026, the owner resolved account access and the demo-code requirement. All production readiness checks now pass: API key present, valid demo code, and free-tier confirmation. AI Studio still displays **Free tier**. The first explicitly approved illustrated-screenshot request failed with a redacted provider rejection; the separately approved diagnostic retry returned **HTTP 503 / UNAVAILABLE**. No successful analysis has been received, no automatic retries occurred, and billing was not enabled. This availability response is not proof that paid access is required. A later explicitly approved request is still needed to verify a successful model response; staged real-world footage and an accuracy evaluation remain separate work.
+
+## Account setup (owner action)
+
+1. Open https://aistudio.google.com/api-keys with an eligible Google account you own. If access redirects to requirements, follow Google's account guidance; do not bypass regional or age restrictions. A different eligible personal account may be used if you own it. Complete private sign-in/verification yourself.
+2. Create or choose a project visibly marked **Free Tier**. Do not link a billing account, buy credits, or upgrade a subscription for this test.
+3. Create a Gemini API key. Keep it private. Note the **Project Number** separately for the ShellHacks Gemini prize field; it is not the API key.
+4. Confirm the selected model is available with free quota in this project. Current default is `gemini-3.8-flash`, as listed in Google's pricing documentation at implementation time. Change `GEMINI_MODEL` if needed after rechecking official model availability and pricing.
+
+## Server configuration
+
+In local `.env.local` or the Panoramic Vercel project's private environment settings, set:
+
+```dotenv
+GEMINI_API_KEY=<private key from the verified Free Tier project>
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_FREE_TIER_CONFIRMED=true
+GEMINI_DEMO_ACCESS_CODE=<a separate randomly generated private value of at least 16 characters>
+```
+
+Never prefix these with `VITE_`. Do not commit them, expose them in screenshots, enter the Google key into the app's access-code field, or paste secrets into chat. `GEMINI_FREE_TIER_CONFIRMED` is only the owner's attestation; it cannot prevent charges if the key actually belongs to a paid project. Keep billing disabled at Google. The app contains no billing or upgrade calls.
+
+Restart `npm run dev` after local environment changes. Redeploy the Vercel project after changing its server environment variables. Check `/api/gemini`: `configured: true` means the server has its required settings, **not** that a live provider call succeeded.
+
+## First live test
+
+1. Use a non-sensitive photo of staged props in an empty room. Do not upload real care footage.
+2. Enter the separate private demo code; check the staging confirmation; click **Analyze frame with Gemini** once.
+3. Confirm the app reports a Gemini response, a model identifier, timestamp, and scene observations. Inspect each box and statement manually against the photo. An error must not create a result or certify safety.
+4. Test an ordinary cup with no visible spill, a spill-like patch, a box across a walking route, and poor lighting. Record misses and false positives. The fixture tests do not measure visual accuracy.
+5. For a candidate hazard, demonstrate no available caregiver, then an available qualified caregiver, acknowledgment, arrival, and a specific resolution note. Only then request and review the optional Gemini summary.
+6. Watch Google's quota. If exhausted, wait or shorten the demonstration; do not enable billing automatically. The local throttle is per instance, not a durable global spending cap.
+
+## Verification completed / still needed
+
+- Completed: 43 local automated tests; TypeScript and production build; browser rehearsal of coverage gap, acknowledgment, arrival, and resolution; production readiness diagnostics using booleans only; two approved connectivity attempts with a non-sensitive illustrated screenshot. Error reporting exposes only HTTP status and allowlisted codes, not raw provider messages or credentials.
+- Pending: successful live model response, real staged-frame analysis, visual accuracy evaluation, and live summary generation. The illustrated screenshot contains preset boxes and labels and is unsuitable for measuring detection accuracy.
+- No scene records are persisted to Supabase yet. The existing care-session storage remains separate and unchanged.
+- Do not mark the Gemini sponsor integration verified or submit the challenge entry until a real API call has succeeded and the required project number is supplied.
+
+## Official references
+
+- https://ai.google.dev/gemini-api/docs/pricing
+- https://ai.google.dev/gemini-api/docs/billing
+- https://ai.google.dev/gemini-api/docs/api-key
+- https://ai.google.dev/gemini-api/docs/image-understanding
+- https://ai.google.dev/api/generate-content
+- https://ai.google.dev/gemini-api/terms

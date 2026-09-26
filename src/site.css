@@ -1,0 +1,33 @@
+/* A quiet product entrance, separate from the caregiver workspace. */
+[data-active-page] h1[tabindex="-1"]:focus { outline: none; }
+.site-button { display: inline-flex; justify-content: center; align-items: center; gap: 18px; min-height: 48px; padding: 14px 22px; border: 1px solid #466879; border-radius: 9px; background: #466879; color: #fffdf8; font-size: 13px; font-weight: 600; text-decoration: none; line-height: 1.5; transition: background .15s; }
+.site-button:hover { background: #355666; border-color: #355666; }
+.welcome-site { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; background: #f4f2ea; }
+.welcome-main { width: 100%; max-width: 590px; padding: 48px 24px; margin: auto; text-align: center; }
+.welcome-main h1 { font-family: inherit; font-size: clamp(46px, 7vw, 72px); line-height: 1.1; font-weight: 800; letter-spacing: -3px; color: #293e45; }
+.entry-button { margin-top: 32px; }
+.workspace-loading { min-height: 70vh; padding-top: 100px; text-align: center; color: #546d6f; }
+.app-shell .page-heading h1 { font-family: inherit; font-size: clamp(28px, 2.7vw, 36px); font-weight: 650; line-height: 1.2; letter-spacing: -1px; }
+.app-shell .rail .brand { margin-bottom: 42px; }
+.app-shell .rail-bottom { display: flex; border: 0; padding-top: 20px; }
+.rail-bottom a { display: inline-flex; align-items: center; gap: 7px; color: #466879; text-decoration: none; font-size: 12px; min-height: 44px; }
+.rail-bottom a:hover { text-decoration: underline; }
+.app-shell .session-empty { min-height: 360px; display: grid; align-content: center; justify-items: center; gap: 20px; }
+.app-shell .session-empty h2 { font-family: inherit; font-size: 21px; font-weight: 600; }
+
+@media (min-width: 761px) and (max-width: 1000px) {
+  .app-shell .rail { width: 190px; padding: 25px 14px; }
+  .app-shell .rail .brand { font-size: 21px; margin-bottom: 32px; }
+  .app-shell .rail .brand > span:last-child { display: block; }
+  .app-shell .rail nav { margin-top: 0; }
+  .app-shell .rail nav button { font-size: 12px; gap: 9px; padding: 13px 9px; }
+  .app-shell .main-shell { margin-left: 190px; width: calc(100% - 190px); }
+}
+@media (max-width: 760px) {
+  .welcome-main h1 { letter-spacing: -2px; }
+  .app-shell .rail .brand { margin-bottom: 0; }
+  .app-shell .rail-bottom { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-button { transition: none; }
+}

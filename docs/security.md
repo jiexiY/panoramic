@@ -4,7 +4,18 @@
 
 Browser action → TypeScript transition → authenticated Supabase request → PostgreSQL RLS → saved snapshot and server revision → UI confirmation.
 
-A local walkthrough does not transmit its session to Supabase until the user chooses cloud saving. The Supabase client may contact Auth when restoring an existing browser session. Vercel serves the frontend and receives normal hosting traffic. No AI provider receives images or session records in this version.
+A local care walkthrough does not transmit its session to Supabase until the user chooses cloud saving. The Supabase client may contact Auth when restoring an existing browser session. Vercel serves the frontend and receives normal hosting traffic. The optional Gemini scene workflow is separate: an explicitly selected staged frame goes through `/api/gemini` to Google only after staging confirmation, a private demo code, and server configuration. An optional summary sends the fictional scene record on a separate explicit request. Video and audio are not uploaded; only the selected resized frame is sent.
+
+## Gemini demo boundary
+
+- Provider key exists only in server environment variables. Do not use a `VITE_` prefix or pass it to the client. The browser's access code is a separate demo gate; do not reuse the provider key.
+- Live requests fail closed unless `GEMINI_API_KEY`, a 16+ character `GEMINI_DEMO_ACCESS_CODE`, and `GEMINI_FREE_TIER_CONFIRMED=true` are configured. The confirmation is an operator attestation, **not an API-level billing check or a spending cap**. Verify the key's project is Free Tier in Google AI Studio before enabling it; never silently attach billing.
+- Authentication uses a shared private demo code, not verified staff identity. Share only with intended demo operators. Before opening live analysis broadly, replace this with verified identities and durable, distributed per-user quota controls.
+- Per-instance throttling (4 provider requests/minute, 30/day, one in flight) is best effort only: serverless instances and restarts do not share those counters. Google project quotas are separate. No automatic retries, paid model fallback, or billing-upgrade operation is implemented.
+- Size and content-type checks bound images and request bodies. The server does not fetch arbitrary client-supplied URLs. It validates model categories, text lengths, and box coordinates, and hides raw upstream error messages.
+- Visible image text and supplied records are untrusted data, not instructions. The model receives no tools that can send messages, change staffing, or operate physical equipment. App transitions—not model prose—control the demo response state.
+- Free-tier data can be used by Google for improvement and human review. Submit only staged, unoccupied scenes and fictional notes, never real residents or personal care data. Google's data practices apply even though this app does not persist the uploaded image.
+- Images, scene results, events, and editable summaries remain in tab memory until exported or refreshed. The app does not log raw media, API keys, access codes, or provider bodies. Hosting/platform retention still needs review before any non-demo use.
 
 ## Implemented controls
 

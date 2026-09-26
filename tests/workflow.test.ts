@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   CHECKS,
+  emptyState,
   initialState,
   missing,
   ready,
@@ -25,6 +26,22 @@ function prepared(scenario: "one" | "two" = "two"): State {
 }
 test("empty checks cannot start", () =>
   assert.throws(() => transition(initialState(), { type: "start" })));
+test("an unopened workspace has no session events or confirmed support", () => {
+  const state = emptyState();
+  assert.deepEqual(state.events, []);
+  assert.equal(ready(state), false);
+  assert.ok(Object.values(state.checks).every(value => value === false));
+  assert.equal(state.caregiver, false);
+  assert.equal(state.helper, false);
+});
+test("sample session activity is created only by an explicit new session", () => {
+  const empty = emptyState();
+  const sample = initialState("one");
+  assert.equal(sample.events.length, 1);
+  assert.equal(sample.scenario, "one");
+  assert.match(sample.events[0].text, /Fictional session created/);
+  assert.deepEqual(empty.events, []);
+});
 test("room preparation is not sufficient without available helpers", () => {
   let s = prepared();
   s = transition(s, { type: "confirm", key: "helper", value: false });

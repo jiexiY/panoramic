@@ -2,6 +2,8 @@
 
 This repository was initialized on September 25, 2026 in America/New_York (September 26 UTC). Actual Git commit timestamps are preserved.
 
+On September 26, 2026, the product and its existing GitHub and Vercel projects were renamed from SteadySide to Panoramic. This was a name change, not a new repository or a reset of the project's history. Earlier verification records and archived material retain the name used at the time.
+
 ## Earlier work exists
 
 - Before this implementation, the founder explored elder bathing support and built a separate shower-control simulator: https://github.com/jiexiY/showerhaven.
