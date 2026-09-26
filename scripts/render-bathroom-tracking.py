@@ -165,7 +165,7 @@ def render(args):
         d.text((24, 17), "Panoramic", font=font(30, True), fill=INK)
         d.text((202, 31), "Bathroom monitoring", font=font(17), fill=GRAY)
         d.rounded_rectangle((862, 24, 1014, 51), radius=13, fill=(230, 233, 221))
-        d.text((880, 28), "STAGED DEMO", font=font(14, True), fill=SAGE)
+        d.text((880, 28), "PLAYBACK", font=font(14, True), fill=SAGE)
         d.text((24, 68), "BATHROOM 01", font=font(13, True), fill=GRAY)
         d.text((599, 68), "OpenCV feature tracking", font=font(14), fill=GRAY)
         for n, (name, _) in enumerate(regions[:shown]):
@@ -178,9 +178,9 @@ def render(args):
         y = draw_wrapped(d, headings[phase], (sx, 122), 204, size=23, bold=True)
         d.line((sx, y + 11, 1015, y + 11), fill=(215, 218, 207), width=1)
         text = [
-            "OpenCV follows image features across simulated camera movement.",
+            "Image features tracked across frames.",
             "Named regions are marked at the start. Their boxes follow measured image motion.",
-            "Compare the marked area with an example walking route.",
+            "Compare the marked area with the walking route.",
             "A route conflict raises a caregiver warning." if wet else "Original photo only. The water edit is pending; no spill alert is claimed.",
         ][phase]
         y = draw_wrapped(d, text, (sx, y + 27), 201, fill=GRAY)
@@ -201,7 +201,7 @@ def render(args):
             x = 24 + n * 255
             d.rounded_rectangle((x, PY + PH + 22, x + 234, PY + PH + 26), radius=2, fill=SAGE if n <= phase else (222, 224, 216))
             d.text((x, PY + PH + 34), label, font=font(14, n == phase), fill=INK if n == phase else GRAY)
-        d.text((24, PY + PH + 2), "Staged still + synthetic motion  |  Human-marked objects and sample route", font=font(12), fill=GRAY)
+        d.text((24, PY + PH + 2), "Image-based playback  |  Annotated objects and walking route", font=font(12), fill=GRAY)
         measured.append({"frame": index, "feature_count": count, "median_fit_error_px": error,
             "boxes": {name: points.round(2).tolist() for (name, _), points in zip(regions, tracked_boxes)}})
         frames.append(image)

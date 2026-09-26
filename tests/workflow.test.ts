@@ -39,7 +39,7 @@ test("sample session activity is created only by an explicit new session", () =>
   const sample = initialState("one");
   assert.equal(sample.events.length, 1);
   assert.equal(sample.scenario, "one");
-  assert.match(sample.events[0].text, /Fictional session created/);
+  assert.match(sample.events[0].text, /Care session created/);
   assert.deepEqual(empty.events, []);
 });
 test("room preparation is not sufficient without available helpers", () => {
@@ -170,7 +170,8 @@ test("transition does not mutate its input", () => {
 test("report is deterministic from recorded state", () => {
   const s = prepared();
   assert.equal(report(s), report(s));
-  assert.match(report(s), /No real patient data/);
+  assert.match(report(s), /Operator-entered timeline/);
+  assert.match(report(s), /Notifications: not connected/);
 });
 test("all successful actions append one attributed event", () => {
   const s = prepared();

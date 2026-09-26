@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGeminiHandler } from "../server/gemini.ts";
-import { rehearsalScene } from "../src/scene.ts";
+import { rehearsalScene } from "./fixtures/scenes.ts";
 const env = { GEMINI_API_KEY: "test-key-never-real", GEMINI_FREE_TIER_CONFIRMED: "true", GEMINI_DEMO_ACCESS_CODE: "test-private-code-123456" };
 const image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZfoAAAAASUVORK5CYII=";
 const body = { operation: "analyze", stagedOnly: true, image };
@@ -95,7 +95,7 @@ test("network failure produces an explicit failure, not a fallback analysis", as
 test("summary uses only the supplied fictional record and returns a draft", async () => {
   const result = await createGeminiHandler({ fetch: async (_url, options) => {
     const data = JSON.parse(String(options?.body)); assert.match(data.systemInstruction.parts[0].text, /Separate AI observations/);
-    assert.deepEqual(JSON.parse(data.contents[0].parts[0].text), { fictionalRecord: "Staged spill. Sam acknowledged. Arrival not recorded." });
+    assert.deepEqual(JSON.parse(data.contents[0].parts[0].text), { eventRecord: "Staged spill. Sam acknowledged. Arrival not recorded." });
     return response({ summary: "Draft: possible spill observed; acknowledgment recorded. Arrival remains unconfirmed." });
   } })(request({ operation: "summary", stagedOnly: true, record: "Staged spill. Sam acknowledged. Arrival not recorded." }), env);
   assert.equal(result.status, 200); assert.match((await result.json()).summary, /unconfirmed/);

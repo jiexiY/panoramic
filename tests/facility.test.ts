@@ -41,7 +41,7 @@ test("availability and qualification take priority over sample distance", () => 
 test("acknowledgment reserves the caregiver without pretending they arrived", () => {
   const loaded = load();
   const accepted = facilityTransition(loaded, { type: "acknowledge", at });
-  assert.equal(accepted.incident?.assigned, "Sam");
+  assert.equal(accepted.incident?.assigned, "Caregiver 01");
   assert.equal(accepted.incident?.phase, "acknowledged");
   assert.equal(accepted.staff[0].available, false);
   assert.equal(accepted.staff[0].location, "supervision");

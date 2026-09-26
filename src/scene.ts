@@ -5,7 +5,7 @@ export type Detection = {
   evidence: string;
 };
 export type Scene = { observations: Detection[]; brief: string; uncertainty: string };
-export type Analysis = { scene: Scene; source: "gemini" | "rehearsal"; model: string; analyzedAt: string };
+export type Analysis = { scene: Scene; source: "gemini"; model: string; analyzedAt: string };
 export type Caregiver = { id: string; name: string; available: boolean; qualified: boolean; distance: number };
 export type Incident = {
   phase: "flagged" | "acknowledged" | "arrived" | "resolved";
@@ -50,7 +50,7 @@ export function parseScene(value: unknown): Scene {
 export function startIncident(scene: Scene, at: string): Incident | null {
   return scene.observations.some(o => o.kind !== "object") ? {
     phase: "flagged", assigned: null, resolution: "",
-    events: [{ at, text: "Possible environmental hazard flagged in this demo workspace. Not sent to an external device." }],
+    events: [{ at, text: "Possible environmental hazard flagged for review." }],
   } : null;
 }
 export function recommendCaregiver(staff: Caregiver[]): Caregiver | null {
@@ -62,11 +62,11 @@ export function advanceIncident(current: Incident, action: "acknowledge" | "arri
     if (next.phase !== "flagged" || !caregiver?.available || !caregiver.qualified) throw new Error("An available, qualified caregiver must accept the request.");
     next.assigned = caregiver.name;
     next.phase = "acknowledged";
-    next.events.push({ at, text: `${caregiver.name} acknowledged the demo request. Arrival is not yet confirmed.` });
+    next.events.push({ at, text: `${caregiver.name} acknowledged the request. Arrival pending.` });
   } else if (action === "arrive") {
     if (next.phase !== "acknowledged") throw new Error("Acknowledge before confirming arrival.");
     next.phase = "arrived";
-    next.events.push({ at, text: `${next.assigned}: arrival confirmed by the demo operator.` });
+    next.events.push({ at, text: `${next.assigned}: arrival confirmed by operator.` });
   } else {
     if (next.phase !== "arrived" || note.trim().length < 8 || note.length > 500) throw new Error("Confirm arrival and enter a specific resolution note (8–500 characters).");
     next.phase = "resolved";
@@ -75,12 +75,3 @@ export function advanceIncident(current: Incident, action: "acknowledge" | "arri
   }
   return next;
 }
-export const rehearsalScene: Scene = {
-  observations: [
-    { label: "Cup", box: [465, 418, 655, 510], kind: "object", evidence: "An illustrated cup lies on its side beside the chair." },
-    { label: "Possible spill", box: [635, 385, 835, 655], kind: "possible_spill", evidence: "A blue illustrated puddle is on the floor beside the chair." },
-    { label: "Box on floor", box: [490, 705, 710, 875], kind: "possible_trip", evidence: "An illustrated cardboard box occupies floor space to the right of the chair." },
-  ],
-  brief: "Check the possible spill beside the chair and the box on the floor. Review their position against the resident's marked route.",
-  uncertainty: "Authored rehearsal data, not a model result. Real spill recognition needs testing on staged footage.",
-};

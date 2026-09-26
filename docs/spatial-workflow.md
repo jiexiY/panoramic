@@ -11,12 +11,12 @@ The user requested Haven as a close demonstration reference. Its [published proj
 ## Demonstration
 
 1. Open `/app/spatial`. The model is visible, but resident records, staff records, activity and concerns start empty.
-2. Click **Load bathroom example**. This explicitly loads fictional residents and staff, plus the user-supplied water-edited bathroom photo for A101.
-3. Select A101 in the model or room list. The suite plan opens. Click **View bathroom**, or select its active concern, to see the actual water image with named regions and the sample route.
-4. Click **Play OpenCV GIF** to watch the tracked regions, route overlap and warning sequence. The GIF can also be downloaded.
+2. Click **Open bathroom recording**. This opens the image-based tracking playback for A101 with neutral caregiver role handles. No resident biographies are populated.
+3. Select A101 in the model or room list to open its suite plan. **View recording** returns to the bathroom evidence.
+4. Use **Show still** and **Play tracking** to switch between the annotated image and tracked-region sequence. **Download** saves the GIF. Collapsed **Recording details** describes the image source and manual annotations.
 5. Open **Supervision desk**. Change staff availability to demonstrate candidate selection and a coverage gap. Availability and qualification are checked before illustrative proximity.
-6. **Acknowledge**, **Confirm arrival**, and **Record resolution** are distinct operator actions. The response cannot skip steps; resolution requires a note. Acknowledgment reserves staff but does not pretend they arrived. Arrival updates their listed location. Resolution releases them and closes the sample concern.
-7. Download the JSON response record. **Reset example** clears the in-memory demonstration. Reloading the page also clears it.
+6. **Acknowledge**, **Confirm arrival**, and **Record resolution** are distinct operator actions. The response cannot skip steps; resolution requires a note. Acknowledgment reserves staff but does not pretend they arrived. Arrival updates their listed location. Resolution releases them and closes the concern.
+7. Download the JSON response record. **Clear review** clears the in-memory review. Reloading the page also clears it.
 
 Map controls support rotation, zoom, top-down view, focusing a selected space, and reset. The room directory remains usable when WebGL is unavailable.
 

@@ -1,5 +1,5 @@
 export default function SuitePlan({ alert = false }: { alert?: boolean }) {
-  return <svg viewBox="0 0 300 420" className="suite-plan" role="img" aria-label="Sample suite layout: bedroom at the window, desk and kitchenette to the left, closets and bathroom to the lower right, entry at the bottom.">
+  return <svg viewBox="0 0 300 420" className="suite-plan" role="img" aria-label="Suite layout: bedroom at the window, desk and kitchenette to the left, closets and bathroom to the lower right, entry at the bottom.">
     <rect x="20" y="15" width="260" height="385" rx="3" fill="#d7c7b1" stroke="#6c7169" strokeWidth="6" />
     <rect x="55" y="12" width="160" height="8" fill="#d9e8e8" />
     <rect x="154" y="70" width="106" height="135" rx="4" fill="#93816a" />

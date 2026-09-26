@@ -202,7 +202,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
       if (row) {
         if (!navigator.onLine)
           throw new Error(
-            "You are offline. This action was not saved. Do not rely on this prototype for care or emergencies.",
+            "You are offline. This action was not saved.",
           );
         putRow(await saveSession(row, next));
       } else setState(next);
@@ -215,7 +215,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
       const saved = await createSession(state, user.id);
       putRow(saved);
       setNotice(
-        "Connected. Fictional session saved to Supabase and isolated to your authenticated identity.",
+        "Connected. Session saved to your account.",
       );
     });
   const refresh = () =>
@@ -250,7 +250,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `panoramic-fictional-handoff-${row?.id.slice(0, 8) ?? "local"}.txt`;
+    a.download = `panoramic-handoff-${row?.id.slice(0, 8) ?? "local"}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -275,7 +275,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
         />
         <span>
           <b>Assessed plan reviewed</b>
-          <small>Requirements come from a professional plan—not AI.</small>
+          <small>Confirm the current support requirements.</small>
         </span>
       </label>
       <label className="check-row">
@@ -286,7 +286,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           onChange={() => confirm("caregiver")}
         />
         <span>
-          <b>Alex · primary caregiver present</b>
+          <b>Primary caregiver present</b>
           <small>Human-confirmed, awake and available.</small>
         </span>
       </label>
@@ -299,7 +299,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
             onChange={() => confirm("helper")}
           />
           <span>
-            <b>Sam · second helper present</b>
+            <b>Second helper present</b>
             <small>Physically here. Being on call does not count.</small>
           </span>
         </label>
@@ -315,7 +315,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <b>Backup & other-resident coverage confirmed</b>
           <small>
             {state.shift === "night" ? "Awake night coverage" : "Day coverage"}{" "}
-            agreed with Jordan, the fictional supervisor.
+            confirmed with the supervisor.
           </small>
         </span>
       </label>
@@ -387,8 +387,8 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               {busy
                 ? "Saving…"
                 : row
-                  ? "Supabase connected"
-                  : "Local session"}
+                  ? "Saved"
+                  : "Not saved to cloud"}
             </span>}
             {!owner && (
               <button className="text-button" onClick={() => setAuthOpen(true)}>
@@ -423,15 +423,14 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           )}
           {!online && (
             <div className="notice error" role="alert">
-              Offline. Cloud actions are unavailable. Use established care and
-              emergency procedures—not this app.
+              Offline. Cloud actions are unavailable.
             </div>
           )}
           <div hidden={page !== "monitor"}><SceneMonitor /></div>
           <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
           {page === "session" && !hasSession && <>
             <section className="page-heading"><h1>Care session</h1></section>
-            <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New demo session</button></section>
+            <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New session</button></section>
           </>}
           {page === "session" && hasSession && (
             <>
@@ -448,26 +447,19 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                   onClick={() => setNewOpen(true)}
                   disabled={busy}
                 >
-                  <Plus size={17} /> New demo session
+                  <Plus size={17} /> New session
                 </button>
               </section>
-              <div className="demo-note">
-                <span className="pill">DEMO</span>
-                <p>
-                  All residents and caregivers below are fictional. No sensors,
-                  AI review in this care-session flow, or emergency dispatch are connected.
-                </p>
-              </div>
               <div className="session-grid">
                 <div className="flow-column">
                   <section className="resident-strip">
                     <div className="resident-avatar">
-                      EM
+                      <HandHeart size={24} />
                       <span />
                     </div>
                     <div>
-                      <p className="eyebrow">TODAY’S FICTIONAL SESSION</p>
-                      <h2>Evelyn M.</h2>
+                      <p className="eyebrow">CURRENT SESSION</p>
+                      <h2>Bathing support</h2>
                       <p>
                         {state.scenario === "two"
                           ? "Two-person assistance plan"
@@ -573,8 +565,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                         <div>
                           <h3>Resident consent</h3>
                           <p>
-                            Ask whether Evelyn wants to begin. A “no” ends this
-                            routine.
+                            Confirm whether the resident wants to begin.
                           </p>
                           <div className="button-row">
                             <button
@@ -601,7 +592,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                       <div className="card-footer">
                         <span>
                           {ready(state)
-                            ? "Required confirmations recorded. Not clinical clearance."
+                            ? "Required confirmations recorded."
                             : "Confirm the room, their choice, and available support."}
                         </span>
                         <button
@@ -623,12 +614,11 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                         <div>
                           <h2>
                             {state.paused
-                              ? "Pause. Make space for a human decision."
-                              : "Stay present. Keep their choice central."}
+                              ? "Support paused"
+                              : "Care in progress"}
                           </h2>
                           <p>
-                            Follow the assessed care plan. This app does not
-                            direct physical transfers.
+                            Follow the assessed care plan.
                           </p>
                         </div>
                       </div>
@@ -648,8 +638,8 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                           </h3>
                           <p>
                             {state.paused
-                              ? "Do not leave the person unattended to use this interface. Urgent help comes before documentation."
-                              : "There is no automatic timer, camera, or machine deciding when to continue."}
+                              ? "Review support and open concerns before resuming."
+                              : "Record changes as they occur."}
                           </p>
                         </div>
                       </div>
@@ -703,8 +693,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                       <div className="help-note">
                         <Info size={15} />
                         <span>
-                          This records a demo request only. It does not call a
-                          caregiver or emergency services.
+                          Notifications off. Contact the caregiver directly.
                         </span>
                       </div>
                       {state.help !== "none" && (
@@ -744,7 +733,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                                 disabled={busy}
                                 onClick={() => act({ type: "acknowledge" })}
                               >
-                                Acknowledge demo request
+                                Record acknowledgment
                               </button>
                             )}
                             {state.help === "acknowledged" && (
@@ -779,7 +768,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                             disabled={busy || !supportAvailable(state)}
                             onClick={() => act({ type: "resolve" })}
                           >
-                            Record human resolution
+                            Record resolution
                           </button>
                         </div>
                       )}
@@ -794,8 +783,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                           <span>
                             <b>Agreed supported exit is complete</b>
                             <small>
-                              Human confirmation—not a sensor reading. Ending a
-                              routine may still leave concerns open.
+                              Open concerns will carry forward to the handoff.
                             </small>
                           </span>
                         </label>
@@ -808,18 +796,13 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                         </button>
                       </div>
                       <details className="scenario-tools">
-                        <summary>Test a change in available support</summary>
-                        <p>
-                          Fictional scenario: required support becomes
-                          unavailable. This must pause the workflow and retain
-                          the concern.
-                        </p>
+                        <summary>Change in available support</summary>
                         <button
                           className="secondary"
                           disabled={busy}
                           onClick={() => act({ type: "supportLost" })}
                         >
-                          Simulate support unavailable
+                          Record support unavailable
                         </button>
                       </details>
                     </section>
@@ -833,15 +816,15 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                         <div>
                           <h2>
                             {state.phase === "declined"
-                              ? "A “no” is a complete answer."
+                              ? "Session declined"
                               : state.phase === "complete"
-                                ? "The next person gets the whole picture."
-                                : "Keep the handoff honest."}
+                                ? "Handoff complete"
+                                : "Review handoff"}
                           </h2>
                           <p>
                             {state.phase === "declined"
                               ? "The routine did not start. Their choice has been recorded."
-                              : "Confirmed actions and unresolved concerns, without an AI rewriting the facts."}
+                              : "Actions and unresolved concerns."}
                           </p>
                         </div>
                       </div>
@@ -875,12 +858,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                               <li key={item}>{item}</li>
                             ))}
                           </ul>
-                        ) : (
-                          <p>
-                            This is not a safety certification or evidence that
-                            a fall was prevented.
-                          </p>
-                        )}
+                        ) : null}
                       </div>
                       <div className="button-row">
                         <button className="secondary" onClick={download}>
@@ -904,16 +882,14 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                             disabled={busy}
                             onClick={() => setNewOpen(true)}
                           >
-                            New demo session <Plus size={16} />
+                            New session <Plus size={16} />
                           </button>
                         )}
                       </div>
                       <p className="fine-print">
                         {row
-                          ? `Saved in Supabase · revision ${row.revision}.`
-                          : "Local walkthrough only. Download to keep a copy; refreshing loses unsaved local work."}{" "}
-                        Operator-entered record, not a tamper-proof clinical
-                        audit.
+                          ? `Saved · revision ${row.revision}.`
+                          : "Not saved to cloud. Download before closing this tab."}
                       </p>
                     </section>
                   )}
@@ -949,26 +925,20 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                 >
                   <section className="care-plan">
                     <div className="mini-label">
-                      <BookOpen size={16} /> FICTIONAL CARE PLAN
+                      <BookOpen size={16} /> SUPPORT PLAN
                     </div>
                     <h2>
                       {state.scenario === "two"
-                        ? "Two people required."
-                        : "One person required."}
-                      <br />
-                      <span>Not just on shift.</span>
+                        ? "Two-person support"
+                        : "One-person support"}
                     </h2>
-                    <p>
-                      Requirements are set by an assessed plan. Panoramic does
-                      not decide the staffing level.
-                    </p>
                     <div className="people">
                       <span className={state.caregiver ? "present" : ""}>
-                        <Users size={18} /> Alex
+                        <Users size={18} /> Primary caregiver
                       </span>
                       {state.scenario === "two" && (
                         <span className={state.helper ? "present" : ""}>
-                          <Users size={18} /> Sam
+                          <Users size={18} /> Second helper
                         </span>
                       )}
                     </div>
@@ -980,7 +950,6 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                             : 0)}{" "}
                         / {state.scenario === "two" ? 2 : 1} confirmed present
                       </span>
-                      <span>HUMAN INPUT</span>
                     </div>
                   </section>
                   <section className="card availability">
@@ -1021,8 +990,8 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                     </div>
                     <p>
                       {row
-                        ? "This fictional session is saved to Supabase after each successful action. Other guest identities cannot read it."
-                        : "Connect to save this fictional session and return to its history in this browser."}
+                        ? "Changes are saved after each action."
+                        : "Connect to save this session."}
                     </p>
                     {row ? (
                       <button
@@ -1038,13 +1007,12 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                         onClick={connect}
                         disabled={busy || !online}
                       >
-                        <Cloud size={16} /> Connect & save demo
+                        <Cloud size={16} /> Connect & save
                       </button>
                     )}
                     <small>
                       Guest access is tied to this browser. Clearing browsing
-                      data or signing out loses access. No real patient
-                      information.
+                      data or signing out loses access.
                     </small>
                   </section>
                 </aside>
@@ -1063,7 +1031,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                   disabled={busy}
                   onClick={() => setNewOpen(true)}
                 >
-                  <Plus size={16} /> New demo session
+                  <Plus size={16} /> New session
                 </button>
               </section>
               <section className="card history-list">
@@ -1077,7 +1045,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                       onClick={connect}
                       disabled={busy}
                     >
-                      Connect & save demo <ArrowRight size={16} />
+                      Connect & save <ArrowRight size={16} />
                     </button>
                   </div>
                 ) : rows.length === 0 ? (
@@ -1088,7 +1056,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                       className="primary"
                       onClick={() => setNewOpen(true)}
                     >
-                      Create a fictional session
+                      Create a session
                     </button>
                   </div>
                 ) : (
@@ -1103,9 +1071,9 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                         setError("");
                       }}
                     >
-                      <span className="resident-avatar small">EM</span>
+                      <span className="resident-avatar small"><HandHeart size={20} /></span>
                       <span>
-                        <b>Evelyn M. · fictional</b>
+                        <b>Care session</b>
                         <small>
                           {date(saved.updated_at)} ·{" "}
                           {saved.snapshot.scenario === "two"
@@ -1153,11 +1121,8 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               <X size={20} />
             </button>
             <LockKeyhole size={28} />
-            <h2 id="auth-title">Existing account sign-in</h2>
-            <p>
-              Use a Supabase email/password account already provisioned for this
-              prototype. For a quick demo, use guest access instead.
-            </p>
+            <h2 id="auth-title">Sign in</h2>
+            <p>Use your workspace account.</p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1233,12 +1198,12 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               <X size={20} />
             </button>
             <Users size={30} />
-            <h2 id="new-title">Choose a fictional care plan.</h2>
+            <h2 id="new-title">New care session</h2>
             <p>
-              These are demonstration scenarios, not staffing recommendations.{" "}
+              Select the support arrangement in the assessed care plan.{" "}
               {row
                 ? "Your current cloud session stays in history."
-                : "Starting again replaces your current unsaved local walkthrough."}
+                : hasSession ? "Starting again replaces your unsaved session." : ""}
             </p>
             <button
               className="scenario-choice"
@@ -1247,7 +1212,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
             >
               <b>Two-person support</b>
               <span>
-                A required helper is not here yet. Make the gap visible.
+                Primary caregiver and a second helper.
               </span>
               <ArrowRight size={18} />
             </button>
@@ -1258,7 +1223,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
             >
               <b>One-person support</b>
               <span>
-                Still requires preparation, consent, and backup coverage.
+                Primary caregiver with backup coverage.
               </span>
               <ArrowRight size={18} />
             </button>

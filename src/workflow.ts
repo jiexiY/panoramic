@@ -22,7 +22,7 @@ export const CHECKS = [
   [
     "water",
     "Water checked",
-    "Follow the person’s care plan and facility procedure. No sensor is connected.",
+    "Confirm in person using the care plan and facility procedure.",
   ],
   [
     "privacy",
@@ -112,7 +112,7 @@ export function initialState(scenario: "one" | "two" = "two"): State {
     events: [
       {
         at: new Date().toISOString(),
-        text: "Fictional session created. No real resident or connected hardware.",
+        text: "Care session created.",
       },
     ],
   };
@@ -147,7 +147,7 @@ export function transition(
 ): State {
   requireThat(
     !["complete", "declined"].includes(current.phase),
-    "This session is closed. Start a new fictional session.",
+    "This session is closed. Start a new session.",
   );
   const s = structuredClone(current);
   let text = "";
@@ -196,7 +196,7 @@ export function transition(
     );
     s.phase = "support";
     text =
-      "Operator began the planned routine. Checklist completion is not clinical clearance.";
+      "Operator began the planned routine.";
   } else if (action.type === "decline") {
     requireThat(
       s.phase === "prepare",
@@ -217,7 +217,7 @@ export function transition(
   } else if (action.type === "pause") {
     requireThat(s.phase === "support", "Pause is available during support.");
     s.paused = true;
-    text = "Routine paused by operator. Human support remains necessary.";
+    text = "Routine paused by operator.";
   } else if (action.type === "resume") {
     requireThat(
       s.phase === "support" &&
@@ -238,12 +238,12 @@ export function transition(
     s.help = "requested";
     s.paused = true;
     text =
-      "Help request recorded in demo only. No call or external notification sent.";
+      "Help request recorded. Notifications off.";
   } else if (action.type === "acknowledge") {
     requireThat(s.help === "requested", "A request must come first.");
     s.help = "acknowledged";
     text =
-      "Demo request acknowledged. Arrival and resolution remain unconfirmed.";
+      "Request acknowledged. Arrival and resolution pending.";
   } else if (action.type === "arrive") {
     requireThat(
       s.help === "acknowledged",
@@ -265,14 +265,14 @@ export function transition(
   } else if (action.type === "supportLost") {
     requireThat(
       s.phase === "support",
-      "This scenario is available during support.",
+      "Support changes can be recorded during the routine.",
     );
     s.coverage = false;
     s.paused = true;
     s.concern = true;
     if (s.scenario === "two") s.helper = false;
     text =
-      "Required support changed. Human reassessment needed; do not leave the person unattended for this interface.";
+      "Required support changed. Reassessment needed.";
   } else if (action.type === "finish") {
     requireThat(
       s.phase === "support" && s.exit,
@@ -288,20 +288,20 @@ export function transition(
     );
     s.phase = "complete";
     text =
-      "Handoff saved. Closed does not mean concerns resolved or safety certified.";
+      "Handoff closed. Unresolved concerns retained.";
   }
   requireThat(
     s.events.length < 500,
-    "This demo session has reached its event limit.",
+    "This session has reached its event limit.",
   );
   s.events.push({ at, text });
   return s;
 }
 export function report(s: State): string {
   return [
-    "PANORAMIC · FICTIONAL DEMO HANDOFF",
+    "PANORAMIC · CARE HANDOFF",
     `Status: ${s.phase}`,
-    `Scenario: ${s.scenario === "two" ? "Two-person assessed assistance" : "One-person assessed assistance"}`,
+    `Support arrangement: ${s.scenario === "two" ? "Two-person assistance" : "One-person assistance"}`,
     `Shift: ${s.shift}`,
     `Choice: ${s.phase === "declined" ? "Declined" : s.consent ? "Agreed to begin" : "Not confirmed"}`,
     `Supported exit: ${s.exit ? "Human-confirmed" : "Not confirmed"}`,
@@ -309,7 +309,7 @@ export function report(s: State): string {
     "Unresolved support / help:",
     ...(missing(s).length
       ? missing(s)
-      : ["None recorded. This is not a safety certification."]),
+      : ["None recorded."]),
     "",
     "Preparation:",
     ...CHECKS.map(
@@ -317,9 +317,9 @@ export function report(s: State): string {
         `${label}: ${s.checks[key] ? "confirmed" : "not confirmed"}`,
     ),
     "",
-    "Operator-entered timeline (not an immutable clinical audit):",
+    "Operator-entered timeline:",
     ...s.events.map((e) => `${e.at} — ${e.text}`),
     "",
-    "Prototype only. No real patient data. No diagnosis, emergency dispatch, connected shower hardware, or validated fall prevention.",
+    "Notifications: not connected.",
   ].join("\n");
 }

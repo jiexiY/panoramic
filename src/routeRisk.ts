@@ -1,7 +1,7 @@
 import type { Detection } from "./scene.ts";
 
 export type RoutePoint = { x: number; y: number };
-export type WalkingRoute = { name: string; points: RoutePoint[]; margin: number; source: "sample" | "caregiver-marked" };
+export type WalkingRoute = { name: string; points: RoutePoint[]; margin: number; source: "recording" | "caregiver-marked" };
 export type RoutePriority = "unassessed" | "object" | "away" | "near" | "crossing";
 export const routeLevels = {
   unassessed: { rank: 0, label: "Route not assessed", short: "Unassessed", color: "#dfe3e1", ink: "#35494e", border: "#65767a" },
@@ -64,9 +64,3 @@ export function highestRoutePriority(objects: Detection[], route: WalkingRoute |
   if (!hazards.length || !validRoute(route)) return "unassessed";
   return hazards.map(o => assessRouteHazard(o, route).priority).reduce((a, b) => routeLevels[a].rank >= routeLevels[b].rank ? a : b);
 }
-
-export const sampleRoutes: WalkingRoute[] = [
-  { name: "Chair to doorway", points: [{ x: 290, y: 850 }, { x: 525, y: 750 }, { x: 810, y: 620 }, { x: 970, y: 850 }], margin: 65, source: "sample" },
-  { name: "Chair along room edge", points: [{ x: 280, y: 860 }, { x: 360, y: 920 }, { x: 870, y: 920 }, { x: 970, y: 850 }], margin: 65, source: "sample" },
-  { name: "Chair to window side", points: [{ x: 300, y: 730 }, { x: 380, y: 610 }, { x: 730, y: 600 }, { x: 955, y: 780 }], margin: 65, source: "sample" },
-];

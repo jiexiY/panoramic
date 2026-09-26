@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assessRouteHazard, highestRoutePriority, sampleRoutes, segmentBoxDistance, validRoute, routeLevels, type WalkingRoute } from "../src/routeRisk.ts";
-import { rehearsalScene, type Detection } from "../src/scene.ts";
+import { assessRouteHazard, highestRoutePriority, segmentBoxDistance, validRoute, routeLevels, type WalkingRoute } from "../src/routeRisk.ts";
+import type { Detection } from "../src/scene.ts";
+import { rehearsalScene, sampleRoutes } from "./fixtures/scenes.ts";
 const hazard: Detection = { label: "Possible spill", kind: "possible_spill", box: [400, 400, 600, 600], evidence: "Staged liquid-like area." };
 const route = (y: number, margin = 65): WalkingRoute => ({ name: "Marked route", points: [{ x: 100, y }, { x: 900, y }], margin, source: "caregiver-marked" });
 

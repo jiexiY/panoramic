@@ -7,7 +7,7 @@ export type SpaceId = SuiteId | "supervision";
 export type FacilityStaff = Caregiver & { role: "Caregiver" | "Registered nurse"; location: SpaceId };
 export type FacilityState = { loaded: boolean; incident: Incident | null; staff: FacilityStaff[] };
 export const emptyFacility = (): FacilityState => ({ loaded: false, incident: null, staff: [] });
-export const bathroomRoute: WalkingRoute = { name: "Entry to shower · sample", source: "sample", margin: 40,
+export const bathroomRoute: WalkingRoute = { name: "Entry to shower", source: "recording", margin: 40,
   points: [{ x: 600, y: 985 }, { x: 570, y: 920 }, { x: 490, y: 860 }, { x: 370, y: 810 }] };
 export const bathroomScene: Scene = {
   observations: [
@@ -19,7 +19,6 @@ export const bathroomScene: Scene = {
   brief: "Check the possible water on the bathroom floor before the resident uses the marked route.",
   uncertainty: "Human-marked demonstration regions on a user-supplied Gemini-edited still. Not an automatic water-detection result.",
 };
-export const sampleResidents: Record<SuiteId, string> = { A101: "Evelyn M.", A102: "Henry L.", A103: "Ruth W.", A104: "Arthur C." };
 export const bathroomPriority = highestRoutePriority(bathroomScene.observations, bathroomRoute);
 export function facilityAlertActive(state: FacilityState) { return !!state.incident && state.incident.phase !== "resolved"; }
 export function facilityCandidate(state: FacilityState): FacilityStaff | null {
@@ -33,16 +32,16 @@ export function facilityTransition(state: FacilityState, action: FacilityAction)
   if (action.type === "load") {
     if (state.loaded) return state;
     return { loaded: true, incident: startIncident(bathroomScene, action.at), staff: [
-      { id: "sam", name: "Sam", role: "Caregiver", location: "supervision", available: true, qualified: true, distance: 2 },
-      { id: "maya", name: "Maya", role: "Registered nurse", location: "supervision", available: true, qualified: true, distance: 3 },
-      { id: "alex", name: "Alex", role: "Caregiver", location: "A102", available: false, qualified: true, distance: 1 },
+      { id: "sam", name: "Caregiver 01", role: "Caregiver", location: "supervision", available: true, qualified: true, distance: 2 },
+      { id: "maya", name: "Nurse 01", role: "Registered nurse", location: "supervision", available: true, qualified: true, distance: 3 },
+      { id: "alex", name: "Caregiver 02", role: "Caregiver", location: "A102", available: false, qualified: true, distance: 1 },
     ] };
   }
   if (action.type === "availability") {
     if (state.incident && !["flagged", "resolved"].includes(state.incident.phase)) return state;
     return { ...state, staff: state.staff.map(p => p.id === action.id ? { ...p, available: !p.available } : p) };
   }
-  if (!state.incident) throw new Error("Load the bathroom example first.");
+  if (!state.incident) throw new Error("Open the bathroom recording first.");
   const candidate = facilityCandidate(state);
   const incident = advanceIncident(state.incident, action.type, action.at, candidate, action.note ?? "");
   return { ...state, incident, staff: state.staff.map(p => p.name !== incident.assigned ? p : {
