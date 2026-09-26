@@ -1,5 +1,12 @@
 # Verification record
 
+## Panoramic audio-note correction — September 26, 2026
+
+- 115 local tests and the production build pass. Panoramic creates the notes; no staff transcription or mandatory interpretation is required. Staff context remains optional.
+- Structured clarity and parser guards preserve question marks in partly heard notes and replace wholly unclear speech with `[unclear?]`. Tests also cover export and repetition-count rules.
+- Chrome verified the revised empty Daily summary: Panoramic note-taking is primary, the manual transcription form is absent, and the question-mark convention is visible. This UI check did not generate real notes.
+- Provider responses are mocked. No live audio request, microphone capture, database change or deployment was performed for this correction.
+
 ## Daily summary and runnable bathroom playback — September 26, 2026
 
 - Local only: 113 tests and TypeScript/Vite build pass. Coverage includes bounded WAV validation, structured cues, room/day filters, playback isolation and legal response sequencing. No real model request was made.
