@@ -4,11 +4,9 @@ import { readFileSync } from "node:fs";
 
 const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
-test("Resident Floor omits the workflow launcher but retains A101 recording controls", () => {
-  const launcher = source("Workspace.tsx").split("\n").find(line => line.includes('className="playback-start"'));
-  assert.ok(launcher);
-  assert.ok(launcher.includes('page === "monitor" && <div className="playback-start"'));
-  assert.ok(launcher.includes('setPage("spatial")'));
+test("workspace omits the workflow launcher and helper text but retains A101 recording controls", () => {
+  assert.doesNotMatch(source("Workspace.tsx"), /playback-start|Run bathroom workflow|Use the recording to walk through a response/);
+  assert.doesNotMatch(source("playback.css"), /playback-start/);
   assert.match(source("RoomMonitoring.tsx"), /Play tracking/);
 });
 
