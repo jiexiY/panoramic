@@ -4,7 +4,7 @@
 
 The supervisor-first workflow and Panoramic AI are implemented locally, not deployed. The existing Supabase project has the **earlier shared-incident baseline**, which does not support the new `dispatched` phase, supervisor assignment or decline action. Do not publish the new frontend against that baseline. `database/incident-workflow.sql` now describes a fresh installation; it is not an upgrade script.
 
-- Build passes; **105 local tests pass**. These include the actual SQL commands and RLS executed in isolated PGlite PostgreSQL, API mocks, pure business logic and source contracts. They do not include a successful live Gemini analysis.
+- Build passes; **113 local tests pass**, including the daily-summary increment. These include the actual SQL commands and RLS executed in isolated PGlite PostgreSQL, API mocks, pure business logic and source contracts. They do not include a successful live Gemini analysis.
 - Isolated database checks cover membership isolation, coordinator-only dispatch, recipient-only acceptance, double-assignment prevention across facilities, decline/reassignment, stale revisions, idempotency, escalation and written resolution. Auth tables are stubbed locally; hosted Auth, Realtime, Storage transport and true concurrent sessions are not covered by this test.
 - Chrome verified the product's empty Panoramic AI panel and care-team toggle. A separately labeled local-only UI fixture exercised review/confirm assignment, acceptance, arrival and written resolution, including a 390 px phone layout without horizontal overflow. It does not create accounts, write cloud records or request model output, and is excluded from the production build.
 
@@ -37,13 +37,15 @@ The sidebar answers questions about authorized concern records, responder availa
 
 Opening the existing OpenCV bathroom GIF no longer creates operational alerts, staff or response history. It is available separately for viewing, pausing and downloading. Its source is still a Gemini-edited image with manually annotated initial regions and optical flow on synthetic motion, not a tested water detector.
 
+The separate **Run bathroom workflow** action intentionally starts a browser-only playback: an authored water-region event reaches supervision, the user assigns a playback responder, and acceptance, arrival and outcome appear in Daily summary. It never publishes these records to Supabase. [Daily summary](daily-summary.md) also supports short audio clips and caregiver-reviewed vocal cues, stored in tab memory only. No hosted schema changes are needed for this isolated playback.
+
 ## Security and remaining work
 
 - Frontend uses the existing publishable key. No service-role credential was added.
 - Exposed tables grant authenticated SELECT only and enable membership-based RLS. Writes go through an invoker RPC wrapper and a narrowly scoped private definer function that checks confirmed identity, membership, role, phase, revision and idempotency.
 - A private Storage bucket accepts JPEGs up to 1.5 MB. Uploads must match an incident created by the uploader; reads require access to the linked incident. Raw videos and audio are not uploaded.
 - Source labels honestly say model output **saved by a team member**. The save endpoint does not cryptographically attest that a payload originated from Gemini; a trusted team member can submit observations through the RPC. Server-attested provenance is future hardening.
-- Four room IDs and the floor layout are still fixed. No resident-specific route learning, audio cue pipeline, continuous video analysis, push notifications, retention/deletion controls, membership revocation UI or clinical validation is implemented.
+- Four room IDs and the floor layout are still fixed. No resident-specific route learning, always-on audio pipeline, cloud vocal-cue storage, continuous video analysis, push notifications, shared-record retention/deletion controls, membership revocation UI or clinical validation is implemented. The bounded audio-clip pipeline is implemented locally but has not passed a live provider test.
 - Supabase Auth confirmation URL/redirect allowlist and the email confirmation flow need verification before onboarding external users. Use the actual deployment origin; never disable email confirmation to get around setup.
 
 ## Verification commands

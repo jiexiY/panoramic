@@ -55,6 +55,7 @@ export default function PanoramicAssistant({ team, selectedId, onSelect, onSignI
       if (!controller.signal.aborted) setTurns(t => t.map(turn => turn.id === id ? { ...turn, error: e instanceof Error ? e.message : "Request failed. No action was taken." } : turn));
     } finally { if (!controller.signal.aborted) { setBusy(false); inFlight.current = false; } }
   };
+  if (team.mode === "playback") return <section className="card"><h2>Response brief</h2>{team.incidents.length ? team.incidents.map(i=><div key={i.id}><p>{i.room} · {i.zone}</p><p>{i.observation.scene.brief}</p><p>{i.assigned_to ? `Assigned: ${team.members.find(m=>m.user_id===i.assigned_to)?.display_name}` : "Waiting for supervision to assign a responder."}</p>{i.resolution&&<p>{i.resolution}</p>}<button className="secondary full" onClick={()=>onSelect(i.id,i.room)}>Open response record</button></div>) : <p>Waiting for the recorded tracking event.</p>}<small>Generated from playback records · no model request</small></section>;
   return <section className="panoramic-assistant card" aria-label="Panoramic AI">
     <header className="assistant-heading"><div><MessageSquare size={19} /><h2>Panoramic AI</h2></div>
       <div><button className="text-button" aria-label="AI connection settings" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={16} /></button>

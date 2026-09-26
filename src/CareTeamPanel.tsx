@@ -21,6 +21,7 @@ export default function CareTeamPanel({
   const run = (job: Promise<unknown>) => {
     void job.catch(() => {});
   };
+  if (team.mode === "playback") return <section className="card care-team-panel"><div className="card-title"><Users size={19}/><h2>Response team</h2></div>{team.members.map(m=><p key={m.user_id}>{m.display_name} · {m.role === "coordinator" ? "Supervision" : m.available ? "Available" : "Reserved / unavailable"}</p>)}<small>Playback roles · change your view using the bar above.</small></section>;
   return (
     <section className="card care-team-panel">
       <div className="card-title">

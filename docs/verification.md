@@ -1,5 +1,12 @@
 # Verification record
 
+## Daily summary and runnable bathroom playback — September 26, 2026
+
+- Local only: 113 tests and TypeScript/Vite build pass. Coverage includes bounded WAV validation, structured cues, room/day filters, playback isolation and legal response sequencing. No real model request was made.
+- Chrome verified water-event → concern → assignment → acceptance → arrival → outcome → daily summary in the actual product. A caregiver-entered cue/review reached the same-tab supervision banner. Records were explicitly identified as playback data.
+- A two-second generated tone decoded into the local player; physical microphone capture and live Gemini extraction remain unverified. No actual resident information was used.
+- [Daily summary details](daily-summary.md). Hosted shared-workflow upgrade and authenticated multi-client verification remain pending.
+
 ## Panoramic AI and supervision-first dispatch — September 26, 2026
 
 - Local only: 105 tests pass and the TypeScript/Vite production build passes. New coverage executes the real workflow SQL in isolated PGlite PostgreSQL and mocks authorized Supabase/Gemini API traffic. No cloud records or model requests were created.

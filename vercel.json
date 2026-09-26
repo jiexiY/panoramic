@@ -9,6 +9,7 @@
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/spatial", "destination": "/index.html" },
     { "source": "/app/supervision", "destination": "/index.html" },
+    { "source": "/app/daily", "destination": "/index.html" },
     { "source": "/app/session", "destination": "/index.html" },
     { "source": "/app/history", "destination": "/index.html" }
   ],
@@ -16,7 +17,7 @@
   "headers": [{ "source": "/(.*)", "headers": [
     { "key": "X-Content-Type-Options", "value": "nosniff" },
     { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-    { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
+    { "key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=()" },
     { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self'; connect-src 'self' data: https://kcyfplbnavcdruogkvbr.supabase.co wss://kcyfplbnavcdruogkvbr.supabase.co; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" }
   ] }]
 }

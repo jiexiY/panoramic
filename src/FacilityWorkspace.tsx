@@ -263,7 +263,7 @@ export default function FacilityWorkspace({
               <b>{open.length}</b>
             </div>
           </section>
-          <div className="facility-assistant-tabs"><button aria-pressed={sidebar === "ai"} onClick={() => setSidebar("ai")}>Panoramic AI</button><button aria-pressed={sidebar === "team"} onClick={() => setSidebar("team")}>Care team</button></div>
+          <div className="facility-assistant-tabs"><button aria-pressed={sidebar === "ai"} onClick={() => setSidebar("ai")}>{team.mode === "playback" ? "Response brief" : "Panoramic AI"}</button><button aria-pressed={sidebar === "team"} onClick={() => setSidebar("team")}>Care team</button></div>
           <div hidden={sidebar !== "ai"}><PanoramicAssistant key={`${team.userId}:${team.facilityId}`} team={team} selectedId={selectedId} onSelect={showIncident} onSignIn={onSignIn} /></div>
           <div hidden={sidebar !== "team"}><CareTeamPanel team={team} onSignIn={onSignIn} /></div>
           <section className="facility-card room-directory">

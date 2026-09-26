@@ -56,6 +56,9 @@ import "./style.css";
 import SceneMonitor from "./SceneMonitor";
 import FacilityWorkspace from "./FacilityWorkspace";
 import { useCareTeam } from "./useCareTeam";
+import { usePlaybackTeam } from "./usePlaybackTeam";
+import DailySummary from "./DailySummary";
+import type { VocalCue } from "./vocalCues";
 import SiteLink, { type Navigate } from "./SiteLink";
 import { workspacePaths, type WorkspacePage } from "./routes";
 
@@ -77,7 +80,15 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
   const hasSession = state.events.length > 0;
   const [row, setRow] = useState<Row | null>(null);
   const [owner, setOwner] = useState<string | null>(null);
-  const careTeam = useCareTeam(owner);
+  const sharedCareTeam = useCareTeam(owner);
+  const playback = usePlaybackTeam();
+  const careTeam = playback.active ? playback.team : sharedCareTeam;
+  const cueScope = playback.active ? "playback" : `${owner ?? "local"}:${sharedCareTeam.facilityId}`;
+  const [cuesByScope, setCuesByScope] = useState<Record<string, VocalCue[]>>({});
+  const cues = cuesByScope[cueScope] ?? [];
+  useEffect(() => { setCuesByScope({}); }, [owner]);
+  const addCues = (added: VocalCue[]) => setCuesByScope(current => ({...current,[cueScope]:[...(current[cueScope] ?? []),...added].slice(-100)}));
+  const reviewCue = (id:string,change:Partial<VocalCue>) => setCuesByScope(current => ({...current,[cueScope]:(current[cueScope] ?? []).map(c=>c.id===id?{...c,...change}:c)}));
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(true);
@@ -354,6 +365,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           </button>
           <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}><Map size={18} /> Spatial view</button>
           <button aria-current={page === "supervision" ? "page" : undefined} onClick={() => setPage("supervision")}><Monitor size={18} /> Supervision</button>
+          <button aria-current={page === "daily" ? "page" : undefined} onClick={() => setPage("daily")}><ClipboardList size={18} /> Daily summary</button>
           <button
             aria-current={page === "session" ? "page" : undefined}
             onClick={() => setPage("session")}
@@ -380,7 +392,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <div className="breadcrumbs">
             Workspace <ChevronRight size={14} />
             <b>
-              {page === "monitor" ? "Scene review" : page === "spatial" ? "Spatial view" : page === "supervision" ? "Supervision" : page === "session"
+              {page === "daily" ? "Daily summary" : page === "monitor" ? "Scene review" : page === "spatial" ? "Spatial view" : page === "supervision" ? "Supervision" : page === "session"
                 ? "Care session"
                 : "Session history"}
             </b>
@@ -437,8 +449,12 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               Offline. Cloud actions are unavailable.
             </div>
           )}
-          <div hidden={page !== "monitor"}><SceneMonitor key={owner ?? 'signed-out'} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
-          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace key={owner ?? 'signed-out'} team={careTeam} onSignIn={() => setAuthOpen(true)} mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
+          {playback.active ? <div className="playback-bar"><div><b>Recording playback · this browser</b><small>No care-team records or real notifications are created.</small></div><label>View as<select aria-label="Playback role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label><button className="text-button" onClick={playback.start}>Restart</button><button className="text-button" onClick={playback.stop}>Exit playback</button></div> : ["monitor","supervision","spatial"].includes(page) && <div className="playback-start"><button className="secondary" onClick={()=>{playback.start();setPage("supervision");}}><Play size={15}/> Run bathroom workflow</button><span>Use the recording to walk through a response.</span></div>}
+          {playback.active && ["supervision","spatial"].includes(page) && <section className="playback-monitor"><img src={playback.scanning?"/demo/bathroom-tracking.gif?v=opencv-2":"/demo/bathroom-tracking-poster.png?v=opencv-2"} alt="Recorded bathroom with object tracking and marked water region"/><div><p className="eyebrow">A101 · BATHROOM RECORDING</p><h2>{playback.scanning?"Reading recorded tracking event…":playback.team.incidents[0]?.phase==="resolved"?"Response recorded":"Water region crosses the walking route"}</h2><p>{playback.scanning?"Replaying the annotated object-tracking sequence.":"The recording's marked water region has created a concern in supervision. Review it, assign a responder, then switch to their view to accept and respond."}</p><small>Annotated recording event, not a new live detection.</small><p><button className="secondary" onClick={()=>setPage("daily")}><ClipboardList size={15}/> Daily summary</button></p></div></section>}
+          {page === "supervision" && cues.some(c=>c.review==="pending"||c.review==="check") && <div className="cue-attention" role="status"><span>{cues.filter(c=>c.review==="pending"||c.review==="check").length} vocal cues need review or follow-up · this tab</span><button className="secondary" onClick={()=>setPage("daily")}>Review vocal cues</button></div>}
+          <div hidden={page !== "monitor"}><SceneMonitor key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
+          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
+          {page === "daily" && <DailySummary key={cueScope} team={careTeam} cues={cues} onAdd={addCues} onReview={reviewCue} onResponse={()=>setPage("supervision")}/>}
           {page === "session" && !hasSession && <>
             <section className="page-heading"><h1>Care session</h1></section>
             <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New session</button></section>

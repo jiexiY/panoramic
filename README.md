@@ -2,7 +2,7 @@
 
 [Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
-**Development update:** Panoramic AI and supervisor-first dispatch are implemented locally, with 105 passing tests. They are **not deployed**. Supabase has the earlier shared-incident baseline; it needs a reviewed upgrade before this frontend can use dispatch. Hosted Auth/two-client delivery and live Gemini output still need verification. See [current status](docs/shared-response-workflow.md) and [AI workflow](docs/panoramic-ai-workflow.md). The sections below describe the development build unless explicitly labeled live.
+**Development update:** Daily summary, short vocal-cue capture, runnable bathroom playback, Panoramic AI and supervisor-first dispatch are implemented locally, with 113 passing tests. They are **not deployed**. Supabase has the earlier baseline; it needs an upgrade before shared dispatch. Isolated bathroom playback runs without accounts or API calls. Hosted delivery and live Gemini output remain unverified. See [daily summary / runnable workflow](docs/daily-summary.md) and [shared status](docs/shared-response-workflow.md). Sections below describe the development build unless labeled live.
 
 ## Product entry and home
 
@@ -37,6 +37,12 @@ Unsigned-in analysis remains local. Shared incidents, evidence and response hist
 **Route-aware concern levels:** mark a walking route before analyzing the current frame. Possible hazards outside the route are light (L1), near it are medium (L2), and intersecting it are dark (L3). Missing route context stays gray/unassessed. Saved route context is fixed to that observation. This uses caregiver-marked image geometry, not learned movement history, a live camera tracker or clinical fall probabilities.
 
 ## Try the workflow
+
+### Bathroom response and Daily summary
+
+Choose **Run bathroom workflow** in Scene review, Spatial view or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. **Daily summary** displays and exports the same timeline. This playback does not claim a fresh detection or write to the shared team.
+
+At `/app/daily`, record a short permitted test clip or import audio, review it locally, then explicitly request Gemini cue extraction. Mumbling and humming remain observations, not invented conversations. A familiar caregiver supplies interpretation and follow-up. Pending cues appear in supervision in this tab. This is not always-on monitoring; cue storage is tab-memory only. [Details and verified limits](docs/daily-summary.md).
 
 ### Spatial view and supervision
 
@@ -75,9 +81,10 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Updates and escalation | Supabase Realtime + pg_cron | Notify open clients of saved changes; check response deadlines every 30 seconds |
 | Concurrent editing | PostgreSQL revision trigger + conditional updates | Reject stale-tab overwrites instead of silently losing a newer record |
 | Hosting | Vercel | Serve the frontend and server-only Gemini endpoint; care-session data uses authenticated Supabase requests |
-| Verification | Node test runner + isolated PGlite PostgreSQL | 105 passing local tests; hosted multi-client and provider checks remain pending |
+| Vocal cues / daily handoff | MediaRecorder + Web Audio + Gemini | Explicit short clips, structured observations, caregiver review and deterministic daily summary; live audio provider test pending |
+| Verification | Node test runner + isolated PGlite PostgreSQL | 113 passing local tests; hosted multi-client and provider checks remain pending |
 
-The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Voice cues, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
+The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Short vocal-cue clips are implemented locally; always-on listening, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
 
 ## Run locally
 

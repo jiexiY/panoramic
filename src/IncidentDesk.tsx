@@ -26,6 +26,7 @@ export default function IncidentDesk({
     let url = "";
     setImage("");
     setImageError("");
+    if (incident.observation.source === "recording") setImage("/demo/bathroom-water.jpg");
     if (incident.evidence_path && cloud)
       void cloud.storage
         .from("care-evidence")
@@ -171,7 +172,7 @@ export default function IncidentDesk({
         </ul>
         <p>{incident.observation.scene.uncertainty}</p>
         <small>
-          {incident.observation.model} output saved by a team member ·{" "}
+          {incident.observation.source === "recording" ? "Annotated recording playback" : `${incident.observation.model} output saved by a team member`} ·{" "}
           {new Date(incident.observation.analyzedAt).toLocaleString()}
         </small>
       </details>

@@ -115,7 +115,7 @@ export function handoffText(
     `Record: ${incident.id}`,
     `Location: ${incident.room} · ${incident.zone}`,
     `Status: ${incident.phase}`,
-    `Source: ${incident.observation.model} output saved by a team member`,
+    `Source: ${incident.observation.source === "recording" ? "Annotated recording playback, not live model output" : `${incident.observation.model} output saved by a team member`}`,
     `Analyzed: ${incident.observation.analyzedAt}`,
     `Media: ${incident.media_name}${incident.frame_time !== null ? ` · frame ${incident.frame_time.toFixed(1)}s` : ""}`,
     "",

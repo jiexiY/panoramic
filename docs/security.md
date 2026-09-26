@@ -27,7 +27,7 @@ A local care walkthrough does not transmit its session to Supabase until the use
 - Each update matches both ID and the expected revision. A zero-row update produces a visible conflict and asks the user to reload; it is not silently retried over newer work.
 - Snapshots are size-bounded and capped at 500 events. Per-identity inserts are serialized to enforce a 30-session demo cap.
 - Cloud failures leave the previous confirmed UI state intact and show an error. There is no silent fallback claiming a cloud save succeeded.
-- No HTML from user records is injected. React renders strings as text. CSP restricts connections to the configured Supabase project; camera, microphone, and geolocation are disabled by the hosting policy.
+- No HTML from user records is injected. React renders strings as text. CSP restricts connections to the configured Supabase project. Camera and geolocation remain disabled; microphone is limited to the same origin for explicit short recording sessions. Browser permission is still required; recording never starts on page load. Vocal cues are held in tab memory, not cloud storage. See [audio controls and retention](daily-summary.md).
 
 ## Not implemented / not claimed
 

@@ -318,4 +318,4 @@ export function useCareTeam(userId: string | null) {
     act,
   };
 }
-export type CareTeam = ReturnType<typeof useCareTeam>;
+export type CareTeam = ReturnType<typeof useCareTeam> & { mode?: "playback" };

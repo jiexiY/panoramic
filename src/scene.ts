@@ -5,7 +5,7 @@ export type Detection = {
   evidence: string;
 };
 export type Scene = { observations: Detection[]; brief: string; uncertainty: string };
-export type Analysis = { scene: Scene; source: "gemini"; model: string; analyzedAt: string };
+export type Analysis = { scene: Scene; source: "gemini" | "recording"; model: string; analyzedAt: string };
 export type Caregiver = { id: string; name: string; available: boolean; qualified: boolean; distance: number };
 export type Incident = {
   phase: "flagged" | "acknowledged" | "arrived" | "resolved";

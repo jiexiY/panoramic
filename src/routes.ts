@@ -1,4 +1,4 @@
-export type WorkspacePage = "monitor" | "spatial" | "supervision" | "session" | "history";
+export type WorkspacePage = "monitor" | "spatial" | "supervision" | "daily" | "session" | "history";
 export type Route =
   | { surface: "entry" }
   | { surface: "workspace"; page: WorkspacePage }
@@ -8,6 +8,7 @@ export const workspacePaths: Record<WorkspacePage, string> = {
   monitor: "/app",
   spatial: "/app/spatial",
   supervision: "/app/supervision",
+  daily: "/app/daily",
   session: "/app/session",
   history: "/app/history",
 };
@@ -24,6 +25,6 @@ export function resolveRoute(pathname: string): Route {
 export function routeTitle(route: Route): string {
   if (route.surface === "entry") return "Panoramic — Open workspace";
   if (route.surface === "not-found") return "Page not found — Panoramic";
-  const labels = { monitor: "Living area review", spatial: "Spatial view", supervision: "Supervision", session: "Care session", history: "Session history" };
+  const labels = { monitor: "Living area review", spatial: "Spatial view", supervision: "Supervision", daily: "Daily summary", session: "Care session", history: "Session history" };
   return labels[route.page] + " — Panoramic";
 }
