@@ -55,6 +55,7 @@ import {
 import "./style.css";
 import SceneMonitor from "./SceneMonitor";
 import FacilityWorkspace from "./FacilityWorkspace";
+import { useCareTeam } from "./useCareTeam";
 import SiteLink, { type Navigate } from "./SiteLink";
 import { workspacePaths, type WorkspacePage } from "./routes";
 
@@ -76,18 +77,27 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
   const hasSession = state.events.length > 0;
   const [row, setRow] = useState<Row | null>(null);
   const [owner, setOwner] = useState<string | null>(null);
+  const careTeam = useCareTeam(owner);
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [restoring, setRestoring] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newOpen, setNewOpen] = useState(false);
   const working = useRef(false);
   const modalRef = useRef<HTMLElement>(null);
   const [online, setOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const subscription = cloud?.auth.onAuthStateChange((_event,session) => {
+      setOwner(session?.user.id ?? null);
+      if (!session) { setRows([]); setRow(null); setState(emptyState()); }
+    });
+    return () => subscription?.data.subscription.unsubscribe();
+  }, []);
   useEffect(() => {
     const heading = [...document.querySelectorAll<HTMLElement>('[data-active-page="true"] .app-shell h1')].find(item => item.getClientRects().length > 0);
     heading?.setAttribute("tabindex", "-1");
@@ -395,6 +405,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                 <LogIn size={16} /> Sign in
               </button>
             )}
+            {owner && <button className="text-button" onClick={() => void cloud?.auth.signOut()}>Sign out</button>}
           </div>
         </header>
         <main id="main">
@@ -426,8 +437,8 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               Offline. Cloud actions are unavailable.
             </div>
           )}
-          <div hidden={page !== "monitor"}><SceneMonitor /></div>
-          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
+          <div hidden={page !== "monitor"}><SceneMonitor key={owner ?? 'signed-out'} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
+          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace key={owner ?? 'signed-out'} team={careTeam} onSignIn={() => setAuthOpen(true)} mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
           {page === "session" && !hasSession && <>
             <section className="page-heading"><h1>Care session</h1></section>
             <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New session</button></section>
@@ -1121,13 +1132,20 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               <X size={20} />
             </button>
             <LockKeyhole size={28} />
-            <h2 id="auth-title">Sign in</h2>
+            <h2 id="auth-title">{creatingAccount ? 'Create care-team account' : 'Sign in'}</h2>
             <p>Use your workspace account.</p>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 void run(async () => {
                   if (!cloud) throw new Error("Supabase is not configured.");
+                  if (creatingAccount) {
+                    const result = await cloud.auth.signUp({ email, password });
+                    if (result.error) throw result.error;
+                    setPassword(''); setAuthOpen(false);
+                    setNotice('Check your email to confirm your account, then sign in. Your coordinator can then add you to the care team.');
+                    return;
+                  }
                   const { data, error } = await cloud.auth.signInWithPassword({
                     email,
                     password,
@@ -1158,14 +1176,15 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                 Password
                 <input
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete={creatingAccount ? "new-password" : "current-password"}
+                  minLength={creatingAccount ? 12 : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </label>
               <button className="primary full" disabled={busy}>
-                Sign in
+                {creatingAccount ? 'Create account' : 'Sign in'}
               </button>
               {error && (
                 <p className="form-error" role="alert">
@@ -1173,6 +1192,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                 </p>
               )}
             </form>
+            <div className="auth-mode"><button className="text-button" disabled={busy} onClick={() => { setCreatingAccount(!creatingAccount); setError(''); }}>{creatingAccount ? 'Already have an account? Sign in' : 'Create a care-team account'}</button></div>
           </section>
         </div>
       )}

@@ -3,8 +3,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { Focus, Layers, Minus, Plus, RotateCcw } from "lucide-react";
 import { suiteIds, type SpaceId } from "./facility";
+import { routeLevels, type RoutePriority } from './routeRisk';
 
-type Props = { selected: SpaceId | null; alert: boolean; showRoute: boolean; onSelect: (id: SpaceId) => void; active: boolean };
+type Props = { selected: SpaceId | null; alert: boolean; roomPriorities?: Record<string,RoutePriority>; showRoute: boolean; onSelect: (id: SpaceId) => void; active: boolean };
 type MapControls = { view: (plan: boolean) => void; zoom: (factor: number) => void; focus: (id: SpaceId | null) => void; reset: () => void; update: (props: Props) => void };
 const positions = [[0, -8.5, 0], [5, -8.5, 0], [4.5, 8.5, Math.PI], [9.5, 8.5, Math.PI]];
 
@@ -177,8 +178,8 @@ export default function FacilityMap(props: Props) {
       focus: id => { if (!id) return; const g = roomGroups.get(id)!; const center = g.localToWorld(new THREE.Vector3(id === "supervision" ? 2.75 : 2.25, 0, id === "supervision" ? 4 : 3.65)); const offset = camera.position.clone().sub(controls.target).normalize().multiplyScalar(17); controls.target.copy(center); camera.position.copy(center).add(offset); controls.update(); render(); },
       reset,
       update: p => {
-        roomFloors.forEach((mat, id) => { mat.color.set(id === "supervision" ? "#bdd1d2" : id === "A101" && p.alert ? "#e5c9b5" : "#d1c0a6"); mat.emissive.set(id === p.selected ? "#334636" : "#000000"); mat.emissiveIntensity = .12; });
-        outlines.forEach((mat, id) => mat.color.set(id === p.selected ? "#395d4f" : id === "A101" && p.alert ? "#652b26" : "#aaa69b"));
+        roomFloors.forEach((mat, id) => { const priority=p.roomPriorities?.[id]; mat.color.set(id === "supervision" ? "#bdd1d2" : priority ? routeLevels[priority].color : id === "A101" && p.alert ? "#e5c9b5" : "#d1c0a6"); mat.emissive.set(id === p.selected ? "#334636" : "#000000"); mat.emissiveIntensity = .12; });
+        outlines.forEach((mat, id) => mat.color.set(id === p.selected ? "#395d4f" : p.roomPriorities?.[id] ? routeLevels[p.roomPriorities[id]].border : id === "A101" && p.alert ? "#652b26" : "#aaa69b"));
         bathFloor.color.set(p.alert ? "#994a38" : "#bec7c1"); hazard.visible = p.alert; walkingLine.visible = p.alert && p.showRoute;
         if (p.active) resize(); render();
       },
@@ -191,7 +192,7 @@ export default function FacilityMap(props: Props) {
       renderer.dispose(); renderer.domElement.remove();
     };
   }, []);
-  useEffect(() => { runtime.current?.update(props); }, [props.selected, props.alert, props.showRoute, props.active]);
+  useEffect(() => { runtime.current?.update(props); }, [props.selected, props.alert, props.showRoute, props.active, props.roomPriorities]);
   return <div className="facility-map-wrap">
     <div ref={host} className="facility-map-canvas" />
     {failed && <p className="map-fallback" role="status">3D is unavailable in this browser. Select a room from the list to view its layout and response details.</p>}

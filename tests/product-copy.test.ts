@@ -21,7 +21,8 @@ test("recorded media stays identified and opens from a direct product action", (
   assert.match(facility, /Open bathroom recording/);
   assert.match(facility, /RECORDING REVIEW/);
   assert.match(facility, /Recording details/);
-  assert.match(facility, /Notifications off/);
+  assert.match(facility.replace(/\s+/g, ' '), /Opening this recording does not create a care-team alert/);
+  assert.doesNotMatch(facility, /facilityTransition|startIncident|bathroomScene/);
   const renderer = source("scripts/render-bathroom-tracking.py");
   assert.doesNotMatch(renderer, /STAGED DEMO|Human-marked objects and sample route/);
   assert.match(renderer, /"PLAYBACK"/);
@@ -41,8 +42,8 @@ test("copy cleanup retains privacy confirmation and explicit provider requests",
   assert.match(monitor, /!privacyConfirmed/);
   assert.match(monitor, /Analysis sends this frame to Google/);
   assert.match(monitor, /stagedOnly: privacyConfirmed/);
-  assert.match(monitor, /Add caregiver/);
-  assert.match(monitor, /Eligible for this task/);
+  assert.match(source('src/CareTeamPanel.tsx'), /Add or update caregiver/);
+  assert.match(source('src/CareTeamPanel.tsx'), /Eligible to check environmental concerns/);
 });
 
 test("bathroom playback and still use native OpenCV overlay styling", () => {

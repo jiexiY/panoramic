@@ -2,13 +2,15 @@
 
 [Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
+**Development update:** the shared hazard-to-caregiver workflow is implemented locally and its schema is installed in Supabase. It is not yet released to the live frontend. Authenticated database and two-client verification remain pending; see [current implementation and verification status](docs/shared-response-workflow.md). The sections below describe the new development build unless explicitly labeled live.
+
 ## Product entry and home
 
 The application has two main surfaces: the project entrance at `/` and the caregiver home at `/app`. **Open care workspace** enters the product directly. There is no advertising page, sales CTA, founder story, or technology explainer in the running application. The former `/welcome` URL redirects to `/` so old links still work. Care sessions and history remain tabs within the workspace at `/app/session` and `/app/history`; all workspace URLs support direct entry and refresh.
 
-Navigating between the entrance and workspace retains an opened workspace in tab memory. Refresh still clears local scene media/events; this is not new persistence or authentication. The entrance does not mount the workspace or initiate its provider-readiness check. Concise privacy, recording-source, save and notification statuses remain next to the relevant actions. No visitor analytics or tracking were added.
+Navigating between the entrance and workspace retains an opened workspace in tab memory. Unsaved local media clears on refresh; shared incidents restore from Supabase after sign-in. The entrance does not mount the workspace or initiate its provider-readiness check. Concise privacy, recording-source, save and connection statuses remain next to the relevant actions. No visitor analytics or tracking were added.
 
-The entrance contains a centered care icon above the bold product name and the workspace button. A fresh workspace has no room images, observations, caregivers, activity, or care sessions. **Add room image** opens the upload controls and privacy confirmation. **Add caregiver** accepts a caregiver ID, eligibility confirmation and response order. **New session** opens a care session with the selected support arrangement. The illustrated rehearsal and invented resident biographies have been removed. Sign-in alone does not create a record. Previously saved records are preserved and can still be restored.
+The entrance contains a centered care icon above the bold product name and the workspace button. A fresh workspace has no room images, observations, caregivers, activity, or care sessions. **Add room image** opens the upload controls and privacy confirmation. A coordinator creates an isolated workspace and adds confirmed caregiver accounts with eligibility and response order. **New session** opens a care session with the selected support arrangement. Sign-in alone does not create a record.
 
 The removed marketing page's source and styling are preserved in `docs/archive/` for recovery and excluded from deployment. Project background and technical documentation remain in this repository, outside the product UI.
 
@@ -26,13 +28,13 @@ My grandmother was active and clear-minded. In her residential eldercare center,
 
 1. **Observe:** choose a staged, unoccupied room photo or select a frame from a local MP4/WebM. The browser resizes the frame; nothing is sent to Gemini until an explicit analysis request.
 2. **Flag:** the server requests structured observations, labeled bounding boxes, a short brief, and uncertainty. It validates the response. A cup alone must not be treated as evidence of spilled water.
-3. **Coordinate:** add eligible caregiver IDs and a response order. Deterministic app logic filters unavailable caregivers before sorting by the entered order. No available caregiver produces a visible coverage gap; external dispatch is not connected.
-4. **Respond:** acknowledgment, arrival, and a written operator resolution are separate transitions.
-5. **Remember:** export the factual event record. After a completed live-analysis response, optionally request a Gemini draft summary, edit it, and mark it reviewed.
+3. **Coordinate:** save a candidate hazard to the connected care team. Database logic suggests an available, eligible caregiver using coordinator-entered response order. Other open clients receive updates and recover missed records on reconnect. No available caregiver produces a visible coverage gap.
+4. **Respond:** a signed-in caregiver accepts, confirms arrival, and records an outcome. These are server-checked transitions, not actions attributed to an invented caregiver. Deadline escalation runs in the database even when browsers are closed.
+5. **Remember:** download a factual handoff generated from the saved observations and event history. No additional AI call is needed.
 
-The scene workflow is held in tab memory, not Supabase; export before refresh. No external notifications are connected. This is single-frame analysis, not continuous surveillance, trained water detection, or validated fall prevention.
+Unsigned-in analysis remains local. Shared incidents, evidence and response history use Supabase. Phone push, SMS and external emergency notifications are not connected. This is single-frame analysis, not continuous surveillance, trained water detection, or validated fall prevention.
 
-**Route-aware concern levels:** mark the resident's usual route on the current frame. Possible hazards outside the route are light (L1), near it are medium (L2), and intersecting it are dark (L3). Boxes, route segments and response priority recalculate immediately when the confirmed route or observations change. Missing route context stays gray/unassessed. This uses caregiver-marked image geometry, not learned movement history, a live camera tracker or clinical fall probabilities. Changing a route never clears the response. See [route awareness](docs/route-awareness.md).
+**Route-aware concern levels:** mark a walking route before analyzing the current frame. Possible hazards outside the route are light (L1), near it are medium (L2), and intersecting it are dark (L3). Missing route context stays gray/unassessed. Saved route context is fixed to that observation. This uses caregiver-marked image geometry, not learned movement history, a live camera tracker or clinical fall probabilities.
 
 ## Try the workflow
 
@@ -40,9 +42,9 @@ The scene workflow is held in tab memory, not Supabase; export before refresh. N
 
 Open the [spatial view](https://panoramic-app.vercel.app/app/spatial) for four furnished sample suites and a dedicated caregiver/nurse supervision room. Rooms preserve the supplied reference plan's bedroom, kitchenette, closet, bath and entry relationships. The original 3D model supports selection, rotation, zoom, top-down view and room focus.
 
-**Open bathroom recording** opens and plays the supplied image-based OpenCV recording for A101, with a route-overlap concern and the [supervision desk](https://panoramic-app.vercel.app/app/supervision). **View recording**, **Play tracking**, **Show still** and **Download** provide direct media controls. The review uses neutral caregiver role handles, not resident biographies. Staff availability, acknowledgment, arrival and documented resolution can be exercised end-to-end. **Clear review** clears local state. No staff or activity load automatically.
+**Open bathroom recording** plays the supplied image-based OpenCV recording. **Play tracking**, **Show still** and **Download** provide direct media controls. Opening it does not populate the shared alert queue, create staff or invent activity. The spatial map and [supervision desk](https://panoramic-app.vercel.app/app/supervision) instead use the same persisted care-team records.
 
-This demonstration uses a user-supplied Gemini-edited image, human-marked initial regions, actual OpenCV optical flow on synthetic-motion frames, and a local response state machine. It does not claim automatic water recognition or send staff notifications. See [spatial workflow](docs/spatial-workflow.md) and [GIF method](docs/bathroom-tracking-demo.md).
+The recording uses a user-supplied Gemini-edited image, human-marked initial regions and actual OpenCV optical flow on synthetic-motion frames. It does not claim automatic water recognition or send staff notifications. See [GIF method](docs/bathroom-tracking-demo.md).
 
 ### Care session
 
@@ -60,14 +62,15 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Spatial overview | Three.js | Original interactive cutaway suites and supervision room, with room-level concern colors |
 | Bathroom tracking demonstration | OpenCV | Measure optical flow for human-marked regions on a staged image sequence; generate the downloadable GIF |
 | Scene analysis and brief | Gemini API via a private Vercel function | Read one explicitly submitted staged frame; return validated boxes and observations; live verification pending |
-| Caregiver suggestion | Deterministic TypeScript | Filter for availability and eligibility, then rank the operator-entered response order |
-| Draft scene handoff | Gemini API, separate explicit request | Summarize supplied observations and operator actions for human review |
+| Caregiver suggestion | PostgreSQL transactional command | Filter for current availability and eligibility, then rank coordinator-entered response order |
+| Scene handoff | Deterministic TypeScript | Export saved observations, uncertainty and attributed response events without inventing a summary |
 | Workflow | Explicit TypeScript transitions | Enforce preparation, refusal, pause, help sequencing, and supported-exit requirements within the prototype |
-| Identity | Supabase Auth | Existing email/password accounts; optional anonymous guest identities for a frictionless demo |
-| Persistence | Supabase PostgreSQL | Store fictional sessions across refreshes, with owner-based row-level security |
+| Identity | Supabase Auth | Confirmed email/password accounts for care teams; anonymous identities cannot use shared incidents |
+| Persistence | Supabase PostgreSQL + private Storage | Facility-scoped incidents, team membership, response events and private reference frames; older care sessions remain owner-scoped |
+| Updates and escalation | Supabase Realtime + pg_cron | Notify open clients of saved changes; check response deadlines every 30 seconds |
 | Concurrent editing | PostgreSQL revision trigger + conditional updates | Reject stale-tab overwrites instead of silently losing a newer record |
 | Hosting | Vercel | Serve the frontend and server-only Gemini endpoint; care-session data uses authenticated Supabase requests |
-| Verification | Node test runner + live API isolation checks | Exercise workflow boundaries and cross-user access denial |
+| Verification | Node test runner + read-only anonymous access checks | 86 passing local tests; authenticated integration tests still pending approval |
 
 The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Voice cues, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
 
@@ -86,9 +89,9 @@ The full development server runs at `http://127.0.0.1:5174` and includes `/api/g
 
 For secure free-tier activation, see [Gemini setup](docs/gemini-setup.md). Never paste the provider key into the browser UI or a `VITE_` variable. The UI's workspace access code is a separate credential, not the Google API key.
 
-The local walkthrough works without cloud configuration. It is not saved across refreshes. For the backend, apply `database/schema.sql` as a reviewed migration to an empty Supabase project. Do not run it blindly against an existing database. Keep RLS enabled. The frontend uses only a publishable key—never a service-role or secret key.
+Local image review and the older care-session walkthrough work without cloud configuration and are not saved across refreshes. For a new backend, review `database/schema.sql`, then the additive `database/incident-workflow.sql`. The existing project already has both; do not apply them again blindly. Keep RLS enabled. The frontend uses only a publishable key—never a service-role or secret key.
 
-Guest cloud access requires enabling anonymous sign-ins in Supabase. Each guest is isolated by `auth.uid()`, but does not have a verified staff identity. Clearing browser data, signing out, or moving devices loses access to that anonymous identity. Existing provisioned email/password accounts can use the sign-in form. No public email sign-up or cross-device guest recovery is implemented.
+Shared incident access requires confirmed email/password accounts. The development sign-in form includes account creation; email delivery and confirmation redirects still need end-to-end verification. Configure the Supabase Auth URL allowlist for the deployment before onboarding. Guest sign-in remains disabled and is not a substitute for staff membership.
 
 ```sh
 npm test
@@ -104,7 +107,7 @@ Import this repository into Vercel as a Vite project. Set `VITE_SUPABASE_URL` an
 
 ## Important boundaries
 
-This is a **fictional-data prototype**, not a real care service, medical device, clinical record system, or validated fall-prevention intervention. Human confirmations are operator-entered, not sensor-verified. Snapshots are owner-editable and are not an immutable audit trail. Workflow rules are client-side UX constraints, not certified physical safety controls.
+This is a **non-resident-data prototype**, not a real care service, medical device, clinical record system, or validated fall-prevention intervention. Human confirmations are operator-entered, not sensor-verified. Shared incident transitions are server-checked and their event history is append-only to app users, but not immutable against administrators. Older care-session snapshots remain owner-editable. Neither workflow constitutes a certified physical safety control.
 
 Before broader promotion or real-world testing: configure anti-abuse controls/CAPTCHA, a retention policy, verified identities and organizational permissions, accessibility evaluation, clinical review, privacy/security review, and appropriate operational procedures. No actual resident names, photos, diagnoses, or care records belong in this deployment.
 
