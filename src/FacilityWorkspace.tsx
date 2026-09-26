@@ -404,6 +404,8 @@ export default function FacilityWorkspace({
           </div>
           <img
             className="bathroom-gif"
+            width={1040}
+            height={794}
             src={playing ? trackingMedia.gif : trackingMedia.still}
             alt="OpenCV tracking playback of annotated bathroom objects and a walking-route concern"
           />
