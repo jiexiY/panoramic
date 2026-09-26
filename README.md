@@ -10,7 +10,7 @@ The application has two main surfaces: the project entrance at `/` and the careg
 
 Navigating between the entrance and workspace retains an opened workspace in tab memory. Refresh still clears local scene media/events; this is not new persistence or authentication. The entrance does not mount the workspace or initiate its provider-readiness check. Necessary privacy, fictional-data, and integration-status notices remain next to the relevant actions. No visitor analytics or tracking were added.
 
-The entrance now contains only a bold product name and the workspace button. A fresh workspace has no room images, observations, caregivers, activity, or care sessions. **Add room image** opens the upload controls and privacy confirmation. **Try illustrated rehearsal** explicitly loads sample observations and caregivers; **New demo session** creates a sample care session. Sign-in alone does not create a sample record. Previously saved records are preserved and can still be restored.
+The entrance contains a centered care icon above the bold product name and the workspace button. A fresh workspace has no room images, observations, caregivers, activity, or care sessions. **Add room image** opens the upload controls and privacy confirmation. **Try illustrated rehearsal** explicitly loads sample observations and caregivers; **New demo session** creates a sample care session. Sign-in alone does not create a sample record. Previously saved records are preserved and can still be restored.
 
 The removed marketing page's source and styling are preserved in `docs/archive/` for recovery and excluded from deployment. Project background and technical documentation remain in this repository, outside the product UI.
 

@@ -4,6 +4,7 @@
 .site-button:hover { background: #355666; border-color: #355666; }
 .welcome-site { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; background: #f4f2ea; }
 .welcome-main { width: 100%; max-width: 590px; padding: 48px 24px; margin: auto; text-align: center; }
+.welcome-emblem { display: grid; place-items: center; width: 90px; height: 94px; margin: 0 auto 26px; border: 1px solid #cddcd7; border-radius: 26px; color: #466879; background: #e1e9e2; }
 .welcome-main h1 { font-family: inherit; font-size: clamp(46px, 7vw, 72px); line-height: 1.1; font-weight: 800; letter-spacing: -3px; color: #293e45; }
 .welcome-site .welcome-main h1 {
   -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 60%);

@@ -46,10 +46,12 @@ test("runtime entry and workspace no longer contain marketing or marketing links
   assert.match(workspace, /Back to start/);
 });
 
-test("entrance contains only the product name and workspace action", () => {
+test("entrance places its icon above the product name without restoring surrounding copy", () => {
   const entry = readFileSync(new URL("../src/Site.tsx", import.meta.url), "utf8");
   assert.match(entry, /<h1>Panoramic<\/h1>/);
-  assert.doesNotMatch(entry, /Welcome to|welcome-emblem|entry-card|welcome-header|welcome-footer|welcome-privacy|HeartHandshake/);
+  assert.match(entry, /<div className="welcome-emblem" aria-hidden="true"><HeartHandshake[^>]+\/><\/div>\s*<h1>Panoramic<\/h1>/);
+  assert.equal((entry.match(/<HeartHandshake\b/g) ?? []).length, 1);
+  assert.doesNotMatch(entry, /Welcome to|entry-card|welcome-header|welcome-footer|welcome-privacy/);
   const css = readFileSync(new URL("../src/site.css", import.meta.url), "utf8");
   assert.match(css, /\.welcome-main h1\s*\{[^}]*font-weight: 800/);
 });
