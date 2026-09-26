@@ -2,7 +2,7 @@
 
 **Care, with someone beside you.**
 
-[Open Panoramic](https://panoramic-care.vercel.app) · [Caregiver workspace](https://panoramic-care.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
+[Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
 ## Product entry and home
 
