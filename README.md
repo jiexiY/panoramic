@@ -38,6 +38,16 @@ My grandmother was active and clear-minded. In her residential eldercare center,
 
 ## Try the workflow
 
+### Spatial view and supervision
+
+Open the [spatial view](https://panoramic-app.vercel.app/app/spatial) for four furnished sample suites and a dedicated caregiver/nurse supervision room. Rooms preserve the supplied reference plan's bedroom, kitchenette, closet, bath and entry relationships. The original 3D model supports selection, rotation, zoom, top-down view and room focus.
+
+**Load bathroom example** connects the supplied water-edited photograph to A101, a route-overlap concern, the downloadable OpenCV tracking GIF, and the [supervision desk](https://panoramic-app.vercel.app/app/supervision). Staff availability, acknowledgment, arrival and documented resolution can be exercised end-to-end. No sample residents, staff or activity load automatically.
+
+This demonstration uses a user-supplied Gemini-edited image, human-marked initial regions, actual OpenCV optical flow on synthetic-motion frames, and a local response state machine. It does not claim automatic water recognition or send staff notifications. See [spatial workflow](docs/spatial-workflow.md) and [GIF method](docs/bathroom-tracking-demo.md).
+
+### Care session
+
 1. **Prepare:** review six room checks, the fictional assessed plan, required helper presence, backup coverage, and the person's choice. Missing required confirmations block starting the software routine.
 2. **Support:** record pause, consent withdrawal, or a help request. Acknowledgment, arrival, and resolution are separate actions. Resolution never automatically resumes the workflow.
 3. **Handoff:** a human confirms the supported exit; the app preserves unresolved concerns and exports a factual text record. Closing a handoff is not a safety certification.
@@ -49,6 +59,8 @@ All on-screen people and care plans are fictional. The one-person and two-person
 | Part | Tool | Specific job |
 | --- | --- | --- |
 | Caregiver workspace | React + TypeScript + Vite | Responsive, keyboard-operable three-stage interface |
+| Spatial overview | Three.js | Original interactive cutaway suites and supervision room, with room-level concern colors |
+| Bathroom tracking demonstration | OpenCV | Measure optical flow for human-marked regions on a staged image sequence; generate the downloadable GIF |
 | Scene analysis and brief | Gemini API via a private Vercel function | Read one explicitly submitted staged frame; return validated boxes and observations; live verification pending |
 | Caregiver suggestion | Deterministic TypeScript | Filter for available and qualified demo staff, then rank fictional proximity |
 | Draft scene handoff | Gemini API, separate explicit request | Summarize supplied fictional observations and operator actions for human review |

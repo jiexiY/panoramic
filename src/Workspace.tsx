@@ -28,6 +28,8 @@ import {
   AlertTriangle,
   LogIn,
   BookOpen,
+  Map,
+  Monitor,
 } from "lucide-react";
 import {
   CHECKS,
@@ -52,6 +54,7 @@ import {
 } from "./cloud";
 import "./style.css";
 import SceneMonitor from "./SceneMonitor";
+import FacilityWorkspace from "./FacilityWorkspace";
 import SiteLink, { type Navigate } from "./SiteLink";
 import { workspacePaths, type WorkspacePage } from "./routes";
 
@@ -339,6 +342,8 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <button aria-current={page === "monitor" ? "page" : undefined} onClick={() => setPage("monitor")}>
             <Sparkles size={18} /> Scene review
           </button>
+          <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}><Map size={18} /> Spatial view</button>
+          <button aria-current={page === "supervision" ? "page" : undefined} onClick={() => setPage("supervision")}><Monitor size={18} /> Supervision</button>
           <button
             aria-current={page === "session" ? "page" : undefined}
             onClick={() => setPage("session")}
@@ -365,7 +370,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <div className="breadcrumbs">
             Workspace <ChevronRight size={14} />
             <b>
-              {page === "monitor" ? "Scene review" : page === "session"
+              {page === "monitor" ? "Scene review" : page === "spatial" ? "Spatial view" : page === "supervision" ? "Supervision" : page === "session"
                 ? "Care session"
                 : "Session history"}
             </b>
@@ -423,6 +428,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
             </div>
           )}
           <div hidden={page !== "monitor"}><SceneMonitor /></div>
+          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
           {page === "session" && !hasSession && <>
             <section className="page-heading"><h1>Care session</h1></section>
             <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New demo session</button></section>
