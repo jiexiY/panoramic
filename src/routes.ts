@@ -24,6 +24,6 @@ export function resolveRoute(pathname: string): Route {
 export function routeTitle(route: Route): string {
   if (route.surface === "entry") return "Panoramic — Open workspace";
   if (route.surface === "not-found") return "Page not found — Panoramic";
-  const labels = { monitor: "Living area review", spatial: "Spatial view", supervision: "Supervision", session: "Care session", history: "Session history" };
+  const labels = { monitor: "Living area review", spatial: "Resident Floor", supervision: "Supervision", session: "Care session", history: "Session history" };
   return labels[route.page] + " — Panoramic";
 }

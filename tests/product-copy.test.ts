@@ -8,7 +8,7 @@ import { startIncident } from "../src/scene.ts";
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("product screens contain no rehearsal flow or competition labels", () => {
-  for (const file of ["src/SceneMonitor.tsx", "src/FacilityWorkspace.tsx", "src/Workspace.tsx", "src/RoutePlanner.tsx", "src/SuitePlan.tsx"]) {
+  for (const file of ["src/SceneMonitor.tsx", "src/FacilityWorkspace.tsx", "src/RoomMonitoring.tsx", "src/Workspace.tsx", "src/RoutePlanner.tsx", "src/SuitePlan.tsx"]) {
     assert.doesNotMatch(source(file), /illustrated rehearsal|STAGED DEMO|SAMPLE SESSION|Sample concern|Show sample route|fictional|New demo session|Load demo caregivers|sales competition/i, file);
   }
   assert.equal(existsSync(new URL("../src/RoomIllustration.tsx", import.meta.url)), false);
@@ -17,7 +17,7 @@ test("product screens contain no rehearsal flow or competition labels", () => {
 });
 
 test("recorded media stays identified and opens from a direct product action", () => {
-  const facility = source("src/FacilityWorkspace.tsx");
+  const facility = source("src/RoomMonitoring.tsx");
   assert.match(facility, /Open bathroom recording/);
   assert.match(facility, /RECORDING REVIEW/);
   assert.match(facility, /Recording details/);
@@ -56,7 +56,7 @@ test("bathroom playback and still use native OpenCV overlay styling", () => {
   assert.match(renderer, /CYAN = \(255, 255, 0\)/);
   assert.match(renderer, /cv2\.COLOR_BGR2RGB/);
   assert.doesNotMatch(renderer, /ImageDraw|rounded_rectangle|SAGE =|TERRA =/);
-  const facility = source("src/FacilityWorkspace.tsx");
+  const facility = source("src/RoomMonitoring.tsx");
   assert.match(facility, /playing \? trackingMedia\.gif : trackingMedia\.still/);
   assert.match(facility, /bathroom-tracking-poster\.png\?v=opencv-2/);
   assert.doesNotMatch(facility, /className="bathroom-scene"/);

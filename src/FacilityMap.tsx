@@ -196,7 +196,7 @@ export default function FacilityMap(props: Props) {
   return <div className="facility-map-wrap">
     <div ref={host} className="facility-map-canvas" />
     {failed && <p className="map-fallback" role="status">3D is unavailable in this browser. Select a room from the list to view its layout and response details.</p>}
-    <div className="map-controls" aria-label="Spatial view controls">
+    <div className="map-controls" aria-label="Resident Floor controls">
       <button onClick={() => { setPlan(!plan); runtime.current?.view(!plan); }} aria-pressed={plan}><Layers size={15} />{plan ? "3D view" : "Floor plan"}</button>
       <button aria-label="Zoom in" onClick={() => runtime.current?.zoom(.84)}><Plus size={16} /></button>
       <button aria-label="Zoom out" onClick={() => runtime.current?.zoom(1.18)}><Minus size={16} /></button>

@@ -40,13 +40,15 @@ Unsigned-in analysis remains local. Shared incidents, evidence and response hist
 
 ### Bathroom response
 
-Choose **Run bathroom workflow** in Scene review, Spatial view or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
+Choose **Run bathroom workflow** in Scene review, Resident Floor or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
 
 Daily notes are not part of this release. The previous implementation remains recoverable in Git history.
 
-### Spatial view and supervision
+### Resident Floor and supervision
 
-Open the [spatial view](https://panoramic-app.vercel.app/app/spatial) for four furnished sample suites and a dedicated caregiver/nurse supervision room. Rooms preserve the supplied reference plan's bedroom, kitchenette, closet, bath and entry relationships. The original 3D model supports selection, rotation, zoom, top-down view and room focus.
+Select a suite from the room list or the monitoring selector. Each suite has its own route-concern scale; A101's **Bathroom monitoring** contains **Open bathroom recording**. **Observation: On** (green) identifies active recording playback, with a Playback label; **Off** (red) applies when it is stopped, unavailable or closed. Saved concerns and database connectivity do not turn observation on.
+
+Open [Resident Floor](https://panoramic-app.vercel.app/app/spatial) for four furnished sample suites and a dedicated caregiver/nurse supervision room. Rooms preserve the supplied reference plan's bedroom, kitchenette, closet, bath and entry relationships. The original 3D model supports selection, rotation, zoom, top-down view and room focus.
 
 **Open bathroom recording** plays the supplied image-based OpenCV recording. **Play tracking**, **Show still** and **Download** provide direct media controls. Opening it does not populate the shared alert queue, create staff or invent activity. The spatial map and [supervision desk](https://panoramic-app.vercel.app/app/supervision) instead use the same persisted care-team records.
 

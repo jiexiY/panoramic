@@ -2,13 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Building2,
-  Download,
   Eye,
-  Map,
-  Monitor,
-  Play,
-  Square,
-  X,
 } from "lucide-react";
 import { suiteIds, type SpaceId } from "./facility";
 import { routeLevels, type RoutePriority } from "./routeRisk";
@@ -18,34 +12,32 @@ import PanoramicAssistant from "./PanoramicAssistant";
 import CareTeamPanel from "./CareTeamPanel";
 import IncidentDesk from "./IncidentDesk";
 import SuitePlan from "./SuitePlan";
+import RoomMonitoring from "./RoomMonitoring";
+import ObservationStatus from "./ObservationStatus";
 import "./facility.css";
+import "./room-monitoring.css";
 
 const FacilityMap = lazy(() => import("./FacilityMap"));
-const trackingMedia = {
-  gif: "/demo/bathroom-tracking.gif?v=opencv-2",
-  still: "/demo/bathroom-tracking-poster.png?v=opencv-2",
-};
 type Props = {
   mode: "spatial" | "supervision";
   active: boolean;
-  onMode: (mode: "spatial" | "supervision") => void;
+  workflowScanning: boolean;
   team: CareTeam;
   onSignIn: () => void;
 };
 export default function FacilityWorkspace({
   mode,
   active,
-  onMode,
+  workflowScanning,
   team,
   onSignIn,
 }: Props) {
-  const [selected, setSelected] = useState<SpaceId | null>(null);
+  const [selected, setSelected] = useState<SpaceId | null>("A101");
   const [selectedId, setSelectedId] = useState("");
   const [filter, setFilter] = useState<"all" | "attention">("all");
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  const [recordingPlaying, setRecordingPlaying] = useState(false);
   const [sidebar, setSidebar] = useState<"team" | "ai">("ai");
-  const recordingRef = useRef<HTMLElement>(null);
+  const monitorRef = useRef<HTMLDivElement>(null);
   const incidentRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setSelectedId(""); }, [team.facilityId]);
   const open = team.incidents.filter((i) => i.phase !== "resolved");
@@ -63,17 +55,17 @@ export default function FacilityWorkspace({
   }
   useEffect(() => {
     if (mode === "supervision" && active) setSelected("supervision");
-    if (!active) setPlaying(false);
   }, [mode, active]);
-  useEffect(() => {
-    if (evidenceOpen)
-      recordingRef.current?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "instant"
-          : "smooth",
-        block: "start",
-      });
-  }, [evidenceOpen]);
+  const monitoringRoom = selected && selected !== "supervision" ? selected : "A101";
+  const selectRoom = (room: SpaceId) => {
+    setSelected(room);
+    const incident = open.find(i => i.room === room);
+    if (incident) setSelectedId(incident.id);
+    requestAnimationFrame(() => monitorRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      block: "start",
+    }));
+  };
   const showIncident = (id: string, room: string) => {
     setSelectedId(id);
     setSelected(room as SpaceId);
@@ -93,32 +85,9 @@ export default function FacilityWorkspace({
           <p className="eyebrow">
             {team.facility?.name.toUpperCase() ?? "RESIDENTIAL CARE"} / FLOOR 01
           </p>
-          <h1>{mode === "spatial" ? "Spatial view" : "Supervision"}</h1>
+          <h1>{mode === "spatial" ? "Resident Floor" : "Supervision"}</h1>
         </div>
-        <button
-          className="secondary"
-          onClick={() => {
-            setEvidenceOpen(true);
-            setPlaying(true);
-          }}
-        >
-          <Play size={15} /> Open bathroom recording
-        </button>
       </section>
-      <div className="facility-tabs">
-        <button
-          aria-current={mode === "spatial" ? "page" : undefined}
-          onClick={() => onMode("spatial")}
-        >
-          <Map size={16} /> Floor overview
-        </button>
-        <button
-          aria-current={mode === "supervision" ? "page" : undefined}
-          onClick={() => onMode("supervision")}
-        >
-          <Monitor size={16} /> Supervision desk
-        </button>
-      </div>
       {team.facility && team.stale && (
         <div className="notice error" role="alert">
           Connection needs attention. The information below may be out of date.
@@ -132,18 +101,12 @@ export default function FacilityWorkspace({
               <span>
                 <Building2 size={16} /> Care-center floor
               </span>
-              <span>
-                {team.facility
-                  ? team.connected
-                    ? "Live updates"
-                    : "Saved observations"
-                  : "No observations"}
-              </span>
+              <ObservationStatus on={active && (workflowScanning || (recordingPlaying && monitoringRoom === "A101"))} playback />
             </div>
             <Suspense
               fallback={
                 <div className="facility-map-loading">
-                  Opening spatial view…
+                  Opening Resident Floor…
                 </div>
               }
             >
@@ -157,6 +120,14 @@ export default function FacilityWorkspace({
               />
             </Suspense>
           </section>
+          <div ref={monitorRef} className="room-monitor-workspace">
+            <nav className="room-monitor-selector" aria-label="Room monitoring selection">
+              {suiteIds.map(id => <button key={id} aria-pressed={monitoringRoom === id} onClick={() => setSelected(id)}>Suite {id}</button>)}
+            </nav>
+            <RoomMonitoring key={`${team.facilityId}:${monitoringRoom}`} room={monitoringRoom}
+              priority={priorities[monitoringRoom] ?? "unassessed"} active={active} workflowScanning={workflowScanning}
+              onObservationChange={setRecordingPlaying} />
+          </div>
           <div className="facility-bottom-grid">
             <section className="facility-card">
               <div className="facility-card-heading">
@@ -291,11 +262,7 @@ export default function FacilityWorkspace({
                 <button
                   className={`facility-room-row ${selected === id ? "selected" : ""}`}
                   key={id}
-                  onClick={() => {
-                    setSelected(id);
-                    const i = open.find((i) => i.room === id);
-                    if (i) setSelectedId(i.id);
-                  }}
+                  onClick={() => selectRoom(id)}
                 >
                   <span
                     className="room-dot"
@@ -317,20 +284,6 @@ export default function FacilityWorkspace({
             {filter === "attention" && !open.length && (
               <p className="facility-empty">No open concerns</p>
             )}
-            <button
-              className="facility-room-row supervision-row"
-              onClick={() => {
-                setSelected("supervision");
-                onMode("supervision");
-              }}
-            >
-              <Monitor size={18} />
-              <span>
-                <b>Supervision room</b>
-                <small>Caregivers & nurses</small>
-              </span>
-              <ArrowRight size={14} />
-            </button>
           </section>
           {selected && selected !== "supervision" && (
             <section className="facility-card room-detail">
@@ -348,79 +301,8 @@ export default function FacilityWorkspace({
               </div>
             </section>
           )}
-          <section className="facility-card">
-            <h2>Route concern</h2>
-            <div className="facility-scale">
-              <span style={{ background: "#fbe5d5" }} />
-              <span style={{ background: "#b85a36" }} />
-              <span style={{ background: "#652b26" }} />
-            </div>
-            <div className="facility-scale-labels">
-              <span>L1 · Off route</span>
-              <span>L2 · Near</span>
-              <span>L3 · On route</span>
-            </div>
-            <div className="facility-key">
-              <span>
-                <i className="key-unknown" />
-                Not assessed
-              </span>
-            </div>
-          </section>
         </aside>
       </div>
-      {evidenceOpen && (
-        <section
-          ref={recordingRef}
-          className="facility-evidence"
-          aria-label="Bathroom recording"
-        >
-          <div className="facility-panel-header">
-            <span>RECORDING REVIEW</span>
-            <div>
-              <button
-                className="text-button"
-                onClick={() => setPlaying(!playing)}
-              >
-                {playing ? <Square size={14} /> : <Play size={14} />}{" "}
-                {playing ? "Show still" : "Play tracking"}
-              </button>
-              <a
-                className="text-button"
-                href={trackingMedia.gif}
-                download="panoramic-bathroom-tracking.gif"
-              >
-                <Download size={14} /> Download
-              </a>
-              <button
-                className="text-button"
-                aria-label="Close recording"
-                onClick={() => {
-                  setEvidenceOpen(false);
-                  setPlaying(false);
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-          <img
-            className="bathroom-gif"
-            width={1040}
-            height={794}
-            src={playing ? trackingMedia.gif : trackingMedia.still}
-            alt="OpenCV tracking playback of annotated bathroom objects and a walking-route concern"
-          />
-          <details className="evidence-caption">
-            <summary>Recording details</summary>
-            <p>
-              Image-based playback with an AI-edited source image and manually
-              annotated regions. OpenCV tracks their movement. Opening this
-              recording does not create a care-team alert.
-            </p>
-          </details>
-        </section>
-      )}
     </div>
   );
 }

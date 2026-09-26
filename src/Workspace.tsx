@@ -356,7 +356,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <button aria-current={page === "monitor" ? "page" : undefined} onClick={() => setPage("monitor")}>
             <Sparkles size={18} /> Scene review
           </button>
-          <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}><Map size={18} /> Spatial view</button>
+          <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}><Map size={18} /> Resident Floor</button>
           <button aria-current={page === "supervision" ? "page" : undefined} onClick={() => setPage("supervision")}><Monitor size={18} /> Supervision</button>
           <button
             aria-current={page === "session" ? "page" : undefined}
@@ -384,7 +384,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <div className="breadcrumbs">
             Workspace <ChevronRight size={14} />
             <b>
-              {page === "monitor" ? "Scene review" : page === "spatial" ? "Spatial view" : page === "supervision" ? "Supervision" : page === "session"
+              {page === "monitor" ? "Scene review" : page === "spatial" ? "Resident Floor" : page === "supervision" ? "Supervision" : page === "session"
                 ? "Care session"
                 : "Session history"}
             </b>
@@ -444,7 +444,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           {playback.active ? <div className="playback-bar"><div><b>Recording playback · this browser</b><small>No care-team records or real notifications are created.</small></div><label>View as<select aria-label="Playback role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label><button className="text-button" onClick={playback.start}>Restart</button><button className="text-button" onClick={playback.stop}>Exit playback</button></div> : ["monitor","supervision","spatial"].includes(page) && <div className="playback-start"><button className="secondary" onClick={()=>{playback.start();setPage("supervision");}}><Play size={15}/> Run bathroom workflow</button><span>Use the recording to walk through a response.</span></div>}
           {playback.active && ["supervision","spatial"].includes(page) && <section className="playback-monitor"><img src={playback.scanning?"/demo/bathroom-tracking.gif?v=opencv-2":"/demo/bathroom-tracking-poster.png?v=opencv-2"} alt="Recorded bathroom with object tracking and marked water region"/><div><p className="eyebrow">A101 · BATHROOM RECORDING</p><h2>{playback.scanning?"Reading recorded tracking event…":playback.team.incidents[0]?.phase==="resolved"?"Response recorded":"Water region crosses the walking route"}</h2><p>{playback.scanning?"Replaying the annotated object-tracking sequence.":playback.team.incidents[0]?.phase==="resolved"?"The response outcome is recorded below. Download the handoff record to keep the timeline.":"The recording's marked water region has created a concern in supervision. Review it, assign a responder, then switch to their view to accept and respond."}</p><small>Annotated recording event, not a new live detection.</small></div></section>}
           <div hidden={page !== "monitor"}><SceneMonitor key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
-          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} onMode={setPage} /></div>
+          <div hidden={page !== "spatial" && page !== "supervision"}><FacilityWorkspace key={`${owner ?? 'signed-out'}:${playback.active}`} workflowScanning={playback.scanning} team={careTeam} onSignIn={() => setAuthOpen(true)} mode={page === "supervision" ? "supervision" : "spatial"} active={page === "spatial" || page === "supervision"} /></div>
           {page === "session" && !hasSession && <>
             <section className="page-heading"><h1>Care session</h1></section>
             <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New session</button></section>
