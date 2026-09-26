@@ -5,7 +5,9 @@
 - Renamed the existing GitHub repository to `jiexiY/panoramic` and Vercel project to `panoramic`; repository history and Vercel project ID remain unchanged. Updated the local Git remote and Vercel project link. Verified Vercel's Git connection references `jiexiY/panoramic`, repository ID `1388472646`, branch `main`.
 - `panoramic.vercel.app` was unavailable (Vercel HTTP 409). Added and verified `panoramic-care.vercel.app` on the same project. The old production domain is retained for existing links.
 - App name, browser titles, report headings/download names, package metadata, current README/setup instructions, and local submission-draft branding now use Panoramic. Historical verification/provenance and archived source retain their original names. No live Devpost update or submission was made.
-- All 54 tests and TypeScript/Vite builds passed after the rename. Local Chrome verified the Panoramic entrance and workspace navigation. Publication verification is recorded in the deployment follow-up below when complete.
+- All 54 tests and TypeScript/Vite builds passed after the rename. Local Chrome verified the Panoramic entrance and workspace navigation. The 390-pixel mobile entrance had no horizontal overflow; the temporary viewport override was reset.
+- Pushed commit `4bceacd` to the renamed repository. GitHub Actions run `36229548488` succeeded, and the connected Git deployment `dpl_MrV8Lg2puFF8anPR9qygpKUdjjYw` reached Ready with a successful Vercel commit check.
+- New production entrance, all three workspace paths, and legacy welcome URL returned HTTP 200. The old production domain also returned Panoramic. Read-only Gemini readiness remains configured; no generation request, secret change, database change, or billing change was made. Live Chrome confirmed Panoramic branding, entry navigation, and the empty workspace without console errors. Proof: `output/panoramic-live-entry.png`.
 
 ## Minimal entrance and empty workspace — September 26, 2026
 
