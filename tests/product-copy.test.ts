@@ -44,3 +44,19 @@ test("copy cleanup retains privacy confirmation and explicit provider requests",
   assert.match(monitor, /Add caregiver/);
   assert.match(monitor, /Eligible for this task/);
 });
+
+test("bathroom playback and still use native OpenCV overlay styling", () => {
+  const renderer = source("scripts/render-bathroom-tracking.py");
+  assert.match(renderer, /cv2\.FONT_HERSHEY_SIMPLEX/);
+  assert.match(renderer, /cv2\.rectangle\(frame/);
+  assert.match(renderer, /cv2\.putText\(frame/);
+  assert.match(renderer, /GREEN = \(0, 255, 0\)/);
+  assert.match(renderer, /RED = \(0, 0, 255\)/);
+  assert.match(renderer, /CYAN = \(255, 255, 0\)/);
+  assert.match(renderer, /cv2\.COLOR_BGR2RGB/);
+  assert.doesNotMatch(renderer, /ImageDraw|rounded_rectangle|SAGE =|TERRA =/);
+  const facility = source("src/FacilityWorkspace.tsx");
+  assert.match(facility, /playing \? trackingMedia\.gif : trackingMedia\.still/);
+  assert.match(facility, /bathroom-tracking-poster\.png\?v=opencv-2/);
+  assert.doesNotMatch(facility, /className="bathroom-scene"/);
+});

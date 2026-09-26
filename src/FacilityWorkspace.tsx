@@ -6,6 +6,10 @@ import SuitePlan from "./SuitePlan";
 import "./facility.css";
 
 const FacilityMap = lazy(() => import("./FacilityMap"));
+const trackingMedia = {
+  gif: "/demo/bathroom-tracking.gif?v=opencv-2",
+  still: "/demo/bathroom-tracking-poster.png?v=opencv-2",
+};
 const clock = (at: string) => new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 type Props = { mode: "spatial" | "supervision"; active: boolean; onMode: (mode: "spatial" | "supervision") => void };
 
@@ -84,9 +88,9 @@ export default function FacilityWorkspace({ mode, active, onMode }: Props) {
       </aside>
     </div>
     {evidenceOpen && state.loaded && <section ref={evidenceRef} className="facility-evidence" aria-label="Bathroom recording">
-      <div className="facility-panel-header"><span>A101 / BATHROOM RECORDING</span><div><button className="text-button" onClick={() => setPlaying(!playing)}>{playing ? <Square size={14} /> : <Play size={14} />}{playing ? "Show still" : "Play tracking"}</button><a className="text-button" href="/demo/bathroom-tracking.gif" download><Download size={14} /> Download</a></div></div>
+      <div className="facility-panel-header"><span>A101 / BATHROOM RECORDING</span><div><button className="text-button" onClick={() => setPlaying(!playing)}>{playing ? <Square size={14} /> : <Play size={14} />}{playing ? "Show still" : "Play tracking"}</button><a className="text-button" href={trackingMedia.gif} download="panoramic-bathroom-tracking.gif"><Download size={14} /> Download</a></div></div>
       <div className="facility-evidence-grid"><div>
-        {playing ? <img className="bathroom-gif" src="/demo/bathroom-tracking.gif" alt="OpenCV tracking playback of annotated bathroom objects and a walking-route concern" /> : <div className="bathroom-scene"><img src="/demo/bathroom-water.jpg" alt="Bathroom image with water across the foreground tiles" />{bathroomScene.observations.map((object, i) => <div key={object.label} className={`bathroom-box ${i === 3 ? "hazard" : ""}`} style={{ left: `${object.box[1] / 10}%`, top: `${object.box[0] / 10}%`, width: `${(object.box[3] - object.box[1]) / 10}%`, height: `${(object.box[2] - object.box[0]) / 10}%` }}><span>{object.label}{i === 3 ? " · L3" : ""}</span></div>)}{routeShown && <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="bathroom-route" aria-hidden="true"><polyline points={bathroomRoute.points.map(p => `${p.x},${p.y}`).join(" ")} /></svg>}</div>}
+        <img className="bathroom-gif" src={playing ? trackingMedia.gif : trackingMedia.still} alt={playing ? "OpenCV tracking playback of annotated bathroom objects and a walking-route concern" : "OpenCV tracking still with green object boxes, a red possible-water region and a cyan walking route"} />
         <details className="evidence-caption"><summary>Recording details</summary><p>Image-based playback with an AI-edited source image and manually annotated regions. OpenCV tracks their movement. This is not a live camera feed.</p></details>
       </div><div>{response}<button className="secondary full" onClick={downloadRecord}><Download size={15} /> Download response record</button></div></div>
     </section>}
