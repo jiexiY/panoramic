@@ -57,7 +57,8 @@ test("runtime entry and workspace no longer contain marketing or marketing links
   const workspace = readFileSync(new URL("../src/Workspace.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(entry, /Try Panoramic now|Our story|How it works|prototype-details|public-site|function Landing\(/);
   assert.doesNotMatch(workspace, /Product website|prototype-details|Back to website/);
-  assert.match(entry, /Open care workspace/);
+  assert.match(entry, /className="site-button entry-button">Open Workplace<\/SiteLink>/);
+  assert.doesNotMatch(entry, /Open care workspace|ArrowRight/);
   assert.match(workspace, /Back to start/);
 });
 
