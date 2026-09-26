@@ -34,6 +34,8 @@ My grandmother was active and clear-minded. In her residential eldercare center,
 
 **Try illustrated rehearsal** is explicitly authored illustration and preset observations; it makes **no Gemini calls**. It exists to rehearse the UI without provider access. The scene workflow is held in tab memory, not Supabase; export before refresh. No external notifications are connected. This is single-frame analysis, not continuous surveillance, trained water detection, or validated fall prevention.
 
+**Route-aware concern levels:** mark the resident's usual route on the current frame. Possible hazards outside the route are light (L1), near it are medium (L2), and intersecting it are dark (L3). Boxes, route segments and response priority recalculate immediately when the confirmed route or observations change. Missing route context stays gray/unassessed. This uses caregiver-marked image geometry, not learned movement history, a live camera tracker or clinical fall probabilities. The explicit rehearsal includes three sample routes; changing a route never clears the response. See [route awareness](docs/route-awareness.md).
+
 ## Try the workflow
 
 1. **Prepare:** review six room checks, the fictional assessed plan, required helper presence, backup coverage, and the person's choice. Missing required confirmations block starting the software routine.

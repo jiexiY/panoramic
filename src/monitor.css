@@ -44,8 +44,38 @@
 .scene-caption { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #596968; padding: 13px 17px; line-height: 1.6; border-top: 1px solid var(--line); }
 .scene-caption span { overflow-wrap: anywhere; }
 .detection-layer { position: absolute; inset: 0; pointer-events: none; }
+.detection-layer { z-index: 3; }
+.scene-canvas > svg.route-overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.route-overlay.drawing { z-index: 4; pointer-events: auto; cursor: crosshair; background: #fffdf80c; }
+.route-overlay text { pointer-events: none; }
+.route-current { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; }
+.route-current b { display: block; font-size: 14px; }
+.route-current small { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 5px; }
+.route-badge { display: inline-block; border-radius: 6px; padding: 7px 10px; font-size: 11px; line-height: 1.5; font-weight: 700; flex-shrink: 0; }
+.risk-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; list-style: none; padding: 0; margin: 0 0 13px; }
+.risk-legend li { display: grid; gap: 7px; }
+.risk-legend li > span { display: block; height: 12px; border-radius: 4px; border: 1px solid; }
+.risk-legend b { font-size: 10px; line-height: 1.5; font-weight: 650; }
+.route-helper { font-size: 11px; line-height: 1.7; color: var(--muted); margin: 12px 0 0; }
+.route-presets { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+.route-planner .button-row { margin-top: 16px; }
+.route-presets .secondary.is-active { background: #dae5e8; color: #254659; border-color: #466879; box-shadow: inset 0 0 0 1px #466879; }
+.route-editor { border: 1px solid #ccd8d7; border-radius: 9px; margin-top: 18px; padding: 16px; min-width: 0; }
+.route-editor legend { font-weight: 650; font-size: 13px; padding: 0 6px; }
+.route-editor p { font-size: 12px; color: var(--muted); line-height: 1.65; margin: 0 0 14px; }
+.route-editor label { display: grid; gap: 7px; font-size: 11px; line-height: 1.55; }
+.route-editor input:not([type=range]) { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #c3cecc; border-radius: 6px; padding: 8px; background: #fffefa; color: #293e45; font: inherit; font-size: 13px; }
+.waypoint-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; align-items: end; }
+.waypoint-inputs > button { grid-column: 1 / -1; justify-self: start; }
+.waypoint-list { display: flex; flex-wrap: wrap; gap: 7px; font-size: 11px; line-height: 1.65; margin: 12px 0; }
+.waypoint-list span { background: #e8efee; padding: 4px 6px; border-radius: 4px; }
+.route-margin { margin-top: 15px; }
+.route-margin input { width: 100%; min-height: 32px; accent-color: #466879; }
+.observation-priority { display: block; margin-top: 8px; font-size: 11px; font-weight: 700; }
 .detection-box { position: absolute; border: 2px solid #366655; border-radius: 3px; background: #426a4210; }
 .detection-box > span { position: absolute; left: -2px; bottom: 100%; padding: 5px 7px; background: #366655; color: white; white-space: nowrap; font-size: clamp(8px, .8vw, 11px); line-height: 1.2; border-radius: 3px 3px 0 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.detection-box.label-right > span { right: -2px; left: auto; }
+.detection-compact-label { display: none; }
 .detection-box.hazard { border-color: #a56424; background: #c4892420; }
 .detection-box.hazard > span { background: #92531e; }
 .detection-box.selected { outline: 3px solid #fff; outline-offset: 3px; }
@@ -120,6 +150,12 @@ textarea:focus-visible { outline: 3px solid #c27a38; outline-offset: 3px; }
   .api-status { max-width: 240px; }
 }
 @media (max-width: 650px) {
+  .detection-full-label { display: none; }
+  .detection-compact-label { display: inline; }
+  .route-current { align-items: flex-start; flex-direction: column; }
+  .route-planner .card-title { flex-wrap: wrap; }
+  .route-planner .card-title > span { width: 100%; margin-left: 0; }
+  .risk-legend b { font-size: 10px; }
   .monitor-page .page-heading { display: block; }
   .monitor-page .page-heading h1 { font-size: 29px; }
   .monitor-page .page-heading > .secondary { margin-top: 16px; }

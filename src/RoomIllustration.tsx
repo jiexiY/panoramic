@@ -5,7 +5,6 @@ export default function RoomIllustration() {
     <path d="M0 390H1000M0 530H1000M180 225L100 600M420 225L400 600M670 225L700 600M880 225L980 600" stroke="#d3d7c9" strokeWidth="3" />
     <rect x="715" y="20" width="215" height="180" rx="4" fill="#a9b6a0" /><rect x="728" y="32" width="190" height="156" fill="#e9eee2" />
     <path d="M823 32V188M728 110H918" stroke="#bac5b1" strokeWidth="9" />
-    <path d="M300 500Q570 385 1000 515" fill="none" stroke="#f5f6ed" strokeWidth="80" strokeDasharray="15 14" opacity=".75" />
     <ellipse cx="277" cy="424" rx="135" ry="32" fill="#bbc6b1" opacity=".5" />
     <path d="M180 326L161 418M350 326L376 418" stroke="#5a6953" strokeWidth="16" />
     <rect x="151" y="150" width="225" height="182" rx="30" fill="#7b9170" /><rect x="144" y="290" width="240" height="60" rx="22" fill="#617e59" />

@@ -78,9 +78,9 @@ export function advanceIncident(current: Incident, action: "acknowledge" | "arri
 export const rehearsalScene: Scene = {
   observations: [
     { label: "Cup", box: [465, 418, 655, 510], kind: "object", evidence: "An illustrated cup lies on its side beside the chair." },
-    { label: "Possible spill", box: [635, 385, 835, 655], kind: "possible_spill", evidence: "A blue illustrated puddle crosses the marked walking path." },
-    { label: "Box in walking path", box: [490, 705, 710, 875], kind: "possible_trip", evidence: "An illustrated box occupies part of the walking path." },
+    { label: "Possible spill", box: [635, 385, 835, 655], kind: "possible_spill", evidence: "A blue illustrated puddle is on the floor beside the chair." },
+    { label: "Box on floor", box: [490, 705, 710, 875], kind: "possible_trip", evidence: "An illustrated cardboard box occupies floor space to the right of the chair." },
   ],
-  brief: "Check the possible spill beside the chair and the box in the walking path. Keep the route clear before the resident uses it.",
+  brief: "Check the possible spill beside the chair and the box on the floor. Review their position against the resident's marked route.",
   uncertainty: "Authored rehearsal data, not a model result. Real spill recognition needs testing on staged footage.",
 };
