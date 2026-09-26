@@ -37,6 +37,17 @@ test("media failure turns observation off; stale failures cannot stop a new play
   assert.equal(recordingReducer(retry, { type: "loaded", version: retry.version }).mode, "playing");
 });
 
+test("the default inline still does not turn observation on and can recover from failure", () => {
+  assert.deepEqual(recordingReducer(initialRecording, { type: "loaded", version: 0 }), initialRecording);
+  const failed = recordingReducer(initialRecording, { type: "failed", version: 0 });
+  assert.equal(failed.mode, "error");
+  assert.equal(recordingIsOn(failed, true, "A101"), false);
+  const retry = recordingReducer(failed, { type: "close" });
+  assert.equal(retry.mode, "closed");
+  assert.equal(recordingReducer(retry, { type: "loaded", version: retry.version }).mode, "closed");
+  assert.deepEqual(recordingReducer(retry, { type: "failed", version: 0 }), retry);
+});
+
 test("all suite overlays are grey and translucent without an assessed concern", () => {
   assert.deepEqual(suiteOverlaySize, { width: 4.66, depth: 7.46, height: 0.89 });
   for (const priority of [undefined, "unassessed", "object"] as const) {

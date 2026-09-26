@@ -15,8 +15,8 @@ export function recordingReducer(state: RecordingState, action: RecordingAction)
     return state.mode === "playing" || state.mode === "loading"
       ? { mode: "still", version: state.version + 1 } : state;
   }
-  // Ignore callbacks from an image that was closed, paused or replaced.
-  if (!("version" in action) || action.version !== state.version || state.mode === "closed") return state;
+  // The default still remains visible even when playback is closed. Ignore replaced images.
+  if (!("version" in action) || action.version !== state.version) return state;
   if (action.type === "failed") return { ...state, mode: "error" };
   return state.mode === "loading" ? { ...state, mode: "playing" } : state;
 }

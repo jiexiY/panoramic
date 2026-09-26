@@ -24,12 +24,12 @@ test("product screens contain no rehearsal flow or competition labels", () => {
   assert.doesNotMatch(source("src/scene.ts"), /rehearsalScene/);
 });
 
-test("recorded media stays identified and opens from a direct product action", () => {
+test("bathroom image is inline and recorded playback stays identified", () => {
   const facility = source("src/RoomMonitoring.tsx");
-  assert.match(facility, /Open bathroom recording/);
-  assert.match(facility, /RECORDING REVIEW/);
-  assert.match(facility, /Recording details/);
-  assert.match(facility.replace(/\s+/g, ' '), /Opening this recording does not create a care-team alert/);
+  assert.match(facility, /Play tracking/);
+  assert.match(facility, /IMAGE DATA/);
+  assert.match(facility, /Image details/);
+  assert.match(facility.replace(/\s+/g, ' '), /Viewing the image or playing the recording does not create a care-team alert/);
   assert.doesNotMatch(facility, /facilityTransition|startIncident|bathroomScene/);
   const renderer = source("scripts/render-bathroom-tracking.py");
   assert.doesNotMatch(renderer, /STAGED DEMO|Human-marked objects and sample route/);

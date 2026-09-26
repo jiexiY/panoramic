@@ -9,7 +9,7 @@ test("Resident Floor omits the workflow launcher but retains A101 recording cont
   assert.ok(launcher);
   assert.ok(launcher.includes('page === "monitor" && <div className="playback-start"'));
   assert.ok(launcher.includes('setPage("spatial")'));
-  assert.match(source("RoomMonitoring.tsx"), /Open bathroom recording/);
+  assert.match(source("RoomMonitoring.tsx"), /Play tracking/);
 });
 
 test("room sidebar omits the layout card while preserving the floor map and room monitoring", () => {
@@ -51,8 +51,9 @@ test("recording controls and route concern belong to room monitoring, not the fl
   assert.doesNotMatch(facility, /Open bathroom recording|Route concern|facility-evidence/);
   assert.match(facility, /<RoomMonitoring key=\{\x60\$\{team.facilityId\}:\$\{monitoringRoom\}\x60\}/);
   assert.match(facility, /priority=\{priorities\[monitoringRoom\] \?\? "unassessed"\}/);
-  assert.match(room, /room === "A101" \? \([\s\S]*Open bathroom recording/);
-  assert.match(room, /bathroom monitoring\x60\}[\s\S]*Open bathroom recording[\s\S]*room-route-concern/);
+  assert.match(room, /room === "A101" \? \(\s*<section className="facility-evidence" aria-label="Bathroom image data">/);
+  assert.match(room, /bathroom monitoring\x60\}[\s\S]*Bathroom image data[\s\S]*room-route-concern/);
+  assert.doesNotMatch(room, /evidenceOpen|Open bathroom recording|Close recording/);
   assert.match(room, /routeLevels\[priority\]/);
 });
 

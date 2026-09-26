@@ -37,7 +37,6 @@
 .room-zone-heading h3 { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 650; margin: 0; }
 .room-zone-heading .observation-status { font-size: 11px; }
 .monitor-source-empty { color: #7e8a81; font-size: 11px; margin: 12px 0 0; }
-.room-recording-button { margin-top: 15px; font-size: 12px; }
 .room-monitor-zone .facility-evidence { margin-top: 14px; border-radius: 5px; }
 .room-monitor-zone .facility-panel-header { padding: 10px; flex-wrap: wrap; gap: 8px; font-size: 10px; }
 .room-monitor-zone .facility-panel-header > div { flex-wrap: wrap; }

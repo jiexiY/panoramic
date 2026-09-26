@@ -1,5 +1,5 @@
-import { useRef, type Dispatch } from "react";
-import { BedDouble, Download, Play, ShowerHead, Square, X } from "lucide-react";
+import { type Dispatch } from "react";
+import { BedDouble, Download, Play, ShowerHead, Square } from "lucide-react";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import ObservationStatus from "./ObservationStatus";
 import { recordingIsOn, type RecordingAction, type RecordingState } from "./recordingObservation";
@@ -19,21 +19,11 @@ type Props = {
 };
 
 export default function RoomMonitoring({ room, priority, active, workflowScanning, recording, onRecordingAction }: Props) {
-  const evidenceOpen = recording.mode !== "closed";
   const playing = recording.mode === "loading" || recording.mode === "playing";
   const mediaError = recording.mode === "error";
-  const recordingRef = useRef<HTMLElement>(null);
   // A saved incident or database subscription is not an active observation source.
   const observing = recordingIsOn(recording, active, room);
   const workflowObserving = active && room === "A101" && workflowScanning;
-
-  const openRecording = () => {
-    onRecordingAction({ type: "play" });
-    requestAnimationFrame(() => recordingRef.current?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-      block: "nearest",
-    }));
-  };
 
   const level = routeLevels[priority];
   return (
@@ -47,38 +37,34 @@ export default function RoomMonitoring({ room, priority, active, workflowScannin
           <div className="room-zone-heading"><h3><BedDouble size={16} /> Bedroom monitoring</h3></div>
           <p className="monitor-source-empty">No observation source connected</p>
         </section>
-        <section ref={recordingRef} className="room-monitor-zone" aria-label={`${room} bathroom monitoring`}>
+        <section className="room-monitor-zone" aria-label={`${room} bathroom monitoring`}>
           <div className="room-zone-heading">
             <h3><ShowerHead size={16} /> Bathroom monitoring</h3>
             <ObservationStatus on={observing || workflowObserving} pending={active && room === "A101" && recording.mode === "loading"} playback />
           </div>
           {room === "A101" ? (
-            <>
-              {!evidenceOpen && <button className="secondary room-recording-button" onClick={openRecording}><Play size={15} /> Open bathroom recording</button>}
-              {evidenceOpen && <section className="facility-evidence" aria-label="Bathroom recording">
+              <section className="facility-evidence" aria-label="Bathroom image data">
                 <div className="facility-panel-header">
-                  <span>RECORDING REVIEW</span>
+                  <span>IMAGE DATA</span>
                   <div>
                     <button className="text-button" onClick={() => onRecordingAction({ type: playing ? "pause" : "play" })}>
                       {playing ? <Square size={14} /> : <Play size={14} />}{" "}
                       {playing ? "Show still" : "Play tracking"}
                     </button>
                     <a className="text-button" href={trackingMedia.gif} download="panoramic-bathroom-tracking.gif"><Download size={14} /> Download</a>
-                    <button className="text-button" aria-label="Close recording" onClick={() => onRecordingAction({ type: "close" })}><X size={16} /></button>
                   </div>
                 </div>
                 {!mediaError && <img key={recording.version} className="bathroom-gif" width={1040} height={794}
                   src={playing ? trackingMedia.gif : trackingMedia.still}
                   onLoad={() => onRecordingAction({ type: "loaded", version: recording.version })}
                   onError={() => onRecordingAction({ type: "failed", version: recording.version })}
-                  alt="OpenCV tracking playback of annotated bathroom objects and a walking-route concern" />}
-                {mediaError && <p className="notice error" role="alert">Recording unavailable. Close and reopen it to try again.</p>}
+                  alt={playing ? "OpenCV tracking playback of annotated bathroom objects and a walking-route concern" : "Bathroom image with annotated objects and a possible water hazard"} />}
+                {mediaError && <div className="notice error" role="alert">Bathroom image unavailable. <button className="text-button" onClick={() => onRecordingAction({ type: "close" })}>Retry image</button></div>}
                 <details className="evidence-caption">
-                  <summary>Recording details</summary>
-                  <p>Image-based playback with an AI-edited source image and manually annotated regions. OpenCV tracks their movement. Opening this recording does not create a care-team alert.</p>
+                  <summary>Image details</summary>
+                  <p>AI-edited source image with manually annotated regions. OpenCV tracks their movement in image-based playback. Viewing the image or playing the recording does not create a care-team alert.</p>
                 </details>
-              </section>}
-            </>
+              </section>
           ) : <p className="monitor-source-empty">No observation source connected</p>}
         </section>
       </div>
