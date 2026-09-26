@@ -4,6 +4,14 @@ import { readFileSync } from "node:fs";
 
 const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
+test("room sidebar omits the layout card while preserving the floor map and room monitoring", () => {
+  const facility = source("FacilityWorkspace.tsx");
+  assert.doesNotMatch(facility, /SuitePlan|room-detail|suite-plan-caption|>LAYOUT</);
+  assert.match(facility, /<FacilityMap/);
+  assert.match(facility, /<RoomMonitoring/);
+  assert.match(facility, /className="facility-card room-directory"/);
+});
+
 test("sidebar uses text labels and a selected vertical marker without icons or a filled highlight", () => {
   const sidebar = source("Workspace.tsx").match(/<aside className="rail">([\s\S]*?)<\/aside>/)?.[1];
   assert.ok(sidebar);

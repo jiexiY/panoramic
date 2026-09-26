@@ -11,7 +11,6 @@ import { eligibleResponders, phaseLabels } from "./incidents";
 import PanoramicAssistant from "./PanoramicAssistant";
 import CareTeamPanel from "./CareTeamPanel";
 import IncidentDesk from "./IncidentDesk";
-import SuitePlan from "./SuitePlan";
 import RoomMonitoring from "./RoomMonitoring";
 import ObservationStatus from "./ObservationStatus";
 import "./facility.css";
@@ -285,22 +284,6 @@ export default function FacilityWorkspace({
               <p className="facility-empty">No open concerns</p>
             )}
           </section>
-          {selected && selected !== "supervision" && (
-            <section className="facility-card room-detail">
-              <div className="facility-card-heading">
-                <h2>Suite {selected}</h2>
-                <span className="facility-chip">LAYOUT</span>
-              </div>
-              <SuitePlan
-                alert={open.some(
-                  (i) => i.room === selected && i.zone === "Bathroom",
-                )}
-              />
-              <div className="suite-plan-caption">
-                Bedroom · kitchenette · closets · accessible bath
-              </div>
-            </section>
-          )}
         </aside>
       </div>
     </div>
