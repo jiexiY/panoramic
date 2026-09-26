@@ -2,7 +2,7 @@
 
 [Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
-**Development update:** Daily summary, Panoramic audio notes, runnable bathroom playback, Panoramic AI and supervisor-first dispatch are implemented locally, with 115 passing tests. They are **not deployed**. Supabase has the earlier baseline; it needs an upgrade before shared dispatch. Isolated bathroom playback runs without accounts or API calls. Hosted delivery and live Gemini output remain unverified. See [daily summary / runnable workflow](docs/daily-summary.md) and [shared status](docs/shared-response-workflow.md). Sections below describe the development build unless labeled live.
+**Release focus:** Environmental hazard review → supervision → caregiver assignment → acceptance → arrival → recorded outcome. Daily notes and audio capture are deferred and removed. The supervisor-first database upgrade is applied; 118 local tests pass, including upgrade preservation checks. Bathroom playback runs without accounts or provider calls. Live Gemini output and authenticated multi-client behavior remain unverified. See [release checks](docs/prevention-release.md).
 
 ## Product entry and home
 
@@ -38,11 +38,11 @@ Unsigned-in analysis remains local. Shared incidents, evidence and response hist
 
 ## Try the workflow
 
-### Bathroom response and Daily summary
+### Bathroom response
 
-Choose **Run bathroom workflow** in Scene review, Spatial view or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. **Daily summary** displays and exports the same timeline. This playback does not claim a fresh detection or write to the shared team.
+Choose **Run bathroom workflow** in Scene review, Spatial view or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
 
-At `/app/daily`, record a short permitted test clip or import audio, then choose **Create audio notes**. Panoramic writes and saves notes without staff transcription or required review. Unclear words become `[unclear?]`; uncertain fragments carry a question mark. Humming remains a sound description, not an invented conversation. Staff context is optional and separate; only explicitly review/check-requested notes appear in supervision. This is not always-on monitoring; notes are tab-memory only. [Details and verified limits](docs/daily-summary.md).
+Daily notes are not part of this release. The previous implementation remains recoverable in Git history.
 
 ### Spatial view and supervision
 
@@ -81,10 +81,9 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Updates and escalation | Supabase Realtime + pg_cron | Notify open clients of saved changes; check response deadlines every 30 seconds |
 | Concurrent editing | PostgreSQL revision trigger + conditional updates | Reject stale-tab overwrites instead of silently losing a newer record |
 | Hosting | Vercel | Serve the frontend and server-only Gemini endpoint; care-session data uses authenticated Supabase requests |
-| Audio notes / daily handoff | MediaRecorder + Web Audio + Gemini | Panoramic writes notes from explicit short clips, preserves question marks and allows optional staff context; live audio provider test pending |
-| Verification | Node test runner + isolated PGlite PostgreSQL | 115 passing local tests; hosted multi-client and provider checks remain pending |
+| Verification | Node test runner + isolated PGlite PostgreSQL | 118 passing local tests; hosted multi-client and provider checks remain pending |
 
-The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Short vocal-cue clips are implemented locally; always-on listening, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
+The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Daily notes and audio capture are deferred. Always-on listening, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
 
 ## Run locally
 
@@ -101,7 +100,7 @@ The full development server runs at `http://127.0.0.1:5174` and includes `/api/g
 
 For secure free-tier activation, see [Gemini setup](docs/gemini-setup.md). Never paste the provider key into the browser UI or a `VITE_` variable. The UI's workspace access code is a separate credential, not the Google API key.
 
-Local image review and the older care-session walkthrough work without cloud configuration and are not saved across refreshes. For a new backend, review `database/schema.sql`, then the fresh-install `database/incident-workflow.sql`. The existing hosted project has an older baseline, so it requires a separately reviewed upgrade migration; do not rerun the fresh-install files or deploy this frontend first. Keep RLS enabled. The frontend uses only a publishable key—never a service-role or secret key.
+Local image review and the older care-session walkthrough work without cloud configuration and are not saved across refreshes. For a new backend, review `database/schema.sql`, then the fresh-install `database/incident-workflow.sql`. The hosted project was upgraded with `supabase/migrations/20260926213803_supervision_first_dispatch.sql`; do not rerun fresh-install files against it. The upgrade preserves existing records and grants. Keep RLS enabled. The frontend uses only a publishable key—never a service-role or secret key.
 
 Shared incident access requires confirmed email/password accounts. The development sign-in form includes account creation; email delivery and confirmation redirects still need end-to-end verification. Configure the Supabase Auth URL allowlist for the deployment before onboarding. Guest sign-in remains disabled and is not a substitute for staff membership.
 

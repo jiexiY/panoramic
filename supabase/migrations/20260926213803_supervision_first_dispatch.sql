@@ -1,93 +1,18 @@
--- Fresh-install Panoramic shared response schema. Apply after schema.sql.
--- This file is NOT an upgrade migration. Do not rerun it against existing tables.
--- The hosted baseline was upgraded by 20260926213803_supervision_first_dispatch.sql.
--- Writes are transactional commands; clients cannot alter audit history directly.
-create schema if not exists panoramic_private;
-revoke all on schema panoramic_private from public, anon;
-grant usage on schema panoramic_private to authenticated;
+-- Upgrade the installed shared-incident baseline; preserve records, RLS and grants.
+-- CLI-created file aligned to hosted migration version 20260926213803 after application.
+-- Apply atomically with the migration runner. No Auth identities are created.
+set local lock_timeout = '5s';
+set local statement_timeout = '30s';
+lock table public.care_incidents in access exclusive mode;
+alter table public.care_incidents add constraint care_incidents_phase_dispatch_check
+  check (phase in ('flagged','dispatched','acknowledged','arrived','resolved'));
+alter table public.care_incidents drop constraint care_incidents_phase_check;
+alter table public.care_incidents rename constraint care_incidents_phase_dispatch_check to care_incidents_phase_check;
+drop index public.care_one_response;
+create unique index care_one_response on public.care_incidents(assigned_to)
+  where phase in ('dispatched','acknowledged','arrived');
 
-create table public.care_facilities (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null unique references auth.users(id),
-  name text not null check (length(name) between 2 and 80),
-  created_at timestamptz not null default now()
-);
-create table public.care_members (
-  facility_id uuid not null references public.care_facilities(id),
-  user_id uuid not null references auth.users(id),
-  display_name text not null check (length(display_name) between 2 and 40),
-  role text not null check (role in ('coordinator','caregiver')),
-  qualified boolean not null default false,
-  available boolean not null default false,
-  available_until timestamptz,
-  response_order integer not null default 1 check (response_order between 1 and 20),
-  primary key (facility_id, user_id)
-);
-create index care_members_user on public.care_members(user_id,facility_id);
-create table public.care_incidents (
-  id uuid primary key,
-  facility_id uuid not null references public.care_facilities(id),
-  created_by uuid not null references auth.users(id),
-  room text not null check (room in ('A101','A102','A103','A104')),
-  zone text not null check (zone in ('Bathroom','Bedroom','Living area')),
-  observation jsonb not null check (octet_length(observation::text) < 16000),
-  route jsonb,
-  priority text not null check (priority in ('unassessed','away','near','crossing')),
-  media_name text not null check (length(media_name) between 1 and 150),
-  frame_time numeric check (frame_time >= 0),
-  evidence_path text,
-  phase text not null default 'flagged' check (phase in ('flagged','dispatched','acknowledged','arrived','resolved')),
-  suggested_to uuid,
-  assigned_to uuid,
-  resolution text not null default '',
-  version integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  due_at timestamptz not null default now() + interval '2 minutes',
-  escalated_at timestamptz,
-  foreign key (facility_id,suggested_to) references public.care_members(facility_id,user_id),
-  foreign key (facility_id,assigned_to) references public.care_members(facility_id,user_id)
-);
-create index care_incidents_queue on public.care_incidents(facility_id,created_at desc);
-create index care_incidents_creator on public.care_incidents(created_by);
-create index care_incidents_suggested on public.care_incidents(facility_id,suggested_to);
-create index care_incidents_assigned on public.care_incidents(facility_id,assigned_to);
-create index care_incidents_due on public.care_incidents(due_at) where phase <> 'resolved' and escalated_at is null;
--- A caregiver cannot be reserved for two open responses, even across concurrent requests.
-create unique index care_one_response on public.care_incidents(assigned_to) where phase in ('dispatched','acknowledged','arrived');
-create table public.care_incident_events (
-  id uuid primary key default gen_random_uuid(),
-  incident_id uuid not null references public.care_incidents(id),
-  facility_id uuid not null references public.care_facilities(id),
-  actor_id uuid references auth.users(id),
-  action text not null,
-  detail text not null,
-  created_at timestamptz not null default now(),
-  request_id uuid not null unique
-);
-create index care_events_incident on public.care_incident_events(incident_id,created_at);
-create index care_events_facility on public.care_incident_events(facility_id);
-create index care_events_actor on public.care_incident_events(actor_id);
-
-alter table public.care_facilities enable row level security;
-alter table public.care_members enable row level security;
-alter table public.care_incidents enable row level security;
-alter table public.care_incident_events enable row level security;
-revoke all on public.care_facilities,public.care_members,public.care_incidents,public.care_incident_events from anon,authenticated;
-grant select on public.care_facilities,public.care_members,public.care_incidents,public.care_incident_events to authenticated;
-
--- Narrow private lookup prevents recursive membership RLS. Never trusts user_metadata.
-create function panoramic_private.is_member(f uuid) returns boolean language sql stable security definer set search_path='' as $$
-  select auth.uid() is not null and exists(select 1 from public.care_members where facility_id=f and user_id=(select auth.uid()));
-$$;
-revoke all on function panoramic_private.is_member(uuid) from public,anon;
-grant execute on function panoramic_private.is_member(uuid) to authenticated;
-create policy facility_team_read on public.care_facilities for select to authenticated using (panoramic_private.is_member(id));
-create policy member_team_read on public.care_members for select to authenticated using (panoramic_private.is_member(facility_id));
-create policy incident_team_read on public.care_incidents for select to authenticated using (panoramic_private.is_member(facility_id));
-create policy event_team_read on public.care_incident_events for select to authenticated using (panoramic_private.is_member(facility_id));
-
-create function panoramic_private.command(action text, payload jsonb) returns jsonb
+create or replace function panoramic_private.command(action text, payload jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare
   actor uuid := auth.uid(); f uuid; target uuid; candidate uuid; request uuid;
@@ -218,20 +143,8 @@ begin
   return to_jsonb(incident);
 end;
 $$;
-revoke all on function panoramic_private.command(text,jsonb) from public,anon;
-grant execute on function panoramic_private.command(text,jsonb) to authenticated;
--- Exposed wrapper does not itself elevate privileges. Private command checks identity,
--- facility membership, role, expected revision and legal transition on every write.
-create function public.care_command(action text,payload jsonb) returns jsonb language sql security invoker set search_path='' as $$ select panoramic_private.command(action,payload); $$;
-revoke all on function public.care_command(text,jsonb) from public,anon;
-grant execute on function public.care_command(text,jsonb) to authenticated;
 
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('care-evidence','care-evidence',false,1500000,array['image/jpeg']);
-create policy evidence_team_read on storage.objects for select to authenticated using(bucket_id='care-evidence' and exists(select 1 from public.care_incidents i where i.evidence_path=name));
-create policy evidence_owner_upload on storage.objects for insert to authenticated with check(bucket_id='care-evidence' and exists(select 1 from public.care_incidents i where i.created_by=(select auth.uid()) and i.evidence_path is null and name=i.facility_id::text||'/'||i.created_by::text||'/'||i.id::text||'.jpg'));
-
--- Unanswered requests are escalated in the database even with every browser closed.
-create function panoramic_private.escalate_due() returns integer language plpgsql security invoker set search_path='' as $$
+create or replace function panoramic_private.escalate_due() returns integer language plpgsql security invoker set search_path='' as $$
 declare r public.care_incidents; n integer:=0;
 begin
   for r in select * from public.care_incidents where phase<>'resolved' and escalated_at is null and due_at<=now() order by due_at limit 100 for update skip locked loop
@@ -242,8 +155,8 @@ begin
   return n;
 end;
 $$;
-revoke all on function panoramic_private.escalate_due() from public,anon,authenticated;
-create extension if not exists pg_cron;
-select cron.schedule('panoramic-response-escalation','30 seconds','select panoramic_private.escalate_due()');
 
-alter publication supabase_realtime add table public.care_incidents,public.care_incident_events,public.care_members;
+-- CREATE OR REPLACE preserves ownership/ACLs. Reassert the existing narrow grants.
+revoke all on function panoramic_private.command(text,jsonb) from public,anon;
+grant execute on function panoramic_private.command(text,jsonb) to authenticated;
+revoke all on function panoramic_private.escalate_due() from public,anon,authenticated;

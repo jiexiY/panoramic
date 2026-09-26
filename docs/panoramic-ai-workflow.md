@@ -1,6 +1,6 @@
 # Panoramic AI and supervision-first response
 
-Local implementation, 26 September 2026. Not deployed or verified with a live provider.
+Prevention-focused release, 26 September 2026. Live provider output remains unverified. See [release checks](prevention-release.md).
 
 ## One concern, one response record
 
@@ -22,18 +22,18 @@ Panoramic AI reads this same record. It does not run a second, disconnected work
 - Assignment is separate from acceptance. Decline needs a reason and returns the concern to supervision. The coordinator can reassign only before acceptance.
 - Availability expires after 90 seconds without renewal. Response order is manually configured, not measured physical distance or automatically assessed clinical skill.
 - Updates are in-app Realtime/polling delivery. There is no phone push, call, SMS or emergency service integration.
-- Current inference is on manually submitted images or video frames. **Run bathroom workflow** also connects the annotated OpenCV recording to an isolated, explicitly labeled playback queue; it does not detect water or write shared care records. See [daily summary and playback](daily-summary.md).
+- Current inference is on manually submitted images or video frames. **Run bathroom workflow** also connects the annotated OpenCV recording to an isolated, explicitly labeled playback queue; it does not detect water or write shared care records. The outcome and handoff remain in the response record.
 - The user-supplied Always Best Care article informs reviewed rules about slippery surfaces, obstructions and visibility. It is not a labeled training dataset, and no new model was trained. The InterNACHI page could not be read; it is not claimed as ingested evidence.
-- The chat must not interpret humming or repeated words as diagnoses or intentions. Daily summary now supports bounded, explicitly initiated audio clips and caregiver-entered interpretation. These tab-local cues are not retrieved by the cloud AI chat. Always-on listening and learned resident baselines are not implemented; live audio inference remains unverified.
+- Daily notes and audio capture are excluded from this release. The chat must not invent audio observations, diagnoses or intentions.
 - Empty observations do not certify safety. A recorded resolution is an attributed caregiver note, not sensor verification of the room.
 
 ## Verification and release gates
 
-`npm test`: 113 tests pass, including the daily-summary increment. Actual SQL runs in isolated PGlite with local identity/storage stubs; hosted Auth, Storage transport, Realtime and separate concurrent database clients remain untested. API tests mock both Supabase and Gemini. Chrome verifies the product's isolated bathroom-playback workflow from supervision through outcome and daily summary; this is not a real care incident.
+`npm test`: 118 tests pass, including fresh-install and upgrade preservation checks. Actual SQL runs in isolated PGlite with local identity/storage stubs; hosted Auth, Storage transport, Realtime and separate concurrent database clients remain untested. API tests mock both Supabase and Gemini. Chrome verifies the product's isolated bathroom-playback workflow from supervision through outcome and handoff; this is not a real care incident.
 
 `npm run build`: passes. Existing Lucide directive and Three.js chunk-size warnings remain non-failing.
 
-Before deployment:
+Release checks:
 
 1. Generate a timestamped Supabase upgrade migration from the installed baseline. Change the phase constraint and reservation index; replace command/escalation functions without widening grants or dropping records. Verify migration compatibility in an isolated database.
 2. With specific approval, test confirmed coordinator/caregiver accounts plus an outsider in the hosted workspace. Include two-client delivery, reconnect, private evidence, duplicate requests, concurrent assignment, decline and escalation.

@@ -1,6 +1,10 @@
 # Verification record
 
-## Panoramic audio-note correction — September 26, 2026
+## Prevention-focused release — September 26, 2026
+
+Daily notes/audio were subsequently removed at the user's request. The notes sections below are historical, not current features. The current build passes 118 tests, including fresh and upgraded database checks. The hosted supervisor-first migration is applied, with RLS/grants and escalation verified; security advisor returned no findings. See [release details](prevention-release.md).
+
+## Panoramic audio-note correction — September 26, 2026 (historical)
 
 - 115 local tests and the production build pass. Panoramic creates the notes; no staff transcription or mandatory interpretation is required. Staff context remains optional.
 - Structured clarity and parser guards preserve question marks in partly heard notes and replace wholly unclear speech with `[unclear?]`. Tests also cover export and repetition-count rules.

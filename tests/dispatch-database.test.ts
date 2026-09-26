@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 
-test("isolated PostgreSQL: supervision-first response, permissions and escalation", async t => {
+for (const mode of ["fresh", "upgrade"]) test(`isolated PostgreSQL (${mode}): supervision-first response, permissions and escalation`, async t => {
   // No remote connection, environment variables, Auth service or provider requests.
   const db = await PGlite.create();
   try {
@@ -20,7 +20,24 @@ test("isolated PostgreSQL: supervision-first response, permissions and escalatio
     `);
     const schema = readFileSync(new URL("../database/incident-workflow.sql", import.meta.url), "utf8");
     // Hosted Cron scheduling and logical replication are integration checks, not emulated here.
-    await db.exec(schema.split("create extension if not exists pg_cron;")[0]);
+    if (mode === "fresh") await db.exec(schema.split("create extension if not exists pg_cron;")[0]);
+    else {
+      const baseline = readFileSync(new URL("./fixtures/incident-baseline.sql", import.meta.url), "utf8");
+      await db.exec(baseline.split("create extension if not exists pg_cron;")[0]);
+      const owner=crypto.randomUUID(), center=crypto.randomUUID(), record=crypto.randomUUID();
+      await db.query("insert into auth.users values($1,'upgrade@example.invalid',false,now())",[owner]);
+      await db.query("insert into public.care_facilities(id,owner_id,name) values($1,$2,'Preserved center')",[center,owner]);
+      await db.query("insert into public.care_members(facility_id,user_id,display_name,role) values($1,$2,'Preserved coordinator','coordinator')",[center,owner]);
+      await db.query("insert into public.care_incidents(id,facility_id,created_by,room,zone,observation,priority,media_name,phase,resolution) values($1,$2,$3,'A101','Bathroom','{}','unassessed','old-frame.jpg','resolved','Keep this old outcome')",[record,center,owner]);
+      await db.query("insert into public.care_incident_events(incident_id,facility_id,actor_id,action,detail,request_id) values($1,$2,$3,'resolved','Keep this old event',gen_random_uuid())",[record,center,owner]);
+      const before=(await db.query("select to_jsonb(i) saved from public.care_incidents i where id=$1",[record])).rows;
+      const grants=(await db.query("select relacl::text,relrowsecurity from pg_class where oid='public.care_incidents'::regclass")).rows;
+      const migration=readFileSync(new URL("../supabase/migrations/20260926213803_supervision_first_dispatch.sql",import.meta.url),"utf8");
+      await db.exec("begin;\n"+migration+"\ncommit;");
+      assert.deepEqual((await db.query("select to_jsonb(i) saved from public.care_incidents i where id=$1",[record])).rows,before);
+      assert.deepEqual((await db.query("select relacl::text,relrowsecurity from pg_class where oid='public.care_incidents'::regclass")).rows,grants);
+      assert.equal((await db.query<{detail:string}>("select detail from public.care_incident_events where incident_id=$1",[record])).rows[0].detail,"Keep this old event");
+    }
     const ids = Array.from({ length: 5 }, () => crypto.randomUUID());
     for (let n = 0; n < ids.length; n++) await db.query("insert into auth.users values($1,$2,false,now())", [ids[n], `local${n}@example.invalid`]);
     const [coordinator, caregiver, other, outsider, secondCoordinator] = ids;

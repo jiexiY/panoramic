@@ -27,15 +27,15 @@ A local care walkthrough does not transmit its session to Supabase until the use
 - Each update matches both ID and the expected revision. A zero-row update produces a visible conflict and asks the user to reload; it is not silently retried over newer work.
 - Snapshots are size-bounded and capped at 500 events. Per-identity inserts are serialized to enforce a 30-session demo cap.
 - Cloud failures leave the previous confirmed UI state intact and show an error. There is no silent fallback claiming a cloud save succeeded.
-- No HTML from user records is injected. React renders strings as text. CSP restricts connections to the configured Supabase project. Camera and geolocation remain disabled; microphone is limited to the same origin for explicit short recording sessions. Browser permission is still required; recording never starts on page load. Vocal cues are held in tab memory, not cloud storage. See [audio controls and retention](daily-summary.md).
+- No HTML from user records is injected. React renders strings as text. CSP restricts connections to the configured Supabase project. Camera, microphone and geolocation are disabled by Permissions-Policy. Audio capture and daily notes are excluded.
 
 ## Not implemented / not claimed
 
-- Verified caregiver identity, facility membership, role-based team access, invitation workflows, cross-device recovery for guests.
+- Professional credential verification, invitation/acceptance workflows and cross-device recovery for guests. Confirmed Auth identities, facility membership and coordinator/caregiver roles exist for shared incidents; hosted multi-client verification remains pending.
 - Immutable audit logs, clinical-record integrity, formal health-data compliance, or clinical decision support.
-- Server-enforced clinical workflow semantics: the stored record is operator-owned prototype data, and an owner can alter their own snapshots via the API.
+- Clinical validation: shared incident transitions are server-checked operational steps, not clinically validated decisions. Older care-session snapshots remain owner-editable prototype data.
 - CAPTCHA setup, comprehensive bot protection, an automated retention/cleanup schedule, or a clinical incident escalation service.
-- Real alerts to colleagues or emergency services. Buttons record demonstration events only.
+- Push, SMS, calls or emergency-service alerts. Shared incidents support in-app updates and database deadline escalation. Playback sends no real notifications.
 
 Do not load real care data. Enable CAPTCHA/abuse protections before broad public use. Default Supabase sign-up limits and per-identity row caps do not stop a determined actor from creating many identities. Keep the project on its selected plan; no paid upgrade was requested.
 
