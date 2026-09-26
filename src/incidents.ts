@@ -29,7 +29,7 @@ export type SharedIncident = {
   media_name: string;
   frame_time: number | null;
   evidence_path: string | null;
-  phase: "flagged" | "acknowledged" | "arrived" | "resolved";
+  phase: "flagged" | "dispatched" | "acknowledged" | "arrived" | "resolved";
   suggested_to: string | null;
   assigned_to: string | null;
   resolution: string;
@@ -95,6 +95,15 @@ export function memberAvailable(person: TeamMember, now = Date.now()) {
     Date.parse(person.available_until) > now
   );
 }
+export function eligibleResponders(members: TeamMember[], incidents: SharedIncident[], now = Date.now()) {
+  return members.filter(m => memberAvailable(m, now) && !incidents.some(i =>
+    i.assigned_to === m.user_id && ["dispatched", "acknowledged", "arrived"].includes(i.phase)
+  )).sort((a,b) => a.response_order - b.response_order || a.user_id.localeCompare(b.user_id));
+}
+export const phaseLabels: Record<SharedIncident["phase"], string> = {
+  flagged: "Awaiting assignment", dispatched: "Awaiting acceptance", acknowledged: "Arrival pending",
+  arrived: "Caregiver attending", resolved: "Response recorded",
+};
 export function handoffText(
   incident: SharedIncident,
   events: IncidentEvent[],

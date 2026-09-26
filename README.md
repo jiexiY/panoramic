@@ -2,7 +2,7 @@
 
 [Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
-**Development update:** the shared hazard-to-caregiver workflow is implemented locally and its schema is installed in Supabase. It is not yet released to the live frontend. Authenticated database and two-client verification remain pending; see [current implementation and verification status](docs/shared-response-workflow.md). The sections below describe the new development build unless explicitly labeled live.
+**Development update:** Panoramic AI and supervisor-first dispatch are implemented locally, with 105 passing tests. They are **not deployed**. Supabase has the earlier shared-incident baseline; it needs a reviewed upgrade before this frontend can use dispatch. Hosted Auth/two-client delivery and live Gemini output still need verification. See [current status](docs/shared-response-workflow.md) and [AI workflow](docs/panoramic-ai-workflow.md). The sections below describe the development build unless explicitly labeled live.
 
 ## Product entry and home
 
@@ -28,8 +28,8 @@ My grandmother was active and clear-minded. In her residential eldercare center,
 
 1. **Observe:** choose a staged, unoccupied room photo or select a frame from a local MP4/WebM. The browser resizes the frame; nothing is sent to Gemini until an explicit analysis request.
 2. **Flag:** the server requests structured observations, labeled bounding boxes, a short brief, and uncertainty. It validates the response. A cup alone must not be treated as evidence of spilled water.
-3. **Coordinate:** save a candidate hazard to the connected care team. Database logic suggests an available, eligible caregiver using coordinator-entered response order. Other open clients receive updates and recover missed records on reconnect. No available caregiver produces a visible coverage gap.
-4. **Respond:** a signed-in caregiver accepts, confirms arrival, and records an outcome. These are server-checked transitions, not actions attributed to an invented caregiver. Deadline escalation runs in the database even when browsers are closed.
+3. **Coordinate:** send the candidate hazard to supervision. A supervisor reviews the evidence, selects an available eligible responder and explicitly confirms the assignment. The responder is reserved, not assumed to have accepted. No available caregiver produces a visible coverage gap.
+4. **Respond:** the assigned caregiver accepts, confirms arrival, and records an outcome. They can decline a pending request with a reason so supervision can reassign it. These are server-checked transitions. Deadline escalation runs in the database even when browsers are closed.
 5. **Remember:** download a factual handoff generated from the saved observations and event history. No additional AI call is needed.
 
 Unsigned-in analysis remains local. Shared incidents, evidence and response history use Supabase. Phone push, SMS and external emergency notifications are not connected. This is single-frame analysis, not continuous surveillance, trained water detection, or validated fall prevention.
@@ -45,6 +45,10 @@ Open the [spatial view](https://panoramic-app.vercel.app/app/spatial) for four f
 **Open bathroom recording** plays the supplied image-based OpenCV recording. **Play tracking**, **Show still** and **Download** provide direct media controls. Opening it does not populate the shared alert queue, create staff or invent activity. The spatial map and [supervision desk](https://panoramic-app.vercel.app/app/supervision) instead use the same persisted care-team records.
 
 The recording uses a user-supplied Gemini-edited image, human-marked initial regions and actual OpenCV optical flow on synthetic-motion frames. It does not claim automatic water recognition or send staff notifications. See [GIF method](docs/bathroom-tracking-demo.md).
+
+### Panoramic AI
+
+The spatial and supervision sidebar can answer “Why is this room flagged?”, “Who is available?” and “What happened during this response?” using server-retrieved, facility-scoped records. Answers preserve uncertainty and link to their evidence. Assignment suggestions require separate supervisor confirmation; the model cannot dispatch or change records by itself. Google receives selected record text only after explicit non-sensitive-data confirmation. This is retrieval plus reference rules, not a newly trained water detector. See [data flow and limits](docs/panoramic-ai-workflow.md).
 
 ### Care session
 
@@ -62,7 +66,8 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Spatial overview | Three.js | Original interactive cutaway suites and supervision room, with room-level concern colors |
 | Bathroom tracking demonstration | OpenCV | Measure optical flow for human-marked regions on a staged image sequence; generate the downloadable GIF |
 | Scene analysis and brief | Gemini API via a private Vercel function | Read one explicitly submitted staged frame; return validated boxes and observations; live verification pending |
-| Caregiver suggestion | PostgreSQL transactional command | Filter for current availability and eligibility, then rank coordinator-entered response order |
+| Caregiver assignment | PostgreSQL transactional command | Supervisor-confirmed dispatch; reserve eligible available responders; reject conflicting assignments |
+| Panoramic AI | Gemini API + authorized record retrieval | Evidence-linked answers and proposed actions; no model-initiated writes |
 | Scene handoff | Deterministic TypeScript | Export saved observations, uncertainty and attributed response events without inventing a summary |
 | Workflow | Explicit TypeScript transitions | Enforce preparation, refusal, pause, help sequencing, and supported-exit requirements within the prototype |
 | Identity | Supabase Auth | Confirmed email/password accounts for care teams; anonymous identities cannot use shared incidents |
@@ -70,7 +75,7 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Updates and escalation | Supabase Realtime + pg_cron | Notify open clients of saved changes; check response deadlines every 30 seconds |
 | Concurrent editing | PostgreSQL revision trigger + conditional updates | Reject stale-tab overwrites instead of silently losing a newer record |
 | Hosting | Vercel | Serve the frontend and server-only Gemini endpoint; care-session data uses authenticated Supabase requests |
-| Verification | Node test runner + read-only anonymous access checks | 86 passing local tests; authenticated integration tests still pending approval |
+| Verification | Node test runner + isolated PGlite PostgreSQL | 105 passing local tests; hosted multi-client and provider checks remain pending |
 
 The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Voice cues, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
 
@@ -89,7 +94,7 @@ The full development server runs at `http://127.0.0.1:5174` and includes `/api/g
 
 For secure free-tier activation, see [Gemini setup](docs/gemini-setup.md). Never paste the provider key into the browser UI or a `VITE_` variable. The UI's workspace access code is a separate credential, not the Google API key.
 
-Local image review and the older care-session walkthrough work without cloud configuration and are not saved across refreshes. For a new backend, review `database/schema.sql`, then the additive `database/incident-workflow.sql`. The existing project already has both; do not apply them again blindly. Keep RLS enabled. The frontend uses only a publishable key—never a service-role or secret key.
+Local image review and the older care-session walkthrough work without cloud configuration and are not saved across refreshes. For a new backend, review `database/schema.sql`, then the fresh-install `database/incident-workflow.sql`. The existing hosted project has an older baseline, so it requires a separately reviewed upgrade migration; do not rerun the fresh-install files or deploy this frontend first. Keep RLS enabled. The frontend uses only a publishable key—never a service-role or secret key.
 
 Shared incident access requires confirmed email/password accounts. The development sign-in form includes account creation; email delivery and confirmation redirects still need end-to-end verification. Configure the Supabase Auth URL allowlist for the deployment before onboarding. Guest sign-in remains disabled and is not a substitute for staff membership.
 

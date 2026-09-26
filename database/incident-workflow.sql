@@ -1,4 +1,6 @@
--- Panoramic shared response schema. Apply after schema.sql.
+-- Fresh-install Panoramic shared response schema. Apply after schema.sql.
+-- The hosted project has an older baseline. This file is NOT an upgrade migration.
+-- Do not rerun against existing tables; prepare a reviewed ALTER/function migration first.
 -- Writes are transactional commands; clients cannot alter audit history directly.
 create schema if not exists panoramic_private;
 revoke all on schema panoramic_private from public, anon;
@@ -34,7 +36,7 @@ create table public.care_incidents (
   media_name text not null check (length(media_name) between 1 and 150),
   frame_time numeric check (frame_time >= 0),
   evidence_path text,
-  phase text not null default 'flagged' check (phase in ('flagged','acknowledged','arrived','resolved')),
+  phase text not null default 'flagged' check (phase in ('flagged','dispatched','acknowledged','arrived','resolved')),
   suggested_to uuid,
   assigned_to uuid,
   resolution text not null default '',
@@ -51,8 +53,8 @@ create index care_incidents_creator on public.care_incidents(created_by);
 create index care_incidents_suggested on public.care_incidents(facility_id,suggested_to);
 create index care_incidents_assigned on public.care_incidents(facility_id,assigned_to);
 create index care_incidents_due on public.care_incidents(due_at) where phase <> 'resolved' and escalated_at is null;
--- A caregiver cannot accept two open responses, even across concurrent requests.
-create unique index care_one_response on public.care_incidents(assigned_to) where phase in ('acknowledged','arrived');
+-- A caregiver cannot be reserved for two open responses, even across concurrent requests.
+create unique index care_one_response on public.care_incidents(assigned_to) where phase in ('dispatched','acknowledged','arrived');
 create table public.care_incident_events (
   id uuid primary key default gen_random_uuid(),
   incident_id uuid not null references public.care_incidents(id),
@@ -119,7 +121,7 @@ begin
     return jsonb_build_object('user_id',target);
   elsif action in ('availability','heartbeat') then
     if action='availability' then
-      if coalesce((payload->>'available')::boolean,false) and (not member.qualified or exists(select 1 from public.care_incidents where assigned_to=actor and phase in ('acknowledged','arrived'))) then raise exception 'You are not eligible or already handling a response.'; end if;
+      if coalesce((payload->>'available')::boolean,false) and (not member.qualified or exists(select 1 from public.care_incidents where assigned_to=actor and phase in ('dispatched','acknowledged','arrived'))) then raise exception 'You are not eligible or already handling a response.'; end if;
       update public.care_members set available=coalesce((payload->>'available')::boolean,false),available_until=now()+interval '90 seconds' where facility_id=f and user_id=actor;
     else
       update public.care_members set available_until=now()+interval '90 seconds' where facility_id=f and user_id=actor and available;
@@ -160,11 +162,11 @@ begin
     elsif payload->>'priority' is distinct from 'unassessed' then raise exception 'Confirm a route before assigning route priority.';
     end if;
     select user_id into candidate from public.care_members m where m.facility_id=f and m.available and m.qualified and m.available_until>now()
-      and not exists(select 1 from public.care_incidents i where (i.assigned_to=m.user_id and i.phase in ('acknowledged','arrived')) or (i.suggested_to=m.user_id and i.phase='flagged' and i.escalated_at is null)) order by response_order,user_id limit 1;
+      and not exists(select 1 from public.care_incidents i where i.assigned_to=m.user_id and i.phase in ('dispatched','acknowledged','arrived')) order by response_order,user_id limit 1;
     insert into public.care_incidents(id,facility_id,created_by,room,zone,observation,route,priority,media_name,frame_time,suggested_to)
       values(created,f,actor,payload->>'room',payload->>'zone',payload->'observation',payload->'route',payload->>'priority',payload->>'media_name',(payload->>'frame_time')::numeric,candidate) returning * into incident;
     insert into public.care_incident_events(incident_id,facility_id,actor_id,action,detail,request_id)
-      values(created,f,actor,'flagged',case when candidate is null then 'Observation saved. Coverage gap: no available, eligible caregiver.' else 'Observation saved. Caregiver response requested.' end,created);
+      values(created,f,actor,'flagged','Concern added to the supervision queue. Assignment pending.',created);
     return to_jsonb(incident);
   end if;
   select * into incident from public.care_incidents where id=(payload->>'id')::uuid and facility_id=f for update;
@@ -181,9 +183,23 @@ begin
     if incident.created_by<>actor or incident.evidence_path is not null or payload->>'path' <> f::text||'/'||actor::text||'/'||incident.id::text||'.jpg' or not exists(select 1 from storage.objects where bucket_id='care-evidence' and name=payload->>'path') then raise exception 'Evidence is not available.'; end if;
     update public.care_incidents set evidence_path=payload->>'path' where id=incident.id;
     description := 'Private reference frame attached.';
+  elsif action='dispatch' then
+    if member.role<>'coordinator' then raise exception 'Only the coordinator can assign a response.' using errcode='42501'; end if;
+    if incident.phase not in ('flagged','dispatched') then raise exception 'An accepted response cannot be reassigned here.'; end if;
+    target := (payload->>'caregiver_id')::uuid;
+    select display_name into description from public.care_members where facility_id=f and user_id=target and qualified and available and available_until>now() for update;
+    if not found then raise exception 'This caregiver is no longer available or eligible. Refresh the team.'; end if;
+    if exists(select 1 from public.care_incidents where assigned_to=target and phase in ('dispatched','acknowledged','arrived')) then raise exception 'This caregiver already has an open response.'; end if;
+    update public.care_incidents set assigned_to=target,phase='dispatched',due_at=now()+interval '2 minutes',escalated_at=null where id=incident.id;
+    update public.care_members set available=false where facility_id=f and user_id=target;
+    description := member.display_name||' assigned the response to '||description||'. Acceptance pending.';
+  elsif action='decline' then
+    if incident.phase<>'dispatched' or incident.assigned_to is distinct from actor or length(trim(coalesce(payload->>'note',''))) not between 8 and 1000 then raise exception 'Only the requested caregiver can decline, with a reason (8–1000 characters).'; end if;
+    update public.care_incidents set phase='flagged',assigned_to=null,suggested_to=null,escalated_at=now(),due_at=now() where id=incident.id;
+    description := member.display_name||' could not respond: '||trim(payload->>'note')||'. Returned to supervision for reassignment.';
   elsif action='acknowledge' then
-    if incident.phase<>'flagged' or not member.qualified or not member.available or member.available_until<=now() then raise exception 'Only an available, eligible caregiver can accept an open response.'; end if;
-    if exists(select 1 from public.care_incidents where assigned_to=actor and phase in ('acknowledged','arrived')) then raise exception 'Finish your current response before accepting another.'; end if;
+    if incident.phase<>'dispatched' or incident.assigned_to is distinct from actor or not member.qualified then raise exception 'Only the assigned, eligible caregiver can accept this response.'; end if;
+    if exists(select 1 from public.care_incidents where assigned_to=actor and id<>incident.id and phase in ('dispatched','acknowledged','arrived')) then raise exception 'Finish your current response before accepting another.'; end if;
     update public.care_incidents set assigned_to=actor,phase='acknowledged',due_at=now()+interval '3 minutes',escalated_at=null where id=incident.id;
     update public.care_members set available=false where facility_id=f and user_id=actor;
     description := member.display_name||' accepted the response. Arrival pending.';
@@ -220,7 +236,7 @@ declare r public.care_incidents; n integer:=0;
 begin
   for r in select * from public.care_incidents where phase<>'resolved' and escalated_at is null and due_at<=now() order by due_at limit 100 for update skip locked loop
     update public.care_incidents set escalated_at=now(),updated_at=now(),version=version+1 where id=r.id;
-    insert into public.care_incident_events(incident_id,facility_id,action,detail,request_id) values(r.id,r.facility_id,'escalated',case r.phase when 'flagged' then 'No acknowledgment within 2 minutes. Coordinator attention required.' when 'acknowledged' then 'Arrival not confirmed within 3 minutes. Coordinator attention required.' else 'Response remains open after 10 minutes. Coordinator follow-up required.' end,gen_random_uuid());
+    insert into public.care_incident_events(incident_id,facility_id,action,detail,request_id) values(r.id,r.facility_id,'escalated',case r.phase when 'flagged' then 'No assignment within 2 minutes. Coordinator attention required.' when 'dispatched' then 'No acknowledgment within 2 minutes. Coordinator attention required.' when 'acknowledged' then 'Arrival not confirmed within 3 minutes. Coordinator attention required.' else 'Response remains open after 10 minutes. Coordinator follow-up required.' end,gen_random_uuid());
     n:=n+1;
   end loop;
   return n;

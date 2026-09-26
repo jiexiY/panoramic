@@ -1,4 +1,7 @@
--- Disposable identities and records exist only inside this rolled-back transaction.
+-- LEGACY BASELINE TEST: predates supervisor-first dispatch. Not valid for the current local schema.
+-- Retained for the previously installed hosted baseline; DO NOT execute without specific approval.
+-- This transaction inserts into live auth.users; rollback does not remove every possible side effect.
+-- Current isolated SQL behavior tests: tests/dispatch-database.test.ts (npm test).
 begin;
 create temporary table qa_ids(label text primary key,id uuid not null default gen_random_uuid());
 insert into qa_ids(label) values('coordinator'),('caregiver'),('outsider'),('incident'),('claim'),('arrival'),('resolve');

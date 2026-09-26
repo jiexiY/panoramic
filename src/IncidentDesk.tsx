@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, Download, Image as ImageIcon } from "lucide-react";
 import type { CareTeam } from "./useCareTeam";
-import { handoffText, memberAvailable, type SharedIncident } from "./incidents";
+import { handoffText, phaseLabels, type SharedIncident } from "./incidents";
+import DispatchResponse from "./DispatchResponse";
 import { cloud } from "./cloud";
 import { routeLevels } from "./routeRisk";
 import RouteOverlay from "./RouteOverlay";
@@ -46,21 +47,17 @@ export default function IncidentDesk({
     };
   }, [incident.id, incident.evidence_path, team.userId]);
   const assigned = team.members.find((m) => m.user_id === incident.assigned_to);
-  const suggested = team.members.find(
-    (m) => m.user_id === incident.suggested_to,
-  );
   const mine = incident.assigned_to === team.userId;
   const canAccept =
-    !!team.me &&
-    memberAvailable(team.me, team.clock) &&
+    !!team.me?.qualified && mine && incident.phase === "dispatched" &&
     !team.incidents.some(
       (i) =>
         i.assigned_to === team.userId &&
-        ["acknowledged", "arrived"].includes(i.phase),
+        i.id !== incident.id && ["dispatched", "acknowledged", "arrived"].includes(i.phase),
     );
   const events = team.events.filter((e) => e.incident_id === incident.id);
   const busy = team.busy || team.stale;
-  const act = (action: "acknowledge" | "arrive" | "resolve") => {
+  const act = (action: "acknowledge" | "arrive" | "resolve" | "decline") => {
     void team.act(incident, action, note).catch(() => {});
   };
   const download = () => {
@@ -89,9 +86,7 @@ export default function IncidentDesk({
         >
           {incident.escalated_at
             ? "ESCALATED"
-            : incident.phase === "flagged"
-              ? "AWAITING RESPONSE"
-              : incident.phase.toUpperCase()}
+            : phaseLabels[incident.phase].toUpperCase()}
         </span>
       </div>
       <h2>
@@ -113,7 +108,8 @@ export default function IncidentDesk({
         <p className="incident-escalation" role="alert">
           Coordinator attention required.{" "}
           {incident.phase === "flagged"
-            ? "No caregiver has accepted."
+            ? "Assignment is needed."
+            : incident.phase === "dispatched" ? "The assigned caregiver has not accepted."
             : incident.phase === "acknowledged"
               ? "Arrival has not been confirmed."
               : "The response remains open."}
@@ -179,25 +175,22 @@ export default function IncidentDesk({
           {new Date(incident.observation.analyzedAt).toLocaleString()}
         </small>
       </details>
-      {incident.phase === "flagged" && (
+      <ol className="response-progress" aria-label="Response progress">
+        {(["flagged", "dispatched", "acknowledged", "arrived", "resolved"] as const).map((phase, index) => <li key={phase} data-complete={index <= ["flagged", "dispatched", "acknowledged", "arrived", "resolved"].indexOf(incident.phase)} aria-current={phase === incident.phase ? "step" : undefined}>{["Flagged", "Assigned", "Accepted", "Arrived", "Resolved"][index]}</li>)}
+      </ol>
+      <DispatchResponse team={team} incident={incident} />
+      {incident.phase === "flagged" && team.me?.role !== "coordinator" && <p>Waiting for the supervision station to assign a responder.</p>}
+      {incident.phase === "dispatched" && (
         <div className="incident-action">
-          <p>
-            {suggested
-              ? `Requested: ${suggested.display_name}`
-              : "Coverage gap · no available, eligible caregiver"}
-          </p>
-          <button
+          <p>Assigned to {assigned?.display_name ?? "caregiver"} · acceptance pending</p>
+          {mine && <><button
             className="primary full"
             disabled={busy || !canAccept}
             onClick={() => act("acknowledge")}
           >
             Accept response <ArrowRight size={16} />
           </button>
-          {!canAccept && (
-            <small>
-              Mark yourself available after eligibility is confirmed.
-            </small>
-          )}
+          <details><summary>Unable to respond?</summary><label className="team-field">Reason<textarea value={note} onChange={e => setNote(e.target.value)} maxLength={1000} placeholder="Tell the supervision station why you cannot attend." /></label><button className="secondary full" disabled={busy || note.trim().length < 8} onClick={() => act("decline")}>Return to supervision</button></details></>}
         </div>
       )}
       {incident.phase === "acknowledged" && (

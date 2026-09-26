@@ -1,5 +1,12 @@
 # Verification record
 
+## Panoramic AI and supervision-first dispatch — September 26, 2026
+
+- Local only: 105 tests pass and the TypeScript/Vite production build passes. New coverage executes the real workflow SQL in isolated PGlite PostgreSQL and mocks authorized Supabase/Gemini API traffic. No cloud records or model requests were created.
+- Chrome verified the actual empty AI sidebar, care-team toggle, explicit supervisor confirmation, recipient acceptance, arrival and written resolution. Response checks used a separately labeled local fixture, not live accounts or real incidents. A 390 px phone viewport had no horizontal overflow.
+- Hosted Supabase remains on the earlier workflow baseline. Dispatch needs a reviewed upgrade migration; do not deploy the new frontend first. Authenticated multi-client delivery, true concurrency, private-image transport and successful live AI output remain release gates.
+- [Current status](shared-response-workflow.md) and [AI data flow](panoramic-ai-workflow.md) distinguish new local checks from earlier production observations.
+
 ## Entrance title motion — September 26, 2026
 
 - Added a one-time 1.4-second top-to-bottom soft-mask reveal to the Panoramic entrance heading, with opacity fade and an 18-pixel downward settle. The button and workspace remain stationary. No dependencies, layout changes, or provider requests were added.

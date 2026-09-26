@@ -13,7 +13,8 @@ import {
 import { suiteIds, type SpaceId } from "./facility";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import type { CareTeam } from "./useCareTeam";
-import { memberAvailable } from "./incidents";
+import { eligibleResponders, phaseLabels } from "./incidents";
+import PanoramicAssistant from "./PanoramicAssistant";
 import CareTeamPanel from "./CareTeamPanel";
 import IncidentDesk from "./IncidentDesk";
 import SuitePlan from "./SuitePlan";
@@ -43,8 +44,10 @@ export default function FacilityWorkspace({
   const [filter, setFilter] = useState<"all" | "attention">("all");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [sidebar, setSidebar] = useState<"team" | "ai">("ai");
   const recordingRef = useRef<HTMLElement>(null);
   const incidentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { setSelectedId(""); }, [team.facilityId]);
   const open = team.incidents.filter((i) => i.phase !== "resolved");
   const current =
     team.incidents.find((i) => i.id === selectedId) ??
@@ -121,6 +124,7 @@ export default function FacilityWorkspace({
           Connection needs attention. The information below may be out of date.
         </div>
       )}
+      {team.incidents.filter(i => i.phase === "dispatched" && i.assigned_to === team.userId).map(i => <div key={i.id} className="assigned-banner" role="status"><div><b>Response requested · {i.room}</b><span>{i.zone} · waiting for your acceptance</span></div><button className="primary" onClick={() => showIncident(i.id, i.room)}>Review request <ArrowRight size={15} /></button></div>)}
       <div className="facility-grid">
         <div className="facility-main">
           <section className="facility-map-panel">
@@ -184,11 +188,7 @@ export default function FacilityWorkspace({
                       <small>
                         {i.escalated_at
                           ? "Escalated · coordinator attention"
-                          : i.phase === "flagged"
-                            ? "Awaiting caregiver"
-                            : i.phase === "acknowledged"
-                              ? "Arrival pending"
-                              : "Caregiver attending"}
+                          : phaseLabels[i.phase]}
                       </small>
                     </span>
                     <ArrowRight size={16} />
@@ -252,7 +252,7 @@ export default function FacilityWorkspace({
               <small>Available staff</small>
               <b>
                 {
-                  team.members.filter((m) => memberAvailable(m, team.clock))
+                  eligibleResponders(team.members, team.incidents, team.clock)
                     .length
                 }
                 <em> / {team.members.length}</em>
@@ -263,7 +263,9 @@ export default function FacilityWorkspace({
               <b>{open.length}</b>
             </div>
           </section>
-          <CareTeamPanel team={team} onSignIn={onSignIn} />
+          <div className="facility-assistant-tabs"><button aria-pressed={sidebar === "ai"} onClick={() => setSidebar("ai")}>Panoramic AI</button><button aria-pressed={sidebar === "team"} onClick={() => setSidebar("team")}>Care team</button></div>
+          <div hidden={sidebar !== "ai"}><PanoramicAssistant key={`${team.userId}:${team.facilityId}`} team={team} selectedId={selectedId} onSelect={showIncident} onSignIn={onSignIn} /></div>
+          <div hidden={sidebar !== "team"}><CareTeamPanel team={team} onSignIn={onSignIn} /></div>
           <section className="facility-card room-directory">
             <div className="facility-card-heading">
               <h2>Rooms</h2>

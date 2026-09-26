@@ -28,6 +28,17 @@ export function useCareTeam(userId: string | null) {
   identity.current = userId;
   const facility = facilities.find((f) => f.id === facilityId) ?? null;
   const me = members.find((m) => m.user_id === userId) ?? null;
+  const selectFacility = (id: string) => {
+    if (id === facilityId) return;
+    revision.current++;
+    setMembers([]);
+    setIncidents([]);
+    setEvents([]);
+    setSyncedAt(null);
+    setConnected(false);
+    setLoading(true);
+    setFacilityId(id);
+  };
 
   const refresh = useCallback(async () => {
     if (!cloud || !userId) return;
@@ -273,7 +284,7 @@ export function useCareTeam(userId: string | null) {
   };
   const act = (
     incident: SharedIncident,
-    action: "acknowledge" | "arrive" | "resolve",
+    action: "acknowledge" | "arrive" | "resolve" | "decline",
     note = "",
   ) =>
     command(action, {
@@ -288,7 +299,7 @@ export function useCareTeam(userId: string | null) {
     facilities,
     facility,
     facilityId,
-    setFacilityId,
+    setFacilityId: selectFacility,
     incidents,
     members,
     events,
