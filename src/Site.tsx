@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, HeartHandshake } from "lucide-react";
+import { ArrowLeft, ArrowRight, HeartHandshake, Webcam } from "lucide-react";
 import SiteLink, { type Navigate } from "./SiteLink";
 import { resolveRoute, routeTitle, type WorkspacePage } from "./routes";
 
@@ -11,7 +11,7 @@ function ProjectLanding({ navigate }: { navigate: Navigate }) {
     <a className="skip" href="#entry-main">Skip to workspace entry</a>
     <main id="entry-main" className="welcome-main">
       <div className="welcome-emblem" aria-hidden="true"><HeartHandshake size={52} strokeWidth={1.3} /></div>
-      <h1>Panoramic</h1>
+      <h1 aria-label="Panoramic"><span className="entry-wordmark" aria-hidden="true">Pan<Webcam className="entry-wordmark-icon" strokeWidth={2.5} />ramic</span></h1>
       <SiteLink to="/app" navigate={navigate} className="site-button entry-button">Open care workspace <ArrowRight size={18} /></SiteLink>
     </main>
   </div>;

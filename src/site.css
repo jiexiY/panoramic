@@ -22,6 +22,10 @@
   to { opacity: 1; transform: none; -webkit-mask-position: 0 0; mask-position: 0 0; }
 }
 .entry-button { margin-top: 32px; }
+.welcome-site .entry-button, .welcome-site .entry-button:hover { background: #fff; border-color: #8fa58f; color: #3f5e4b; }
+.welcome-site .entry-button:focus-visible { outline: 3px solid #64846d; outline-offset: 4px; }
+.entry-wordmark { white-space: nowrap; }
+.entry-wordmark-icon { display: inline-block; width: .68em; height: .68em; margin: 0 .015em; vertical-align: -.055em; }
 .workspace-loading { min-height: 70vh; padding-top: 100px; text-align: center; color: #546d6f; }
 .app-shell .page-heading h1 { font-family: inherit; font-size: clamp(28px, 2.7vw, 36px); font-weight: 650; line-height: 1.2; letter-spacing: -1px; }
 .app-shell .rail .brand { margin-bottom: 42px; }

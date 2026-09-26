@@ -63,12 +63,21 @@ test("runtime entry and workspace no longer contain marketing or marketing links
 
 test("entrance places its icon above the product name without restoring surrounding copy", () => {
   const entry = readFileSync(new URL("../src/Site.tsx", import.meta.url), "utf8");
-  assert.match(entry, /<h1>Panoramic<\/h1>/);
-  assert.match(entry, /<div className="welcome-emblem" aria-hidden="true"><HeartHandshake[^>]+\/><\/div>\s*<h1>Panoramic<\/h1>/);
+  assert.match(entry, /<h1 aria-label="Panoramic">/);
+  assert.match(entry, /<div className="welcome-emblem" aria-hidden="true"><HeartHandshake[^>]+\/><\/div>\s*<h1 aria-label="Panoramic">/);
   assert.equal((entry.match(/<HeartHandshake\b/g) ?? []).length, 1);
   assert.doesNotMatch(entry, /Welcome to|entry-card|welcome-header|welcome-footer|welcome-privacy/);
   const css = readFileSync(new URL("../src/site.css", import.meta.url), "utf8");
   assert.match(css, /\.welcome-main h1\s*\{[^}]*font-weight: 800/);
+});
+
+test("entrance uses the selected webcam as the o and a white sage-outline button", () => {
+  const entry = readFileSync(new URL("../src/Site.tsx", import.meta.url), "utf8");
+  assert.match(entry, /<h1 aria-label="Panoramic"><span className="entry-wordmark" aria-hidden="true">Pan<Webcam[^>]*\/>ramic<\/span><\/h1>/);
+  assert.equal((entry.match(/<Webcam\b/g) ?? []).length, 1);
+  const css = readFileSync(new URL("../src/site.css", import.meta.url), "utf8");
+  assert.match(css, /\.welcome-site \.entry-button, \.welcome-site \.entry-button:hover\s*\{[^}]*background: #fff;[^}]*border-color: #8fa58f;[^}]*color: #3f5e4b;/);
+  assert.match(css, /\.entry-wordmark-icon\s*\{[^}]*width: \.68em;[^}]*height: \.68em;/);
 });
 
 test("workspace starts empty and does not create a record on an empty account sign-in", () => {
