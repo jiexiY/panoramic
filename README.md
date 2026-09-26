@@ -40,23 +40,23 @@ Unsigned-in analysis remains local. Shared incidents, evidence and response hist
 
 ### Bathroom response
 
-Choose **Run bathroom workflow** in Scene review or Supervision. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
+Choose **Run bathroom workflow** in Scene review to open the response in Resident Floor. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
 
 Daily notes are not part of this release. The previous implementation remains recoverable in Git history.
 
-### Resident Floor and supervision
+### Resident Floor
 
 Select a suite from the room list or the monitoring selector. Each suite has its own route-concern scale; A101's **Bathroom monitoring** contains **Open bathroom recording**. **Observation: On** (green) identifies active recording playback, with a Playback label; **Off** (red) applies when it is stopped, unavailable or closed. Saved concerns and database connectivity do not turn observation on.
 
 Open [Resident Floor](https://panoramic-app.vercel.app/app/spatial) for four furnished sample suites and a dedicated caregiver/nurse supervision room. Rooms preserve the supplied reference plan's bedroom, kitchenette, closet, bath and entry relationships. The original 3D model supports selection, rotation, zoom, top-down view and room focus.
 
-**Open bathroom recording** plays the supplied image-based OpenCV recording. **Play tracking**, **Show still** and **Download** provide direct media controls. Opening it does not populate the shared alert queue, create staff or invent activity. The spatial map and [supervision desk](https://panoramic-app.vercel.app/app/supervision) instead use the same persisted care-team records.
+**Open bathroom recording** plays the supplied image-based OpenCV recording. **Play tracking**, **Show still** and **Download** provide direct media controls. Opening it does not populate the shared alert queue, create staff or invent activity. The floor map, concern queue and response tools use the same persisted care-team records. Supervision is no longer a separate category; old links redirect to Resident Floor.
 
 The recording uses a user-supplied Gemini-edited image, human-marked initial regions and actual OpenCV optical flow on synthetic-motion frames. It does not claim automatic water recognition or send staff notifications. See [GIF method](docs/bathroom-tracking-demo.md).
 
 ### Panoramic AI
 
-The spatial and supervision sidebar can answer “Why is this room flagged?”, “Who is available?” and “What happened during this response?” using server-retrieved, facility-scoped records. Answers preserve uncertainty and link to their evidence. Assignment suggestions require separate supervisor confirmation; the model cannot dispatch or change records by itself. Google receives selected record text only after explicit non-sensitive-data confirmation. This is retrieval plus reference rules, not a newly trained water detector. See [data flow and limits](docs/panoramic-ai-workflow.md).
+The Resident Floor sidebar can answer “Why is this room flagged?”, “Who is available?” and “What happened during this response?” using server-retrieved, facility-scoped records. Answers preserve uncertainty and link to their evidence. Assignment suggestions require separate supervisor confirmation; the model cannot dispatch or change records by itself. Google receives selected record text only after explicit non-sensitive-data confirmation. This is retrieval plus reference rules, not a newly trained water detector. See [data flow and limits](docs/panoramic-ai-workflow.md).
 
 ### Care session
 

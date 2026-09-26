@@ -18,14 +18,12 @@ import "./room-monitoring.css";
 
 const FacilityMap = lazy(() => import("./FacilityMap"));
 type Props = {
-  mode: "spatial" | "supervision";
   active: boolean;
   workflowScanning: boolean;
   team: CareTeam;
   onSignIn: () => void;
 };
 export default function FacilityWorkspace({
-  mode,
   active,
   workflowScanning,
   team,
@@ -52,9 +50,6 @@ export default function FacilityWorkspace({
     )
       priorities[i.room] = i.priority;
   }
-  useEffect(() => {
-    if (mode === "supervision" && active) setSelected("supervision");
-  }, [mode, active]);
   const monitoringRoom = selected && selected !== "supervision" ? selected : "A101";
   const selectRoom = (room: SpaceId) => {
     setSelected(room);
@@ -84,7 +79,7 @@ export default function FacilityWorkspace({
           <p className="eyebrow">
             {team.facility?.name.toUpperCase() ?? "RESIDENTIAL CARE"} / FLOOR 01
           </p>
-          <h1>{mode === "spatial" ? "Resident Floor" : "Supervision"}</h1>
+          <h1>Resident Floor</h1>
         </div>
       </section>
       {team.facility && team.stale && (

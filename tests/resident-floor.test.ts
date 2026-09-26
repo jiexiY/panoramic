@@ -7,8 +7,8 @@ const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.m
 test("Resident Floor omits the workflow launcher but retains A101 recording controls", () => {
   const launcher = source("Workspace.tsx").split("\n").find(line => line.includes('className="playback-start"'));
   assert.ok(launcher);
-  assert.ok(launcher.includes('["monitor","supervision"].includes(page)'));
-  assert.ok(!launcher.includes('"spatial"'));
+  assert.ok(launcher.includes('page === "monitor" && <div className="playback-start"'));
+  assert.ok(launcher.includes('setPage("spatial")'));
   assert.match(source("RoomMonitoring.tsx"), /Open bathroom recording/);
 });
 
@@ -24,8 +24,9 @@ test("sidebar uses text labels and a selected vertical marker without icons or a
   const sidebar = source("Workspace.tsx").match(/<aside className="rail">([\s\S]*?)<\/aside>/)?.[1];
   assert.ok(sidebar);
   assert.doesNotMatch(sidebar, /<(?:Sparkles|Map|Monitor|HandHeart|History|ArrowLeft)\b/);
-  for (const label of ["Scene review", "Resident Floor", "Supervision", "Care session", "Session history"]) assert.ok(sidebar.includes(label));
-  assert.equal((sidebar.match(/aria-current=/g) ?? []).length, 5);
+  for (const label of ["Scene review", "Resident Floor", "Care session", "Session history"]) assert.ok(sidebar.includes(label));
+  assert.doesNotMatch(sidebar, /Supervision/);
+  assert.equal((sidebar.match(/aria-current=/g) ?? []).length, 4);
   const css = source("style.css");
   assert.match(css, /\.rail nav button::before\s*\{[^}]*width: 2px;[^}]*height: 18px;[^}]*opacity: 0;/);
   assert.match(css, /\.rail nav button\[aria-current\]::before\s*\{\s*opacity: 1;/);
@@ -40,7 +41,8 @@ test("Resident Floor replaces spatial labels without duplicate supervision navig
   }
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /Supervision desk|supervision-row|Caregivers & nurses|onMode/);
-  assert.match(source("Workspace.tsx"), /setPage\("supervision"\)/);
+  assert.doesNotMatch(source("Workspace.tsx"), /setPage\("supervision"\)|page === "supervision"/);
+  assert.match(facility, /<IncidentDesk/);
 });
 
 test("recording controls and route concern belong to room monitoring, not the floor header or sidebar", () => {

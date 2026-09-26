@@ -30,6 +30,12 @@ export default function Site() {
     setLocation(locationState());
   }, []);
   useEffect(() => {
+    if (location.pathname.replace(/\/+$/, "") === "/app/supervision") {
+      window.history.replaceState(null, "", "/app/spatial" + window.location.search + window.location.hash);
+      setLocation(locationState());
+    }
+  }, [location.pathname]);
+  useEffect(() => {
     const update = () => setLocation(locationState());
     window.addEventListener("popstate", update);
     window.addEventListener("hashchange", update);

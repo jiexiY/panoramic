@@ -3,12 +3,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "redirects": [
-    { "source": "/welcome", "destination": "/", "permanent": false }
+    { "source": "/welcome", "destination": "/", "permanent": false },
+    { "source": "/app/supervision", "destination": "/app/spatial", "permanent": false }
   ],
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/spatial", "destination": "/index.html" },
-    { "source": "/app/supervision", "destination": "/index.html" },
     { "source": "/app/session", "destination": "/index.html" },
     { "source": "/app/history", "destination": "/index.html" }
   ],

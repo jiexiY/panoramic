@@ -33,9 +33,23 @@ test("production rewrites cover direct app entry without rewriting the API", () 
   assert.ok(config.rewrites.every((item: {destination: string}) => item.destination === "/index.html"));
 });
 
-test("legacy welcome links redirect to the project entrance", () => {
+test("legacy welcome and supervision links redirect to their current surfaces", () => {
   const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
-  assert.deepEqual(config.redirects, [{ source: "/welcome", destination: "/", permanent: false }]);
+  assert.deepEqual(config.redirects, [
+    { source: "/welcome", destination: "/", permanent: false },
+    { source: "/app/supervision", destination: "/app/spatial", permanent: false },
+  ]);
+});
+
+test("old supervision routes open Resident Floor and are not separate workspace categories", () => {
+  for (const path of ["/app/supervision", "/app/supervision/"]) {
+    assert.deepEqual(resolveRoute(path), { surface: "workspace", page: "spatial" });
+    assert.equal(routeTitle(resolveRoute(path)), "Resident Floor — Panoramic");
+  }
+  assert.deepEqual(Object.keys(workspacePaths), ["monitor", "spatial", "session", "history"]);
+  const site = readFileSync(new URL("../src/Site.tsx", import.meta.url), "utf8");
+  assert.match(site, /window.history.replaceState/);
+  assert.ok(site.includes('"/app/spatial" + window.location.search + window.location.hash'));
 });
 
 test("runtime entry and workspace no longer contain marketing or marketing links", () => {
