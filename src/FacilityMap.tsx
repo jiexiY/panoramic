@@ -23,7 +23,7 @@ export default function FacilityMap(props: Props) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor("#f6f5f1");
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.domElement.setAttribute("aria-label", "Interactive care-center floor. Select rooms using the room list, or drag to rotate and scroll to zoom.");
     renderer.domElement.setAttribute("role", "img");
     container.appendChild(renderer.domElement);
@@ -142,7 +142,7 @@ export default function FacilityMap(props: Props) {
     box(station, 4.7, .12, 3.5, .51, .85, 1.4, "#a6b7b2", "supervision");
     plant(station, .68, .56); plant(station, 4.80, 7.25);
     label(station, "SUPERVISION", 2.76, 4.03, 3.6, "#365c68");
-    label(station, "Caregivers + nurses", 2.76, 4.7, 3.1, "#526d74");
+    label(station, "Caregivers + nurses", 2.76, 5.08, 3.1, "#526d74");
     label(scene, "CENTRAL CORRIDOR", 5.8, .03, 3.5, "#7a7467");
     const linePoints = [new THREE.Vector3(1.70, .15, 7.45), new THREE.Vector3(1.70, .15, 6.2), new THREE.Vector3(2.05, .15, 6.2), new THREE.Vector3(3.45, .15, 6.2)];
     const walkingLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(linePoints), new THREE.LineDashedMaterial({ color: "#652b26", dashSize: .17, gapSize: .12 }));
