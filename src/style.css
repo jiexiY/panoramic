@@ -183,6 +183,7 @@ small {
   gap: 7px;
 }
 .rail nav button {
+  position: relative;
   background: none;
   border: none;
   display: flex;
@@ -190,17 +191,38 @@ small {
   gap: 11px;
   text-align: left;
   border-radius: 7px;
-  padding: 13px 12px;
+  padding: 13px 12px 13px 25px;
   color: #4e635e;
   font-size: 13px;
   font-weight: 550;
 }
+.rail nav button::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0;
+}
 .rail nav button[aria-current] {
-  background: #d4e1e5;
+  background: transparent;
   color: #294f62;
+  font-weight: 650;
+}
+.rail nav button[aria-current]::before {
+  opacity: 1;
 }
 .rail nav button:hover {
-  background: #dbe5dc;
+  background: transparent;
+  color: #294f62;
+}
+.rail nav button:focus-visible {
+  outline: 2px solid #587966;
+  outline-offset: -2px;
 }
 .nav-dot {
   margin-left: auto;

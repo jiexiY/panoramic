@@ -4,6 +4,19 @@ import { readFileSync } from "node:fs";
 
 const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
+test("sidebar uses text labels and a selected vertical marker without icons or a filled highlight", () => {
+  const sidebar = source("Workspace.tsx").match(/<aside className="rail">([\s\S]*?)<\/aside>/)?.[1];
+  assert.ok(sidebar);
+  assert.doesNotMatch(sidebar, /<(?:Sparkles|Map|Monitor|HandHeart|History|ArrowLeft)\b/);
+  for (const label of ["Scene review", "Resident Floor", "Supervision", "Care session", "Session history"]) assert.ok(sidebar.includes(label));
+  assert.equal((sidebar.match(/aria-current=/g) ?? []).length, 5);
+  const css = source("style.css");
+  assert.match(css, /\.rail nav button::before\s*\{[^}]*width: 2px;[^}]*height: 18px;[^}]*opacity: 0;/);
+  assert.match(css, /\.rail nav button\[aria-current\]::before\s*\{\s*opacity: 1;/);
+  assert.match(css, /\.rail nav button\[aria-current\]\s*\{\s*background: transparent;/);
+  assert.match(source("site.css"), /\.app-shell \.rail nav button\s*\{[^}]*flex: 0 0 auto;[^}]*font-size: 12px;/);
+});
+
 test("Resident Floor replaces spatial labels without duplicate supervision navigation", () => {
   for (const file of ["Workspace.tsx", "FacilityWorkspace.tsx", "FacilityMap.tsx", "routes.ts"]) {
     assert.doesNotMatch(source(file), /Spatial view/);

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  ArrowLeft,
   ArrowUpRight,
   Check,
   CheckCheck,
@@ -22,14 +21,11 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   Users,
   X,
   AlertTriangle,
   LogIn,
   BookOpen,
-  Map,
-  Monitor,
 } from "lucide-react";
 import {
   CHECKS,
@@ -354,15 +350,15 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
         <p className="nav-label">WORKSPACE</p>
         <nav aria-label="Main navigation">
           <button aria-current={page === "monitor" ? "page" : undefined} onClick={() => setPage("monitor")}>
-            <Sparkles size={18} /> Scene review
+            Scene review
           </button>
-          <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}><Map size={18} /> Resident Floor</button>
-          <button aria-current={page === "supervision" ? "page" : undefined} onClick={() => setPage("supervision")}><Monitor size={18} /> Supervision</button>
+          <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}>Resident Floor</button>
+          <button aria-current={page === "supervision" ? "page" : undefined} onClick={() => setPage("supervision")}>Supervision</button>
           <button
             aria-current={page === "session" ? "page" : undefined}
             onClick={() => setPage("session")}
           >
-            <HandHeart size={18} /> Care session
+            Care session
           </button>
           <button
             aria-current={page === "history" ? "page" : undefined}
@@ -371,12 +367,12 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
               if (owner) void refresh();
             }}
           >
-            <History size={18} /> Session history{" "}
+            Session history{" "}
             <span className="count">{rows.length}</span>
           </button>
         </nav>
         <div className="rail-bottom">
-          <SiteLink to="/" navigate={navigate}><ArrowLeft size={13} /> Back to start</SiteLink>
+          <SiteLink to="/" navigate={navigate}>Back to start</SiteLink>
         </div>
       </aside>
       <div className="main-shell">
