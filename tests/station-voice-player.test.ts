@@ -100,3 +100,31 @@ test("automatic preparation caches exact text without playing and reuses it acro
   assert.equal(await player.prepare({ ...message, key: "other" }, credentials), false);
   assert.equal(sounds[0].paused, false);
 });
+
+test("automatic preparation finishes across page, settings and current-response changes", async () => {
+  let complete!: (response: Response) => void;
+  const { player, sounds, payloads } = setup(async () => new Promise(resolve => { complete = resolve; }));
+  const current = { ...message, key: "current:incident-1:1" };
+  const pending = player.prepare(current, credentials);
+  player.stopPlayback(); // switching pages / opening settings must not cancel synthesis
+  player.stopIfSuperseded([{ ...current, key: "current:incident-1:2" }]);
+  assert.equal(player.getSnapshot().phase, "loading");
+  complete(mp3());
+  assert.equal(await pending, true);
+  assert.equal(player.isPrepared(current), true);
+  assert.equal(sounds.length, 0);
+  await player.play(current, credentials);
+  assert.equal(payloads.length, 1);
+  player.stopPlayback();
+  assert.equal(sounds[0].paused, true);
+});
+
+test("navigation cancels pending manual playback so it cannot speak on a different page", async () => {
+  let complete!: (response: Response) => void;
+  const { player, sounds } = setup(async () => new Promise(resolve => { complete = resolve; }));
+  const pending = player.play(message, credentials);
+  player.stopPlayback();
+  complete(mp3()); await pending;
+  assert.equal(sounds.length, 0);
+  assert.equal(player.getSnapshot().phase, "idle");
+});

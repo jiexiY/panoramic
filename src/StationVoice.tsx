@@ -7,7 +7,7 @@ import { createStationVoiceQueue, voiceAutoLimits } from "./stationVoiceQueue";
 const connectionTest: VoiceMessage = { key: "station-connection-test", announcement: { room: "A101", priority: "unassessed", update: "recorded" } };
 const VoiceContext = createContext<{ state: VoicePlayback; available: boolean; automatic: boolean; notice: string; prepared: (message: VoiceMessage) => boolean; configure: () => void; activate: (message: VoiceMessage) => void } | null>(null);
 
-export function StationVoiceProvider({ supervisor, active, scope, messages, children }: { supervisor: boolean; active: boolean; scope: string; messages: VoiceMessage[]; children: ReactNode }) {
+export function StationVoiceProvider({ supervisor, active, visible, scope, messages, children }: { supervisor: boolean; active: boolean; visible: boolean; scope: string; messages: VoiceMessage[]; children: ReactNode }) {
   const [ready, setReady] = useState(false), [checking, setChecking] = useState(true);
   const [code, setCode] = useState(""), [consent, setConsent] = useState(false);
   const [connection, setConnection] = useState("Checking voice connection…");
@@ -32,7 +32,8 @@ export function StationVoiceProvider({ supervisor, active, scope, messages, chil
     return () => { request.abort(); player.reset(); };
   }, [player]);
   // Suite navigation retains floor setup/cache; speech never follows the user into another suite.
-  useEffect(() => { if (player.getSnapshot().phase === "playing") player.stop(); setSelection(null); }, [scope, player]);
+  useEffect(() => { player.stopPlayback(); setSelection(null); }, [scope, player]);
+  useEffect(() => { if (!visible) { player.stopPlayback(); setSelection(null); setSettingsOpen(false); } }, [visible, player]);
   useEffect(() => { player.stopIfSuperseded(messages); }, [messages, player]);
   useEffect(() => { if (!active || !supervisor) { player.stop(); setSelection(null); setSettingsOpen(false); } }, [active, supervisor, player]);
   useEffect(() => { player.reset(); setAutomatic(false); }, [code, consent, player]);
@@ -48,8 +49,9 @@ export function StationVoiceProvider({ supervisor, active, scope, messages, chil
       }
       setAutoStatus(`Preparing ${message.announcement.room} ${message.announcement.zone ?? "suite"} audio…`);
       const prepared = await player.prepare(message, { code, consent });
+      queue.finish(message, prepared);
       if (cancelled) return;
-      if (!prepared) { setAutomatic(false); setAutoStatus("Automatic preparation paused. Open voice settings to check access or quota; no automatic retry was made."); }
+      if (!prepared) { setAutomatic(false); setAutoStatus(`Sarah automatic audio paused. ${player.getSnapshot().message || "Preparation was interrupted."} Enable automatic audio to resume; no automatic retry was made.`); }
       else setAutoStatus("New station responses are prepared automatically. Click their speaker to listen.");
     };
     void tick(); const timer = setInterval(() => void tick(), 1000);
@@ -60,7 +62,7 @@ export function StationVoiceProvider({ supervisor, active, scope, messages, chil
     else dialog.current?.close();
   }, [selection, settingsOpen]);
   const activate = (message: VoiceMessage) => {
-    if (!active || !supervisor) return;
+    if (!active || !visible || !supervisor) return;
     if (!ready || !consent || code.length < 16 || state.phase === "error") { player.stop(); setSelection(message); return; }
     void player.play(message, { code, consent });
   };
@@ -69,7 +71,7 @@ export function StationVoiceProvider({ supervisor, active, scope, messages, chil
     const message = selection; setSelection(null); void player.play(message, { code, consent });
   };
   const closeSettings = () => { setSelection(null); setSettingsOpen(false); };
-  return <VoiceContext.Provider value={{ state, available: active && supervisor, automatic, notice: autoStatus, prepared: player.isPrepared, configure: () => { player.stop(); setSettingsOpen(true); }, activate }}>
+  return <VoiceContext.Provider value={{ state, available: active && visible && supervisor, automatic, notice: autoStatus, prepared: player.isPrepared, configure: () => { player.stopPlayback(); setSettingsOpen(true); }, activate }}>
     {children}
     <dialog className="station-voice-dialog" ref={dialog} aria-labelledby={headingId} onCancel={closeSettings} onClose={closeSettings}>
       <header><h2 id={headingId}>Station voice settings</h2><button type="button" className="text-button" aria-label="Close voice setup" onClick={closeSettings}><X size={18} /></button></header>
@@ -77,14 +79,14 @@ export function StationVoiceProvider({ supervisor, active, scope, messages, chil
       {selection && <p className="station-voice-preview">{stationAnnouncement(selection.announcement.room, selection.announcement.priority, selection.announcement.update, selection.announcement.zone)}</p>}
       <label className="team-field">Private voice access code<input type="password" autoComplete="off" value={code} onChange={e => setCode(e.target.value)} placeholder="Not your ElevenLabs API key" /></label>
       <label className="assistant-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>Send fixed, non-sensitive station response text to ElevenLabs. No names or free-text care notes are sent.</span></label>
-      <p className="muted">The API key is already kept on the server. This separate access code protects its credits. Setup and prepared audio stay in memory across all four suites until you reload or leave this workspace.</p>
+      <p className="muted">The API key stays on the server. Enter the separate station code and enable automatic audio once per workspace session. Setup and prepared audio stay in memory across all suites and the Dashboard. Reloading clears access; credentials are never saved.</p>
       <p className="muted">Automatic mode prepares current and new station responses, one at a time, at most {voiceAutoLimits.clips} new clips / {voiceAutoLimits.characters.toLocaleString()} characters in this session. Repeated text reuses its clip. Provider quotas may stop generation earlier. Audio does not play or dispatch anyone automatically.</p>
       {autoStatus && <p role="status">{autoStatus}</p>}
       {state.key === connectionTest.key && <p role={state.phase === "error" ? "alert" : "status"}>{state.message}</p>}
       <p className="muted">Voice test text ({stationAnnouncement("A101", "unassessed", "recorded").length} characters): {stationAnnouncement("A101", "unassessed", "recorded")}</p>
       <button type="button" className="secondary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={() => { setAutomatic(false); void player.play(connectionTest, { code, consent }); }}>{state.key === connectionTest.key && ["loading", "playing"].includes(state.phase) ? "Stop voice test" : "Test Sarah"}</button>
       {selection && <button type="button" className="secondary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={playSelection}>Play this announcement</button>}
-      <button type="button" className="primary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={() => { player.stop(); setAutomatic(!automatic); closeSettings(); }}>{automatic ? "Pause automatic audio" : "Enable automatic audio"}</button>
+      <button type="button" className="primary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={() => { player.stopPlayback(); if (!automatic) { queue.retryFailed(); setAutoStatus("Sarah will prepare new station responses automatically, including while you view the Dashboard."); } setAutomatic(!automatic); closeSettings(); }}>{automatic ? "Pause automatic audio" : "Enable automatic audio"}</button>
       <button type="button" className="text-button" onClick={() => { player.reset(); setAutomatic(false); setCode(""); setConsent(false); setAutoStatus(""); }}>Forget voice access</button>
     </dialog>
   </VoiceContext.Provider>;

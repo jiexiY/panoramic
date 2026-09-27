@@ -26,6 +26,27 @@ test("session preparation is bounded and does not retry failed or canceled text"
   assert.ok(queue.usage().clips <= 12); assert.ok(queue.usage().characters <= 4000);
   assert.equal(queue.exhausted(), true);
 });
+
+test("failed preparation is retryable only after explicit resume, with usage still bounded", () => {
+  const queue = createStationVoiceQueue();
+  assert.equal(queue.next([first], 0, () => false), first);
+  queue.finish(first, false);
+  assert.equal(queue.next([first], 16_000, () => false), null);
+  queue.retryFailed();
+  assert.equal(queue.next([first], 16_000, () => false), first);
+  queue.finish(first, true);
+  assert.equal(queue.next([{ ...first, key: "later-version" }], 32_000, () => true), null);
+  assert.equal(queue.usage().clips, 2);
+});
+
+test("opening settings or changing pages cannot mark unfinished audio as prepared", () => {
+  const queue = createStationVoiceQueue();
+  queue.next([first], 0, () => false);
+  queue.retryFailed();
+  assert.equal(queue.next([first], 16_000, () => false), null); // still in flight
+  queue.finish(first, true);
+  assert.equal(queue.next([first], 32_000, () => true), null); // now cached
+});
 test("automatic preparation is opt-in, floor-scoped and stops on unavailable access", () => {
   const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
   const voice = read("StationVoice.tsx"), floor = read("FacilityWorkspace.tsx");
@@ -37,4 +58,8 @@ test("automatic preparation is opt-in, floor-scoped and stops on unavailable acc
   assert.match(floor, /messages=\{team.incidents.flatMap/);
   assert.match(floor, /StationVoiceProvider key=\{`\$\{team.userId\}:\$\{team.facilityId\}`\}/);
   assert.doesNotMatch(read("SuiteAI.tsx"), /<StationVoiceProvider/);
+  assert.match(floor, /active=\{!team.stale\} visible=\{active\}/);
+  assert.match(voice, /queue.finish\(message, prepared\)/);
+  assert.match(voice, /queue.retryFailed\(\)/);
+  assert.match(voice, /configure: \(\) => \{ player.stopPlayback\(\)/);
 });

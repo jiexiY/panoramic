@@ -13,10 +13,11 @@ export const voiceText = (message: VoiceMessage) => {
 export function createStationVoicePlayer(deps: Dependencies) {
   let state: VoicePlayback = { key: "", phase: "idle", message: "" };
   let generation = 0, controller: AbortController | null = null, audio: PlayerAudio | null = null;
+  let preparingOnly = false;
   const listeners = new Set<() => void>(), cache = new Map<string, string>();
   const set = (next: VoicePlayback) => { state = next; listeners.forEach(listener => listener()); };
   const stop = () => {
-    generation++; controller?.abort(); controller = null;
+    generation++; controller?.abort(); controller = null; preparingOnly = false;
     if (audio) { audio.onended = null; audio.onerror = null; audio.pause(); audio.src = ""; audio = null; }
     set({ key: "", phase: "idle", message: "" });
   };
@@ -24,8 +25,11 @@ export function createStationVoicePlayer(deps: Dependencies) {
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getSnapshot: () => state,
     stop,
+    stopPlayback() { if (!preparingOnly && ["loading", "playing"].includes(state.phase)) stop(); },
     stopIfSuperseded(messages: VoiceMessage[]) {
-      if (state.key.startsWith("current:") && !messages.some(message => message.key === state.key)) stop();
+      // Finish and cache an in-flight preparation, even when the response advances.
+      // Only audible, outdated speech must stop immediately.
+      if (!preparingOnly && state.key.startsWith("current:") && !messages.some(message => message.key === state.key)) stop();
     },
     reset() { stop(); cache.forEach(deps.revokeUrl); cache.clear(); },
     isPrepared: (message: VoiceMessage) => cache.has(voiceText(message)),
@@ -38,6 +42,7 @@ export function createStationVoicePlayer(deps: Dependencies) {
       if (!credentials.consent || credentials.code.length < 16) return;
       if (state.key === message.key && ["loading", "playing"].includes(state.phase)) { stop(); return; }
       stop();
+      preparingOnly = prepareOnly;
       const version = generation, request = new AbortController(); controller = request;
       const a = message.announcement;
       const cacheKey = voiceText(message);

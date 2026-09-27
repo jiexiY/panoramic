@@ -63,7 +63,7 @@ export default function FacilityWorkspace({
     );
   };
   return (
-    <StationVoiceProvider key={`${team.userId}:${team.facilityId}`} supervisor={team.me?.role === "coordinator"} active={active && !team.stale} scope={monitoringRoom}
+    <StationVoiceProvider key={`${team.userId}:${team.facilityId}`} supervisor={team.me?.role === "coordinator"} active={!team.stale} visible={active} scope={monitoringRoom}
       messages={team.incidents.flatMap(i => { if (!isSuiteId(i.room)) return []; const message = incidentVoiceMessage(i.room, i); return message ? [message] : []; })}>
     <div className="facility-page">
       <section className="page-heading facility-heading">
