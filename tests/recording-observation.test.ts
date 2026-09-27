@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { initialRecording, recordingIsOn, recordingReducer } from "../src/recordingObservation.ts";
+import { initialRecording, recordingIsOn, recordingReducer, recordingSourceLabel } from "../src/recordingObservation.ts";
 import { suiteOverlayCenter, suiteOverlaySize, suiteOverlayStyle } from "../src/floorPresentation.ts";
 import { readFileSync } from "node:fs";
 
-test("manual On requests playback but is not active until the image loads", () => {
+test("preview playback is not active until the image loads", () => {
   assert.equal(recordingIsOn(initialRecording, true, "A101"), false);
   const loading = recordingReducer(initialRecording, { type: "play" });
   assert.equal(loading.mode, "loading");
@@ -15,7 +15,7 @@ test("manual On requests playback but is not active until the image loads", () =
   assert.equal(recordingIsOn(playing, true, "A102"), false);
 });
 
-test("manual Off stops playback and ignores late image loads", () => {
+test("pausing the preview stops playback and ignores late image loads", () => {
   const loading = recordingReducer(initialRecording, { type: "play" });
   const paused = recordingReducer(loading, { type: "pause" });
   assert.equal(paused.mode, "still");
@@ -27,7 +27,7 @@ test("manual Off stops playback and ignores late image loads", () => {
   assert.deepEqual(recordingReducer(initialRecording, { type: "pause" }), initialRecording);
 });
 
-test("media failure turns observation off; stale failures cannot stop a new playback", () => {
+test("media failure stops the preview; stale failures cannot stop a new playback", () => {
   const loading = recordingReducer(initialRecording, { type: "play" });
   const failed = recordingReducer(loading, { type: "failed", version: loading.version });
   assert.equal(failed.mode, "error");
@@ -37,7 +37,7 @@ test("media failure turns observation off; stale failures cannot stop a new play
   assert.equal(recordingReducer(retry, { type: "loaded", version: retry.version }).mode, "playing");
 });
 
-test("the default inline still does not turn observation on and can recover from failure", () => {
+test("the default inline still does not start playback and can recover from failure", () => {
   assert.deepEqual(recordingReducer(initialRecording, { type: "loaded", version: 0 }), initialRecording);
   const failed = recordingReducer(initialRecording, { type: "failed", version: 0 });
   assert.equal(failed.mode, "error");
@@ -46,6 +46,17 @@ test("the default inline still does not turn observation on and can recover from
   assert.equal(retry.mode, "closed");
   assert.equal(recordingReducer(retry, { type: "loaded", version: retry.version }).mode, "closed");
   assert.deepEqual(recordingReducer(retry, { type: "failed", version: 0 }), retry);
+});
+
+test("suite source labels distinguish recorded data, loading, stills, failures and disconnected suites", () => {
+  for (const mode of ["closed", "loading", "playing", "still", "error"] as const) {
+    for (const room of ["A102", "A103", "A104"]) assert.equal(recordingSourceLabel({ mode, version: 0 }, room), "Not connected");
+  }
+  assert.equal(recordingSourceLabel(initialRecording, "A101"), "Still image");
+  assert.equal(recordingSourceLabel({ mode: "loading", version: 1 }, "A101"), "Loading recording…");
+  assert.equal(recordingSourceLabel({ mode: "playing", version: 1 }, "A101"), "Recorded data");
+  assert.equal(recordingSourceLabel({ mode: "error", version: 1 }, "A101"), "Unavailable");
+  assert.equal(recordingSourceLabel({ mode: "still", version: 2 }, "A101"), "Still image");
 });
 
 test("all suite overlays are grey and translucent without an assessed concern", () => {

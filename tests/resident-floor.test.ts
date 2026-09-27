@@ -27,7 +27,7 @@ test("room sidebar omits the layout card while preserving the floor map and room
 test("Resident Floor omits duplicate labels and sidebar cards while retaining response controls", () => {
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /Care-center floor|Building2|facility-summary|room-directory|CareTeamPanel|facility-assistant-tabs|setSidebar|setFilter/);
-  assert.match(facility, /onToggle=\{monitoringRoom === "A101" \? toggleObservation : undefined\}/);
+  assert.match(facility, /<MonitorStatus \/>/);
   assert.match(facility, /<aside className="facility-sidebar" aria-label="Panoramic assistant">\s*<PanoramicAssistant/);
   assert.match(facility, /<h2>Active concerns<\/h2>/);
   assert.match(facility, /<h2>Activity<\/h2>/);
@@ -35,7 +35,7 @@ test("Resident Floor omits duplicate labels and sidebar cards while retaining re
   assert.match(source("FacilityMap.tsx"), /suite labels or room tabs/);
   assert.match(source("SceneMonitor.tsx"), /<CareTeamPanel/);
   assert.match(source("Workspace.tsx"), /Monitoring Resident Floor now/);
-  assert.doesNotMatch(source("RoomMonitoring.tsx"), /<ObservationStatus[^>]* playback \/>/);
+  assert.match(source("RoomMonitoring.tsx"), /<SourceStatus room=\{room\} recording=\{recording\} \/>/);
 });
 
 test("sidebar uses text labels and a selected vertical marker without icons or a filled highlight", () => {
@@ -67,43 +67,49 @@ test("recording controls and route concern belong to room monitoring, not the fl
   const facility = source("FacilityWorkspace.tsx");
   const room = source("RoomMonitoring.tsx");
   assert.doesNotMatch(facility, /Open bathroom recording|Route concern|facility-evidence/);
-  assert.match(facility, /<RoomMonitoring key=\{monitoringRoom\}/);
-  assert.match(facility, /priority=\{priorities\[monitoringRoom\] \?\? "unassessed"\}/);
+  assert.match(facility, /<RoomMonitoring room=\{room\}/);
+  assert.match(facility, /priority=\{priorities\[room\] \?\? "unassessed"\}/);
   assert.match(room, /room === "A101" \? \(\s*<section className="facility-evidence" aria-label="Bathroom image data">/);
   assert.match(room, /bathroom monitoring\x60\}[\s\S]*Bathroom image data[\s\S]*room-route-concern/);
   assert.doesNotMatch(room, /evidenceOpen|Open bathroom recording|Close recording/);
   assert.match(room, /routeLevels\[priority\]/);
 });
 
-test("manual observation controls real playback state and stops it when hidden", () => {
+test("floor monitor is always enabled, has no switch, and is distinct from source availability", () => {
   const room = source("RoomMonitoring.tsx");
   const facility = source("FacilityWorkspace.tsx");
-  assert.match(room, /recordingIsOn\(recording, active, room\)/);
-  assert.match(room, /active && room === "A101" && workflowScanning/);
-  assert.match(facility, /if \(!active\) \{ recordingAction\(\{ type: "pause" \}\); onStopWorkflow\(\)/);
-  assert.match(facility, /if \(workflowScanning\) onStopWorkflow\(\)/);
-  assert.match(facility, /onToggle=\{monitoringRoom === "A101" \? toggleObservation : undefined\}/);
+  assert.match(facility, /<MonitorStatus \/>/);
+  assert.doesNotMatch(facility, /onStopWorkflow|toggleObservation|onObservationChange/);
   assert.match(room, /onError=\{\(\) => onRecordingAction\(\{ type: "failed", version: recording.version \}\)\}/);
-  assert.doesNotMatch(source("FacilityWorkspace.tsx"), /No observations|Live updates|Saved observations/);
-  const status = source("ObservationStatus.tsx");
-  assert.match(status, /Observation:/);
-  assert.match(status, /on \? "On" : "Off"/);
-  assert.doesNotMatch(status, /Playback|observation-source/);
-  assert.match(status, /role="switch" aria-label="Floor observation" aria-checked=\{on \|\| pending\}/);
+  const status = source("MonitorStatus.tsx");
+  assert.match(status, /Monitor:/);
+  assert.match(status, /aria-label="Resident Floor monitor: On"/);
+  assert.match(status, /Monitoring is enabled across the whole Resident Floor/);
+  assert.doesNotMatch(status, /Observation:|Playback|role="switch"|onToggle|<button/);
+  assert.match(status, /Source: \{recordingSourceLabel\(recording, room\)\}/);
+  assert.match(room, /No monitoring source connected/);
   assert.match(status, /aria-hidden="true"/);
   const css = source("room-monitoring.css");
-  assert.match(css, /is-on i \{ background: #22e65f/);
-  assert.match(css, /is-off i \{ background: #ff303b/);
+  assert.match(css, /\.monitor-state i \{[^}]*background: #22e65f/);
 });
 
-test("monitoring banner omits restart, exit and helper copy, and does not claim monitoring while paused", () => {
+test("monitoring banner refers to the floor monitor, not individual preview playback", () => {
   const workspace = source("Workspace.tsx");
   const banner = workspace.match(/<div className="playback-bar">([\s\S]*?)<\/label><\/div>/)?.[1];
   assert.ok(banner);
-  assert.match(banner, /floorObserving \? "Monitoring Resident Floor now" : "Resident Floor monitoring paused"/);
+  assert.match(banner, /Monitoring Resident Floor now/);
   assert.match(banner, /View as<select aria-label="Monitoring role"/);
   assert.doesNotMatch(banner, /Restart|Exit playback|Recording playback|No care-team records|<small|<button/);
-  assert.match(workspace, /onObservationChange=\{setFloorObserving\}/);
-  assert.match(source("FacilityWorkspace.tsx"), /onObservationChange\(observationOn\)/);
+  assert.doesNotMatch(workspace, /floorObserving|monitoring paused|onObservationChange/);
   assert.match(source("RoomMonitoring.tsx"), /not a live cleanup detection/);
+});
+
+test("suite navigation keeps each source mounted and does not cancel floor-level processing", () => {
+  const facility = source("FacilityWorkspace.tsx");
+  assert.match(facility, /suiteIds.map\(room =>/);
+  assert.match(facility, /const records = suiteRecords\(room, team.incidents, team.events\)/);
+  assert.match(facility, /<div key=\{room\} hidden=\{room !== monitoringRoom\}>/);
+  assert.match(facility, /action.type === "loaded" && action.version === recording.version && recording.mode === "loading"\) onMonitorFrame\("hazard"\)/);
+  assert.doesNotMatch(facility, /onStopWorkflow|workflowScanning|recordingIsOn/);
+  assert.doesNotMatch(facility, /recordingAction\(\{ type: "close" \}\).*monitoringRoom/);
 });

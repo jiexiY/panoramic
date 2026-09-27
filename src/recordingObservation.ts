@@ -24,3 +24,10 @@ export function recordingReducer(state: RecordingState, action: RecordingAction)
 export function recordingIsOn(state: RecordingState, active: boolean, room: string): boolean {
   return active && room === "A101" && state.mode === "playing";
 }
+
+export function recordingSourceLabel(state: RecordingState, room: string): string {
+  if (room !== "A101") return "Not connected";
+  if (state.mode === "error") return "Unavailable";
+  if (state.mode === "loading") return "Loading recording…";
+  return state.mode === "playing" ? "Recorded data" : "Still image";
+}

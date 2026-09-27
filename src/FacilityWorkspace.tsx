@@ -12,8 +12,8 @@ import { incidentStatus, noHazardVisible } from "./incidents";
 import PanoramicAssistant from "./PanoramicAssistant";
 import IncidentDesk from "./IncidentDesk";
 import RoomMonitoring from "./RoomMonitoring";
-import ObservationStatus from "./ObservationStatus";
-import { initialRecording, recordingIsOn, recordingReducer } from "./recordingObservation";
+import MonitorStatus from "./MonitorStatus";
+import { initialRecording, recordingReducer } from "./recordingObservation";
 import "./facility.css";
 import "./room-monitoring.css";
 
@@ -22,9 +22,6 @@ type Props = {
   suite?: SuiteId;
   navigate: Navigate;
   active: boolean;
-  workflowScanning: boolean;
-  onObservationChange: (on: boolean) => void;
-  onStopWorkflow: () => void;
   onMonitorFrame: (value: "hazard" | "clear" | "unknown") => void;
   team: CareTeam;
   onSignIn: () => void;
@@ -33,9 +30,6 @@ export default function FacilityWorkspace({
   suite,
   navigate,
   active,
-  workflowScanning,
-  onObservationChange,
-  onStopWorkflow,
   onMonitorFrame,
   team,
   onSignIn,
@@ -45,7 +39,8 @@ export default function FacilityWorkspace({
   const [selectedId, setSelectedId] = useState("");
   const [recording, recordingAction] = useReducer(recordingReducer, initialRecording);
   const incidentRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setSelectedId(""); if (team.mode !== "playback") recordingAction({ type: "close" }); }, [team.facilityId, team.mode, monitoringRoom]);
+  useEffect(() => { setSelectedId(""); }, [team.facilityId, team.mode, monitoringRoom]);
+  useEffect(() => { if (team.mode !== "playback") recordingAction({ type: "close" }); }, [team.facilityId, team.mode]);
   const roomRecords = suiteRecords(monitoringRoom, team.incidents, team.events);
   const { open, events, incidents } = roomRecords;
   const current =
@@ -60,22 +55,6 @@ export default function FacilityWorkspace({
     )
       priorities[i.room] = i.priority;
   }
-  const recordingPending = active && monitoringRoom === "A101" && recording.mode === "loading";
-  const observationOn = active && monitoringRoom === "A101" && (workflowScanning || recordingIsOn(recording, active, monitoringRoom));
-  useEffect(() => { onObservationChange(observationOn); }, [observationOn, onObservationChange]);
-  useEffect(() => { if (!active) { recordingAction({ type: "pause" }); onStopWorkflow(); } }, [active]);
-  useEffect(() => { if (monitoringRoom !== "A101") { recordingAction({ type: "close" }); onStopWorkflow(); } }, [monitoringRoom]);
-  const roomOpen = open;
-  const roomLatest = incidents[0];
-  const toggleObservation = () => {
-    if (monitoringRoom !== "A101") return;
-    if (observationOn || recordingPending) {
-      recordingAction({ type: "pause" });
-      if (workflowScanning) onStopWorkflow();
-    } else {
-      recordingAction({ type: "play" });
-    }
-  };
   const showIncident = (id: string, room: string) => {
     if (room !== monitoringRoom || !incidents.some(i => i.id === id)) return;
     setSelectedId(id);
@@ -103,7 +82,7 @@ export default function FacilityWorkspace({
         <div className="facility-main">
           <section className="facility-map-panel">
             <div className="facility-panel-header">
-              <ObservationStatus on={observationOn} pending={recordingPending} onToggle={monitoringRoom === "A101" ? toggleObservation : undefined} />
+              <MonitorStatus />
             </div>
             <Suspense
               fallback={
@@ -126,18 +105,23 @@ export default function FacilityWorkspace({
             <nav className="room-monitor-selector" aria-label="Room monitoring selection">
               {suiteIds.map(id => <SiteLink key={id} to={suitePath(id)} navigate={navigate} aria-current={monitoringRoom === id ? "page" : undefined}>Suite {id}</SiteLink>)}
             </nav>
-            <RoomMonitoring key={monitoringRoom} room={monitoringRoom}
-              priority={priorities[monitoringRoom] ?? "unassessed"} active={active} workflowScanning={workflowScanning}
-              recording={recording} onRecordingAction={action => {
-                recordingAction(action);
-                if (action.type === "pause" || action.type === "close") onStopWorkflow();
-                if (action.type === "loaded" && action.version === recording.version && recording.mode === "loading" && active && monitoringRoom === "A101") onMonitorFrame("hazard");
-                if (action.type === "failed" && action.version === recording.version) onMonitorFrame("unknown");
-              }}
-              clearVisible={roomOpen.length > 0 && roomOpen.every(noHazardVisible)}
-              closed={!roomOpen.length && !!roomLatest?.nursing_checked_by}
-              canReview={team.mode === "playback" && open.length > 0}
-              onClearFrame={() => onMonitorFrame("clear")} />
+            {/* Keep sources mounted across suite navigation; only their presentation changes. */}
+            {suiteIds.map(room => {
+              const records = suiteRecords(room, team.incidents, team.events);
+              return <div key={room} hidden={room !== monitoringRoom}>
+                <RoomMonitoring room={room} priority={priorities[room] ?? "unassessed"}
+                  recording={recording} onRecordingAction={action => {
+                    recordingAction(action);
+                    if (room !== "A101") return;
+                    if (action.type === "loaded" && action.version === recording.version && recording.mode === "loading") onMonitorFrame("hazard");
+                    if (action.type === "failed" && action.version === recording.version) onMonitorFrame("unknown");
+                  }}
+                  clearVisible={records.open.length > 0 && records.open.every(noHazardVisible)}
+                  closed={!records.open.length && !!records.incidents[0]?.nursing_checked_by}
+                  canReview={team.mode === "playback" && records.open.length > 0}
+                  onClearFrame={() => { if (room === "A101") onMonitorFrame("clear"); }} />
+              </div>;
+            })}
           </div>
           <div className="facility-bottom-grid" role="region" aria-label={`Suite ${monitoringRoom} follow-up`}>
             <section className="facility-card">

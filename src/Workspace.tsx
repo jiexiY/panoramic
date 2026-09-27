@@ -79,7 +79,6 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
   const [owner, setOwner] = useState<string | null>(null);
   const sharedCareTeam = useCareTeam(owner);
   const playback = usePlaybackTeam();
-  const [floorObserving, setFloorObserving] = useState(false);
   const careTeam = playback.active ? playback.team : sharedCareTeam;
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
@@ -428,9 +427,9 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
               Offline. Cloud actions are unavailable.
             </div>
           )}
-          {playback.active && <div className="playback-bar"><div><b role="status">{floorObserving ? "Monitoring Resident Floor now" : "Resident Floor monitoring paused"}</b></div><label>View as<select aria-label="Monitoring role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label></div>}
+          {playback.active && <div className="playback-bar"><div><b role="status">Monitoring Resident Floor now</b></div><label>View as<select aria-label="Monitoring role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label></div>}
           <div hidden={page !== "monitor"}><SceneMonitor key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
-          <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} suite={suite} navigate={navigate} workflowScanning={playback.scanning} onObservationChange={setFloorObserving} onStopWorkflow={playback.pause} onMonitorFrame={playback.monitorFrame} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
+          <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} suite={suite} navigate={navigate} onMonitorFrame={playback.monitorFrame} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
           {isCareSession && <>
             <section className="page-heading">
               <h1>Care session</h1>

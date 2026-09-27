@@ -1,4 +1,4 @@
-.observation-status {
+.monitor-status {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
@@ -6,14 +6,10 @@
   color: #54665d;
   font-size: 12px;
 }
-.observation-state { display: inline-flex; align-items: center; gap: 5px; color: #29443a; font-weight: 650; }
-.observation-state i { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; }
-.observation-state.is-on i { background: #22e65f; box-shadow: 0 0 0 3px #22e65f19; }
-.observation-state.is-off i { background: #ff303b; box-shadow: 0 0 0 3px #ff303b12; }
-.observation-state.is-pending i { background: #d79928; }
-.observation-toggle { border: 1px solid #d9e0d7; border-radius: 5px; padding: 7px 9px; min-width: 57px; background: #fffefb; font: inherit; font-weight: 650; cursor: pointer; }
-.observation-toggle:hover { border-color: #7c9386; background: #f4f7f1; }
-.observation-toggle:focus-visible { outline: 2px solid #466879; outline-offset: 3px; }
+.monitor-state { display: inline-flex; align-items: center; gap: 5px; color: #29443a; font-weight: 650; border: 1px solid #d9e0d7; border-radius: 5px; padding: 7px 9px; background: #fffefb; }
+.monitor-state i { display: inline-block; width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: #22e65f; box-shadow: 0 0 0 3px #22e65f19; }
+.monitor-status small { font-size: 11px; color: #68796f; }
+.monitor-source-status { font-size: 11px; color: #68796f; }
 .map-suite-labels { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .map-suite-label { position: absolute; visibility: hidden; pointer-events: auto; min-width: 60px; padding: 7px 10px; border: 1px solid #7d898f; border-radius: 5px; background: #edf0f0f2; color: #344851; font-size: 12px; line-height: 1.2; font-weight: 700; letter-spacing: .4px; box-shadow: 0 2px 6px #24323b14; }
 .map-suite-label, .map-suite-label:hover, .map-suite-label:focus, .map-suite-label:not(:disabled):active { transform: none; transition: none; animation: none; }
@@ -34,7 +30,6 @@
 .room-monitor-zones { display: grid; gap: 12px; }
 .room-monitor-zone { padding: 15px; border: 1px solid #e4e7df; border-radius: 6px; scroll-margin-top: 24px; }
 .room-zone-heading h3 { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 650; margin: 0; }
-.room-zone-heading .observation-status { font-size: 11px; }
 .monitor-source-empty { color: #7e8a81; font-size: 11px; margin: 12px 0 0; }
 .room-monitor-zone .facility-evidence { margin-top: 14px; border-radius: 5px; }
 .room-monitor-zone .facility-panel-header { padding: 10px; flex-wrap: wrap; gap: 8px; font-size: 10px; }
