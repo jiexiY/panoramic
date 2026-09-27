@@ -9,6 +9,8 @@ import { routeLevels, type RoutePriority } from "./routeRisk";
 import type { CareTeam } from "./useCareTeam";
 import SuiteAI from "./SuiteAI";
 import MonitorStatus from "./MonitorStatus";
+import { StationVoiceProvider } from "./StationVoice";
+import { incidentVoiceMessage } from "./stationAnnouncement";
 import "./facility.css";
 import "./room-monitoring.css";
 
@@ -61,6 +63,8 @@ export default function FacilityWorkspace({
     );
   };
   return (
+    <StationVoiceProvider key={`${team.userId}:${team.facilityId}`} supervisor={team.me?.role === "coordinator"} active={active && !team.stale} scope={monitoringRoom}
+      messages={team.incidents.flatMap(i => { if (!isSuiteId(i.room)) return []; const message = incidentVoiceMessage(i.room, i); return message ? [message] : []; })}>
     <div className="facility-page">
       <section className="page-heading facility-heading">
         <h1>{suite ? `Suite ${suite}` : "Resident Floor"}</h1>
@@ -104,6 +108,6 @@ export default function FacilityWorkspace({
           <SuiteAI key={`${team.userId}:${team.facilityId}:${monitoringRoom}`} room={monitoringRoom} team={team} selectedId={current?.id ?? ""} onSelect={showIncident} onSignIn={onSignIn} processing={monitoringRoom === "A101" && processing} active={active} />
         </aside>
       </div>
-    </div>
+    </div></StationVoiceProvider>
   );
 }

@@ -7,12 +7,14 @@ import { startIncident } from "../src/scene.ts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("topbar replaces the signed-out action with a presentation-only profile avatar", () => {
+test("topbar keeps a placeholder outside playback and puts demo-only roles in its profile menu", () => {
   const workspace = source("src/Workspace.tsx");
   const topbar = workspace.match(/<header className="topbar">([\s\S]*?)<\/header>/)?.[1];
   assert.ok(topbar);
   assert.doesNotMatch(topbar, /Sign in|setAuthOpen\(true\)|<LogIn/);
-  assert.match(topbar, /!owner && \(\s*<span className="profile-avatar" role="img" aria-label="Placeholder profile"/);
+  assert.match(topbar, /!owner && !playback.active && \(\s*<span className="profile-avatar" role="img" aria-label="Placeholder profile"/);
+  assert.match(topbar, /!owner && playback.active && <details className="demo-role-menu"/);
+  assert.match(topbar, /Local demo roles only; this does not grant care-team permissions/);
   assert.match(topbar, /<UserRound[^>]*aria-hidden="true"/);
   assert.ok(topbar.includes('owner && <button className="text-button" onClick={() => void cloud?.auth.signOut()}>Sign out</button>'));
   assert.match(workspace, /onSignIn=\{\(\) => setAuthOpen\(true\)\}/);

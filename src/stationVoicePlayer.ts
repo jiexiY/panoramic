@@ -4,7 +4,12 @@ export type VoicePlayback = { key: string; phase: "idle" | "loading" | "playing"
 type PlayerAudio = Pick<HTMLAudioElement, "src" | "play" | "pause" | "onended" | "onerror">;
 type Dependencies = { fetch: typeof fetch; createAudio: () => PlayerAudio; createUrl: (blob: Blob) => string; revokeUrl: (url: string) => void };
 
-// One player per suite panel: no overlapping speech, no automatic generation, bounded in-memory replay.
+export const voiceText = (message: VoiceMessage) => {
+  const a = message.announcement;
+  return stationAnnouncement(a.room, a.priority, a.update, a.zone);
+};
+
+// One player per floor: preparation never starts playback, and matching text shares a clip.
 export function createStationVoicePlayer(deps: Dependencies) {
   let state: VoicePlayback = { key: "", phase: "idle", message: "" };
   let generation = 0, controller: AbortController | null = null, audio: PlayerAudio | null = null;
@@ -15,18 +20,27 @@ export function createStationVoicePlayer(deps: Dependencies) {
     if (audio) { audio.onended = null; audio.onerror = null; audio.pause(); audio.src = ""; audio = null; }
     set({ key: "", phase: "idle", message: "" });
   };
-  return {
+  const controls = {
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     getSnapshot: () => state,
     stop,
+    stopIfSuperseded(messages: VoiceMessage[]) {
+      if (state.key.startsWith("current:") && !messages.some(message => message.key === state.key)) stop();
+    },
     reset() { stop(); cache.forEach(deps.revokeUrl); cache.clear(); },
-    async play(message: VoiceMessage, credentials: { code: string; consent: boolean }) {
+    isPrepared: (message: VoiceMessage) => cache.has(voiceText(message)),
+    async prepare(message: VoiceMessage, credentials: { code: string; consent: boolean }) {
+      if (["loading", "playing"].includes(state.phase)) return false;
+      await controls.play(message, credentials, true);
+      return cache.has(voiceText(message));
+    },
+    async play(message: VoiceMessage, credentials: { code: string; consent: boolean }, prepareOnly = false) {
       if (!credentials.consent || credentials.code.length < 16) return;
       if (state.key === message.key && ["loading", "playing"].includes(state.phase)) { stop(); return; }
       stop();
       const version = generation, request = new AbortController(); controller = request;
       const a = message.announcement;
-      const cacheKey = `${message.key}:${stationAnnouncement(a.room, a.priority, a.update, a.zone)}`;
+      const cacheKey = voiceText(message);
       set({ key: message.key, phase: "loading", message: "Preparing announcement…" });
       try {
         let source = cache.get(cacheKey);
@@ -45,6 +59,7 @@ export function createStationVoicePlayer(deps: Dependencies) {
           if (cache.size > 12) { const oldest = cache.keys().next().value!; deps.revokeUrl(cache.get(oldest)!); cache.delete(oldest); }
         }
         if (version !== generation || request.signal.aborted) return;
+        if (prepareOnly) { set({ key: message.key, phase: "ready", message: "Audio ready. Click the speaker to hear this update." }); return; }
         const player = deps.createAudio(); audio = player; player.src = source;
         player.onended = () => { if (version === generation) set({ key: message.key, phase: "ready", message: "Played in this browser. Click to replay without generating again." }); };
         player.onerror = () => { if (version === generation) set({ key: message.key, phase: "error", message: "Audio could not play. Check this browser's audio output." }); };
@@ -59,4 +74,5 @@ export function createStationVoicePlayer(deps: Dependencies) {
       }
     },
   };
+  return controls;
 }

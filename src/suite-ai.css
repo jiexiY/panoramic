@@ -4,6 +4,8 @@
 .suite-ai-heading > div { display: flex; align-items: center; gap: 9px; }
 .suite-ai-heading h2 { margin: 0; font-size: 19px; }
 .suite-ai-heading > span { font-size: 11px; color: #627669; }
+.station-voice-settings { margin: 0 18px; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.station-speaker[data-prepared=true] { color: #375f43; background: #eef4ec; }
 .suite-ai-flow { list-style: none; display: flex; gap: 6px; padding: 0; margin: 19px 18px; }
 .suite-ai-flow li { flex: 1; border-top: 2px solid #e2e7de; padding-top: 6px; font-size: 10px; color: #7b877d; }
 .suite-ai-flow li[data-complete=true] { border-color: #698974; color: #375344; }

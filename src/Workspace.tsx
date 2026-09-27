@@ -391,7 +391,8 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
                   ? "Saved"
                   : "Not saved to cloud"}
             </span>}
-            {!owner && (
+            {!owner && playback.active && <details className="demo-role-menu"><summary className="profile-avatar" aria-label="Demo role settings"><UserRound size={18} strokeWidth={1.7} aria-hidden="true" /></summary><label>Demo role<select aria-label="Demo role" value={playback.actor} onChange={e => playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select><small>Local demo roles only; this does not grant care-team permissions.</small></label></details>}
+            {!owner && !playback.active && (
               <span className="profile-avatar" role="img" aria-label="Placeholder profile" title="Profile placeholder">
                 <UserRound size={18} strokeWidth={1.7} aria-hidden="true" />
               </span>
@@ -428,7 +429,6 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
               Offline. Cloud actions are unavailable.
             </div>
           )}
-          {playback.active && <div className="playback-bar"><div><b role="status">Monitoring Resident Floor now</b></div><label>View as<select aria-label="Monitoring role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label></div>}
           <div hidden={page !== "monitor"}>
             <MonitoringDashboard key={owner ?? 'signed-out'} suite={suite} navigate={navigate} onMonitorFrame={playback.monitorFrame} onTracking={playback.tracking} team={careTeam} autoStartRecording={!restoring && !owner} />
             <details className="dashboard-review"><summary>Review additional room data</summary><div><SceneMonitor embedded key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div></details>

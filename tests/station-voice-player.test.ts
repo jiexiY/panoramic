@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createStationVoicePlayer } from "../src/stationVoicePlayer.ts";
 import type { VoiceMessage } from "../src/stationAnnouncement.ts";
+import { announcementUpdates } from "../src/stationAnnouncement.ts";
 const credentials = { code: "test-long-access-code", consent: true };
 const message: VoiceMessage = { key: "event-1", announcement: { room: "A101", zone: "Bathroom", priority: "crossing", update: "alert" } };
 const mp3 = () => new Response(new Uint8Array([73,68,51,1]), { headers: { "content-type": "audio/mpeg" } });
@@ -47,6 +48,22 @@ test("navigation or a cancelled request cannot play late audio or allocate stale
   assert.equal(sounds.length, 0); assert.equal(player.getSnapshot().phase, "idle");
   player.reset(); assert.equal(revoked.length, 0);
 });
+
+test("superseded current responses abort late audio without cancelling historical updates", async () => {
+  let complete!: (response: Response) => void;
+  const pendingAudio = setup(async () => new Promise(resolve => { complete = resolve; }));
+  const current = { ...message, key: "current:incident-1:1" };
+  const pending = pendingAudio.player.play(current, credentials);
+  pendingAudio.player.stopIfSuperseded([{ ...current, key: "current:incident-1:2" }]);
+  complete(mp3()); await pending;
+  assert.equal(pendingAudio.sounds.length, 0);
+  assert.equal(pendingAudio.player.getSnapshot().phase, "idle");
+  const history = setup();
+  await history.player.play(message, credentials);
+  history.player.stopIfSuperseded([current]);
+  assert.equal(history.player.getSnapshot().phase, "playing");
+  assert.equal(history.sounds[0].paused, false);
+});
 test("browser autoplay rejection keeps prepared audio for a second click without another paid request", async () => {
   const { player, payloads } = setup(undefined, true);
   await player.play(message, credentials);
@@ -63,9 +80,23 @@ test("provider failure is visible, is not retried, and never plays invalid audio
   await invalid.player.play(message, credentials);
   assert.equal(invalid.player.getSnapshot().phase, "error"); assert.equal(invalid.sounds.length, 0);
 });
-test("replay cache stays bounded and never shares another event's audio", async () => {
+test("replay cache stays bounded and separates different announcement text", async () => {
   const { player, revoked, payloads } = setup();
-  for (let i = 0; i < 14; i++) await player.play({ ...message, key: `event-${i}` }, credentials);
+  for (let i = 0; i < 14; i++) await player.play({ ...message, key: `event-${i}`, announcement: { ...message.announcement, update: announcementUpdates[i] } }, credentials);
   assert.equal(payloads.length, 14); assert.equal(revoked.length, 2);
   player.reset(); assert.equal(revoked.length, 14);
+});
+
+test("automatic preparation caches exact text without playing and reuses it across versions", async () => {
+  const { player, sounds, payloads } = setup();
+  assert.equal(await player.prepare(message, { ...credentials, consent: false }), false);
+  assert.equal(payloads.length, 0);
+  assert.equal(await player.prepare(message, credentials), true);
+  assert.equal(sounds.length, 0); assert.equal(player.isPrepared(message), true);
+  const nextVersion = { ...message, key: "new-version-same-text" };
+  await player.prepare(nextVersion, credentials);
+  await player.play(nextVersion, credentials);
+  assert.equal(payloads.length, 1); assert.equal(sounds.length, 1);
+  assert.equal(await player.prepare({ ...message, key: "other" }, credentials), false);
+  assert.equal(sounds[0].paused, false);
 });

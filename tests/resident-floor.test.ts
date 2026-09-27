@@ -37,7 +37,7 @@ test("Resident Floor omits duplicate labels and sidebar cards while retaining re
   assert.match(source("SuiteAI.tsx"), /<IncidentDesk/);
   assert.match(source("FacilityMap.tsx"), /suite labels or room tabs/);
   assert.match(source("SceneMonitor.tsx"), /<CareTeamPanel/);
-  assert.match(source("Workspace.tsx"), /Monitoring Resident Floor now/);
+  assert.doesNotMatch(source("Workspace.tsx"), /Monitoring Resident Floor now/);
   assert.match(source("RoomMonitoring.tsx"), /<SourceStatus room=\{room\} recording=\{recording\} \/>/);
 });
 
@@ -96,13 +96,9 @@ test("floor monitor is always enabled, has no switch, and is distinct from sourc
   assert.match(css, /\.monitor-state i \{[^}]*background: #22e65f/);
 });
 
-test("monitoring banner refers to the floor monitor, not individual preview playback", () => {
+test("the redundant monitoring banner is removed without disabling the floor monitor", () => {
   const workspace = source("Workspace.tsx");
-  const banner = workspace.match(/<div className="playback-bar">([\s\S]*?)<\/label><\/div>/)?.[1];
-  assert.ok(banner);
-  assert.match(banner, /Monitoring Resident Floor now/);
-  assert.match(banner, /View as<select aria-label="Monitoring role"/);
-  assert.doesNotMatch(banner, /Restart|Exit playback|Recording playback|No care-team records|<small|<button/);
+  assert.doesNotMatch(workspace, /className="playback-bar"|Monitoring Resident Floor now/);
   assert.doesNotMatch(workspace, /floorObserving|monitoring paused|onObservationChange/);
   assert.match(source("RoomMonitoring.tsx"), /not a live cleanup detection/);
 });

@@ -9,7 +9,7 @@ import { eventVoiceMessage, incidentVoiceMessage, stationAnnouncement } from "./
 import IncidentDesk from "./IncidentDesk";
 import DispatchResponse from "./DispatchResponse";
 import PanoramicAssistant from "./PanoramicAssistant";
-import StationVoice, { StationVoiceProvider } from "./StationVoice";
+import StationVoice, { StationVoiceSettings } from "./StationVoice";
 import "./suite-ai.css";
 
 type Tab = "station" | "activity" | "report" | "chat";
@@ -26,8 +26,9 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
     const a = document.createElement("a"); a.href = url; a.download = `panoramic-suite-${room}-report.txt`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  return <StationVoiceProvider supervisor={team.me?.role === "coordinator"} active={active && !team.stale} scope={`${room}:${tab}:${current?.id}:${current?.version}`}><section className="suite-ai card" aria-label={`Panoramic AI · Suite ${room}`}>
+  return <section className="suite-ai card" aria-label={`Panoramic AI · Suite ${room}`}>
     <header className="suite-ai-heading"><div><h2>Panoramic AI</h2></div><span>Suite {room}</span></header>
+    <StationVoiceSettings />
     <ol className="suite-ai-flow" aria-label="Hazard response sequence">
       <li data-complete>Monitor</li><li data-complete={!!current || processing}>Detect</li><li data-complete={!!current}>Alert</li><li data-complete={!!current?.assigned_to}>Response</li>
     </ol>
@@ -60,5 +61,5 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
       </section>}
       {tab === "chat" && <PanoramicAssistant key={`${team.userId}:${team.facilityId}:${room}`} room={room} team={team} selectedId={current?.id ?? ""} onSelect={(id, selectedRoom) => { onSelect(id, selectedRoom); setTab("report"); }} onSignIn={onSignIn} />}
     </div>
-  </section></StationVoiceProvider>;
+  </section>;
 }

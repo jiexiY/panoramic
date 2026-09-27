@@ -42,7 +42,7 @@ test("all follow-up UI is housed in the suite AI system and demo chat is clearly
   assert.doesNotMatch(panel, /Sparkles/);
   assert.doesNotMatch(read("PanoramicAssistant.tsx"),/if \(team.mode === "playback"\) return/);
   assert.match(read("PanoramicAssistant.tsx"),/rules-based replies, no language-model request/);
-  assert.match(panel, /supervisor=\{team.me\?\.role === "coordinator"\} active=\{active && !team.stale\}/);
+  assert.match(read("FacilityWorkspace.tsx"), /supervisor=\{team.me\?\.role === "coordinator"\} active=\{active && !team.stale\}/);
   assert.match(read("StationVoice.tsx"), /if \(!active \|\| !supervisor\) return/);
   assert.doesNotMatch(read("StationVoice.tsx"), /Automatically announce|<details|<audio|enabled && consent/);
 });
