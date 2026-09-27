@@ -351,7 +351,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
         <p className="nav-label">WORKSPACE</p>
         <nav aria-label="Main navigation">
           <button aria-current={page === "monitor" ? "page" : undefined} onClick={() => setPage("monitor")}>
-            Home
+            Dashboard
           </button>
           <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}>Resident Floor</button>
           <button
@@ -370,7 +370,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <div className="breadcrumbs">
             Workspace <ChevronRight size={14} />
             <b>
-              {page === "monitor" ? "Home" : page === "spatial" ? "Resident Floor" : "Care session"}
+              {page === "monitor" ? "Dashboard" : page === "spatial" ? "Resident Floor" : "Care session"}
             </b>
           </div>
           <div className="top-actions">

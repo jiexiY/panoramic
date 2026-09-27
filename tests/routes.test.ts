@@ -21,7 +21,7 @@ test("unknown and API paths are not silently treated as a workspace", () => {
   }
 });
 test("each surface has a useful document title", () => {
-  assert.equal(routeTitle(resolveRoute("/app")), "Home — Panoramic");
+  assert.equal(routeTitle(resolveRoute("/app")), "Dashboard — Panoramic");
   assert.equal(routeTitle(resolveRoute("/app/spatial")), "Resident Floor — Panoramic");
   assert.match(routeTitle(resolveRoute("/")), /Open workspace/);
   assert.equal(routeTitle(resolveRoute("/welcome")), routeTitle(resolveRoute("/")));

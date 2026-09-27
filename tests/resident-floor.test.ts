@@ -28,8 +28,8 @@ test("sidebar uses text labels and a selected vertical marker without icons or a
   const sidebar = source("Workspace.tsx").match(/<aside className="rail">([\s\S]*?)<\/aside>/)?.[1];
   assert.ok(sidebar);
   assert.doesNotMatch(sidebar, /<(?:Sparkles|Map|Monitor|HandHeart|History|ArrowLeft)\b/);
-  for (const label of ["Home", "Resident Floor", "Care session"]) assert.ok(sidebar.includes(label));
-  assert.doesNotMatch(sidebar, /Supervision|Scene review|Session history/);
+  for (const label of ["Dashboard", "Resident Floor", "Care session"]) assert.ok(sidebar.includes(label));
+  assert.doesNotMatch(sidebar, /Home|Supervision|Scene review|Session history/);
   assert.equal((sidebar.match(/aria-current=/g) ?? []).length, 3);
   const css = source("style.css");
   assert.match(css, /\.rail nav button::before\s*\{[^}]*width: 2px;[^}]*height: 18px;[^}]*opacity: 0;/);
