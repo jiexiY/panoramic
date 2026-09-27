@@ -4,6 +4,12 @@ import { readFileSync } from "node:fs";
 
 const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
+test("Resident Floor heading has no facility or floor eyebrow in any mode", () => {
+  const facility = source("FacilityWorkspace.tsx");
+  assert.match(facility, /<section className="page-heading facility-heading">\s*<h1>Resident Floor<\/h1>\s*<\/section>/);
+  assert.doesNotMatch(facility, /FLOOR 01|RESIDENTIAL CARE|className="eyebrow"/);
+});
+
 test("workspace omits the workflow launcher and helper text but retains A101 recording controls", () => {
   assert.doesNotMatch(source("Workspace.tsx"), /playback-start|Run bathroom workflow|Use the recording to walk through a response/);
   assert.doesNotMatch(source("playback.css"), /playback-start/);

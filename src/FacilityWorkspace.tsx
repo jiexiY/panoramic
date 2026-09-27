@@ -95,12 +95,7 @@ export default function FacilityWorkspace({
   return (
     <div className="facility-page">
       <section className="page-heading facility-heading">
-        <div>
-          <p className="eyebrow">
-            {team.facility?.name.toUpperCase() ?? "RESIDENTIAL CARE"} / FLOOR 01
-          </p>
-          <h1>Resident Floor</h1>
-        </div>
+        <h1>Resident Floor</h1>
       </section>
       {team.facility && team.stale && (
         <div className="notice error" role="alert">
