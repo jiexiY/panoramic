@@ -27,7 +27,7 @@ export default function FacilityMap(props: Props) {
     renderer.setClearColor("#f6f5f1");
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.domElement.setAttribute("aria-label", "Interactive care-center floor. Select rooms using the room list, or drag to rotate and scroll to zoom.");
+    renderer.domElement.setAttribute("aria-label", "Interactive care-center floor. Select rooms using the suite labels or room tabs, or drag to rotate and scroll to zoom.");
     renderer.domElement.setAttribute("role", "img");
     container.appendChild(renderer.domElement);
     const scene = new THREE.Scene();

@@ -21,7 +21,21 @@ test("room sidebar omits the layout card while preserving the floor map and room
   assert.doesNotMatch(facility, /SuitePlan|room-detail|suite-plan-caption|>LAYOUT</);
   assert.match(facility, /<FacilityMap/);
   assert.match(facility, /<RoomMonitoring/);
-  assert.match(facility, /className="facility-card room-directory"/);
+  assert.match(facility, /className="room-monitor-selector" aria-label="Room monitoring selection"/);
+});
+
+test("Resident Floor omits duplicate labels and sidebar cards while retaining response controls", () => {
+  const facility = source("FacilityWorkspace.tsx");
+  assert.doesNotMatch(facility, /Care-center floor|Building2|facility-summary|room-directory|CareTeamPanel|facility-assistant-tabs|setSidebar|setFilter/);
+  assert.match(facility, /<ObservationStatus on=\{observationOn\} pending=\{recordingPending\} onToggle=\{toggleObservation\} \/>/);
+  assert.match(facility, /<aside className="facility-sidebar" aria-label="Panoramic assistant">\s*<PanoramicAssistant/);
+  assert.match(facility, /<h2>Active concerns<\/h2>/);
+  assert.match(facility, /<h2>Activity<\/h2>/);
+  assert.match(facility, /<IncidentDesk/);
+  assert.match(source("FacilityMap.tsx"), /suite labels or room tabs/);
+  assert.match(source("SceneMonitor.tsx"), /<CareTeamPanel/);
+  assert.match(source("Workspace.tsx"), /Recording playback · this browser/);
+  assert.match(source("RoomMonitoring.tsx"), /<ObservationStatus[^>]* playback \/>/);
 });
 
 test("sidebar uses text labels and a selected vertical marker without icons or a filled highlight", () => {

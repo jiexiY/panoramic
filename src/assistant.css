@@ -33,9 +33,6 @@
 .assistant-composer .primary { padding: 9px; min-width: 35px; flex: 0 0 auto; }
 .assistant-unlock { width: 100%; text-align: center; font-size: 11px; padding: 0 12px 14px; }
 .assistant-thinking { font-size: 12px; color: #6c7d69; }
-.facility-assistant-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 9px; background: #e8ede2; }
-.facility-assistant-tabs button { border: 0; border-radius: 6px; padding: 10px; flex: 1; background: none; color: #62705e; font: inherit; font-size: 12px; }
-.facility-assistant-tabs button[aria-pressed=true] { background: white; color: #354d39; box-shadow: 0 1px 4px #23322212; }
 .dispatch-response { display: grid; gap: 12px; border-top: 1px solid #e1e5dc; margin-top: 18px; padding-top: 17px; }
 .dispatch-response h3 { display: flex; align-items: center; gap: 7px; font-size: 14px; margin: 0; }
 .dispatch-confirm { padding: 12px; background: #eef3e8; border: 1px solid #cddac6; border-radius: 8px; }

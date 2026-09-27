@@ -1,15 +1,13 @@
 import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
 import {
   ArrowRight,
-  Building2,
   Eye,
 } from "lucide-react";
 import { suiteIds, type SpaceId } from "./facility";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import type { CareTeam } from "./useCareTeam";
-import { eligibleResponders, incidentStatus, noHazardVisible } from "./incidents";
+import { incidentStatus, noHazardVisible } from "./incidents";
 import PanoramicAssistant from "./PanoramicAssistant";
-import CareTeamPanel from "./CareTeamPanel";
 import IncidentDesk from "./IncidentDesk";
 import RoomMonitoring from "./RoomMonitoring";
 import ObservationStatus from "./ObservationStatus";
@@ -36,10 +34,7 @@ export default function FacilityWorkspace({
 }: Props) {
   const [selected, setSelected] = useState<SpaceId | null>("A101");
   const [selectedId, setSelectedId] = useState("");
-  const [filter, setFilter] = useState<"all" | "attention">("all");
   const [recording, recordingAction] = useReducer(recordingReducer, initialRecording);
-  const [sidebar, setSidebar] = useState<"team" | "ai">("ai");
-  const monitorRef = useRef<HTMLDivElement>(null);
   const incidentRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setSelectedId(""); if (team.mode !== "playback") recordingAction({ type: "close" }); }, [team.facilityId, team.mode]);
   const open = team.incidents.filter((i) => i.phase !== "resolved");
@@ -71,15 +66,6 @@ export default function FacilityWorkspace({
       recordingAction({ type: "play" });
     }
   };
-  const selectRoom = (room: SpaceId) => {
-    setSelected(room);
-    const incident = open.find(i => i.room === room);
-    if (incident) setSelectedId(incident.id);
-    requestAnimationFrame(() => monitorRef.current?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-      block: "start",
-    }));
-  };
   const showIncident = (id: string, room: string) => {
     setSelectedId(id);
     setSelected(room as SpaceId);
@@ -107,10 +93,7 @@ export default function FacilityWorkspace({
         <div className="facility-main">
           <section className="facility-map-panel">
             <div className="facility-panel-header">
-              <span>
-                <Building2 size={16} /> Care-center floor
-              </span>
-              <ObservationStatus on={observationOn} pending={recordingPending} onToggle={toggleObservation} playback />
+              <ObservationStatus on={observationOn} pending={recordingPending} onToggle={toggleObservation} />
             </div>
             <Suspense
               fallback={
@@ -129,7 +112,7 @@ export default function FacilityWorkspace({
               />
             </Suspense>
           </section>
-          <div ref={monitorRef} className="room-monitor-workspace">
+          <div className="room-monitor-workspace">
             <nav className="room-monitor-selector" aria-label="Room monitoring selection">
               {suiteIds.map(id => <button key={id} aria-pressed={monitoringRoom === id} onClick={() => setSelected(id)}>Suite {id}</button>)}
             </nav>
@@ -231,78 +214,8 @@ export default function FacilityWorkspace({
             </div>
           )}
         </div>
-        <aside className="facility-sidebar" aria-label="Rooms and care team">
-          <section className="facility-card facility-summary">
-            <div>
-              <small>Rooms</small>
-              <b>4</b>
-            </div>
-            <div>
-              <small>Available staff</small>
-              <b>
-                {
-                  eligibleResponders(team.members, team.incidents, team.clock)
-                    .length
-                }
-                <em> / {team.members.length}</em>
-              </b>
-            </div>
-            <div>
-              <small>Concerns</small>
-              <b>{open.length}</b>
-            </div>
-          </section>
-          <div className="facility-assistant-tabs"><button aria-pressed={sidebar === "ai"} onClick={() => setSidebar("ai")}>{team.mode === "playback" ? "Response brief" : "Panoramic AI"}</button><button aria-pressed={sidebar === "team"} onClick={() => setSidebar("team")}>Care team</button></div>
-          <div hidden={sidebar !== "ai"}><PanoramicAssistant key={`${team.userId}:${team.facilityId}`} team={team} selectedId={selectedId} onSelect={showIncident} onSignIn={onSignIn} /></div>
-          <div hidden={sidebar !== "team"}><CareTeamPanel team={team} onSignIn={onSignIn} /></div>
-          <section className="facility-card room-directory">
-            <div className="facility-card-heading">
-              <h2>Rooms</h2>
-              <span className="small-count">4 suites</span>
-            </div>
-            <div className="room-filters">
-              <button
-                aria-pressed={filter === "all"}
-                onClick={() => setFilter("all")}
-              >
-                All
-              </button>
-              <button
-                aria-pressed={filter === "attention"}
-                onClick={() => setFilter("attention")}
-              >
-                Needs review {Object.keys(priorities).length}
-              </button>
-            </div>
-            {suiteIds
-              .filter((id) => filter === "all" || id in priorities)
-              .map((id) => (
-                <button
-                  className={`facility-room-row ${selected === id ? "selected" : ""}`}
-                  key={id}
-                  onClick={() => selectRoom(id)}
-                >
-                  <span
-                    className="room-dot"
-                    style={
-                      id in priorities
-                        ? { background: routeLevels[priorities[id]].color }
-                        : undefined
-                    }
-                  />
-                  <span>
-                    <b>Suite {id}</b>
-                    <small>Bedroom · bathroom</small>
-                  </span>
-                  <span className="room-state">
-                    {id in priorities ? routeLevels[priorities[id]].short : "—"}
-                  </span>
-                </button>
-              ))}
-            {filter === "attention" && !open.length && (
-              <p className="facility-empty">No open concerns</p>
-            )}
-          </section>
+        <aside className="facility-sidebar" aria-label="Panoramic assistant">
+          <PanoramicAssistant key={`${team.userId}:${team.facilityId}`} team={team} selectedId={selectedId} onSelect={showIncident} onSignIn={onSignIn} />
         </aside>
       </div>
     </div>
