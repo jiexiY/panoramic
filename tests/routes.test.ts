@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { resolveRoute, routeTitle, workspacePaths } from "../src/routes.ts";
+import { resolveRoute, routeTitle, workspacePaths, suitePath } from "../src/routes.ts";
+import { suiteIds } from "../src/suiteRecords.ts";
 
 test("project opens directly to the entrance, with no advertising surface", () => {
   assert.deepEqual(resolveRoute("/"), { surface: "entry" });
@@ -30,8 +31,16 @@ test("each surface has a useful document title", () => {
 });
 test("production rewrites cover direct app entry without rewriting the API", () => {
   const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
-  assert.deepEqual(config.rewrites.map((item: {source: string}) => item.source), Object.values(workspacePaths));
+  assert.deepEqual(config.rewrites.map((item: {source: string}) => item.source), [...Object.values(workspacePaths), "/app/spatial/:suite"]);
   assert.ok(config.rewrites.every((item: {destination: string}) => item.destination === "/index.html"));
+});
+
+test("each suite has a distinct bookmarkable page, and unknown suites never fall back to A101", () => {
+  for (const suite of suiteIds) {
+    for (const suffix of ["", "/"]) assert.deepEqual(resolveRoute(suitePath(suite) + suffix), { surface: "workspace", page: "spatial", suite });
+    assert.equal(routeTitle(resolveRoute(suitePath(suite))), `Suite ${suite} · Resident Floor — Panoramic`);
+  }
+  for (const path of ["/app/spatial/A999", "/app/spatial/a101", "/app/spatial/A101/other"]) assert.deepEqual(resolveRoute(path), { surface: "not-found" });
 });
 
 test("legacy welcome, supervision and history links redirect to their current surfaces", () => {

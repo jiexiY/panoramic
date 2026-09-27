@@ -3,7 +3,9 @@ import {
   ArrowRight,
   Eye,
 } from "lucide-react";
-import { suiteIds, type SpaceId } from "./facility";
+import { suiteIds, suiteRecords, isSuiteId, type SuiteId } from "./suiteRecords";
+import SiteLink, { type Navigate } from "./SiteLink";
+import { suitePath } from "./routes";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import type { CareTeam } from "./useCareTeam";
 import { incidentStatus, noHazardVisible } from "./incidents";
@@ -17,6 +19,8 @@ import "./room-monitoring.css";
 
 const FacilityMap = lazy(() => import("./FacilityMap"));
 type Props = {
+  suite?: SuiteId;
+  navigate: Navigate;
   active: boolean;
   workflowScanning: boolean;
   onStopWorkflow: () => void;
@@ -25,6 +29,8 @@ type Props = {
   onSignIn: () => void;
 };
 export default function FacilityWorkspace({
+  suite,
+  navigate,
   active,
   workflowScanning,
   onStopWorkflow,
@@ -32,43 +38,44 @@ export default function FacilityWorkspace({
   team,
   onSignIn,
 }: Props) {
-  const [selected, setSelected] = useState<SpaceId | null>("A101");
+  const monitoringRoom = suite ?? "A101";
+  const selectSuite = (room: string | null) => { if (isSuiteId(room)) navigate(suitePath(room)); };
   const [selectedId, setSelectedId] = useState("");
   const [recording, recordingAction] = useReducer(recordingReducer, initialRecording);
   const incidentRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { setSelectedId(""); if (team.mode !== "playback") recordingAction({ type: "close" }); }, [team.facilityId, team.mode]);
-  const open = team.incidents.filter((i) => i.phase !== "resolved");
+  useEffect(() => { setSelectedId(""); if (team.mode !== "playback") recordingAction({ type: "close" }); }, [team.facilityId, team.mode, monitoringRoom]);
+  const roomRecords = suiteRecords(monitoringRoom, team.incidents, team.events);
+  const { open, events, incidents } = roomRecords;
   const current =
-    team.incidents.find((i) => i.id === selectedId) ??
+    incidents.find((i) => i.id === selectedId) ??
     open[0] ??
-    team.incidents[0];
+    incidents[0];
   const priorities: Record<string, RoutePriority> = {};
-  for (const i of open) {
+  for (const i of team.incidents.filter(i => i.phase !== "resolved")) {
     if (
       !(i.room in priorities) ||
       routeLevels[i.priority].rank > routeLevels[priorities[i.room]].rank
     )
       priorities[i.room] = i.priority;
   }
-  const monitoringRoom = selected && selected !== "supervision" ? selected : "A101";
   const recordingPending = active && monitoringRoom === "A101" && recording.mode === "loading";
-  const observationOn = active && (workflowScanning || recordingIsOn(recording, active, monitoringRoom));
+  const observationOn = active && monitoringRoom === "A101" && (workflowScanning || recordingIsOn(recording, active, monitoringRoom));
   useEffect(() => { if (!active) { recordingAction({ type: "pause" }); onStopWorkflow(); } }, [active]);
   useEffect(() => { if (monitoringRoom !== "A101") { recordingAction({ type: "close" }); onStopWorkflow(); } }, [monitoringRoom]);
-  const roomOpen = open.filter(i => i.room === monitoringRoom);
-  const roomLatest = team.incidents.find(i => i.room === monitoringRoom);
+  const roomOpen = open;
+  const roomLatest = incidents[0];
   const toggleObservation = () => {
+    if (monitoringRoom !== "A101") return;
     if (observationOn || recordingPending) {
       recordingAction({ type: "pause" });
       if (workflowScanning) onStopWorkflow();
     } else {
-      setSelected("A101");
       recordingAction({ type: "play" });
     }
   };
   const showIncident = (id: string, room: string) => {
+    if (room !== monitoringRoom || !incidents.some(i => i.id === id)) return;
     setSelectedId(id);
-    setSelected(room as SpaceId);
     requestAnimationFrame(() =>
       incidentRef.current?.scrollIntoView({
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -81,19 +88,19 @@ export default function FacilityWorkspace({
   return (
     <div className="facility-page">
       <section className="page-heading facility-heading">
-        <h1>Resident Floor</h1>
+        <h1>{suite ? `Suite ${suite}` : "Resident Floor"}</h1>
       </section>
       {team.facility && team.stale && (
         <div className="notice error" role="alert">
           Connection needs attention. The information below may be out of date.
         </div>
       )}
-      {team.incidents.filter(i => i.phase === "dispatched" && i.assigned_to === team.userId).map(i => <div key={i.id} className="assigned-banner" role="status"><div><b>Response requested · {i.room}</b><span>{i.zone} · waiting for your acceptance</span></div><button className="primary" onClick={() => showIncident(i.id, i.room)}>Review request <ArrowRight size={15} /></button></div>)}
+      {incidents.filter(i => i.phase === "dispatched" && i.assigned_to === team.userId).map(i => <div key={i.id} className="assigned-banner" role="status"><div><b>Response requested · {i.room}</b><span>{i.zone} · waiting for your acceptance</span></div><button className="primary" onClick={() => showIncident(i.id, i.room)}>Review request <ArrowRight size={15} /></button></div>)}
       <div className="facility-grid">
         <div className="facility-main">
           <section className="facility-map-panel">
             <div className="facility-panel-header">
-              <ObservationStatus on={observationOn} pending={recordingPending} onToggle={toggleObservation} />
+              <ObservationStatus on={observationOn} pending={recordingPending} onToggle={monitoringRoom === "A101" ? toggleObservation : undefined} />
             </div>
             <Suspense
               fallback={
@@ -103,18 +110,18 @@ export default function FacilityWorkspace({
               }
             >
               <FacilityMap
-                selected={selected}
+                selected={monitoringRoom}
                 alert={false}
                 roomPriorities={priorities}
                 showRoute={false}
-                onSelect={setSelected}
+                onSelect={selectSuite}
                 active={active}
               />
             </Suspense>
           </section>
           <div className="room-monitor-workspace">
             <nav className="room-monitor-selector" aria-label="Room monitoring selection">
-              {suiteIds.map(id => <button key={id} aria-pressed={monitoringRoom === id} onClick={() => setSelected(id)}>Suite {id}</button>)}
+              {suiteIds.map(id => <SiteLink key={id} to={suitePath(id)} navigate={navigate} aria-current={monitoringRoom === id ? "page" : undefined}>Suite {id}</SiteLink>)}
             </nav>
             <RoomMonitoring key={monitoringRoom} room={monitoringRoom}
               priority={priorities[monitoringRoom] ?? "unassessed"} active={active} workflowScanning={workflowScanning}
@@ -126,10 +133,10 @@ export default function FacilityWorkspace({
               }}
               clearVisible={roomOpen.length > 0 && roomOpen.every(noHazardVisible)}
               closed={!roomOpen.length && !!roomLatest?.nursing_checked_by}
-              canReview={team.mode === "playback" && team.incidents.some(i => i.room === monitoringRoom && i.phase !== "resolved")}
+              canReview={team.mode === "playback" && open.length > 0}
               onClearFrame={() => onMonitorFrame("clear")} />
           </div>
-          <div className="facility-bottom-grid">
+          <div className="facility-bottom-grid" role="region" aria-label={`Suite ${monitoringRoom} follow-up`}>
             <section className="facility-card">
               <div className="facility-card-heading">
                 <h2>Active concerns</h2>
@@ -167,7 +174,7 @@ export default function FacilityWorkspace({
                   </button>
                 ))
               ) : (
-                <div className="facility-empty">No open concerns</div>
+                <div className="facility-empty">No open concerns for Suite {monitoringRoom}</div>
               )}
             </section>
             <section className="facility-card">
@@ -175,9 +182,9 @@ export default function FacilityWorkspace({
                 <h2>Activity</h2>
                 <Eye size={16} />
               </div>
-              {team.events.length ? (
+              {events.length ? (
                 <ol className="facility-activity">
-                  {team.events
+                  {events
                     .slice(-8)
                     .reverse()
                     .map((e) => (
@@ -193,14 +200,14 @@ export default function FacilityWorkspace({
                     ))}
                 </ol>
               ) : (
-                <div className="facility-empty">No activity yet</div>
+                <div className="facility-empty">No activity yet for Suite {monitoringRoom}</div>
               )}
             </section>
           </div>
           {current && (
             <div ref={incidentRef}>
               <div className="incident-picker">
-                {team.incidents.map((i) => (
+                {incidents.map((i) => (
                   <button
                     key={i.id}
                     aria-pressed={i.id === current.id}
@@ -215,7 +222,7 @@ export default function FacilityWorkspace({
           )}
         </div>
         <aside className="facility-sidebar" aria-label="Panoramic assistant">
-          <PanoramicAssistant key={`${team.userId}:${team.facilityId}`} team={team} selectedId={selectedId} onSelect={showIncident} onSignIn={onSignIn} />
+          <PanoramicAssistant key={`${team.userId}:${team.facilityId}:${monitoringRoom}`} room={monitoringRoom} team={team} selectedId={current?.id ?? ""} onSelect={showIncident} onSignIn={onSignIn} />
         </aside>
       </div>
     </div>

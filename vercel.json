@@ -11,7 +11,8 @@
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/spatial", "destination": "/index.html" },
     { "source": "/app/session", "destination": "/index.html" },
-    { "source": "/app/session/history", "destination": "/index.html" }
+    { "source": "/app/session/history", "destination": "/index.html" },
+    { "source": "/app/spatial/:suite", "destination": "/index.html" }
   ],
   "functions": { "api/gemini.ts": { "maxDuration": 45 } },
   "headers": [{ "source": "/(.*)", "headers": [

@@ -23,7 +23,7 @@ const answer = () => ({ paragraphs: [{ text: "Possible spill in A102; glare cann
 const env = { GEMINI_API_KEY: "test-key-not-real", GEMINI_FREE_TIER_CONFIRMED: "true", GEMINI_DEMO_ACCESS_CODE: "private-test-code-12345", VITE_SUPABASE_URL: "https://testproject.supabase.co", VITE_SUPABASE_PUBLISHABLE_KEY: "test-public-key" };
 const body = { operation: "assistant", question: "Why is A102 flagged?", facilityId: facility, incidentId: incident.id, nonSensitiveConfirmed: true };
 const request = (value: any = body, auth = "Bearer test.jwt.token") => new Request("https://panoramic.example/api/gemini", { method: "POST", headers: { "content-type": "application/json", "x-demo-access-code": env.GEMINI_DEMO_ACCESS_CODE, authorization: auth }, body: JSON.stringify(value) });
-function mockNetwork(options: { roster?: TeamMember[]; result?: unknown; badAuth?: boolean; empty?: boolean } = {}) {
+function mockNetwork(options: { roster?: TeamMember[]; result?: unknown; badAuth?: boolean; empty?: boolean; records?: SharedIncident[]; busy?: string; availabilityError?: boolean } = {}) {
   const calls: { url: string; method: string; body: any }[] = [];
   const mock: typeof fetch = async (input, init) => {
     const url = new URL(String(input)), method = init?.method ?? "GET";
@@ -31,11 +31,21 @@ function mockNetwork(options: { roster?: TeamMember[]; result?: unknown; badAuth
     calls.push({ url: url.href, method, body: data });
     if (url.pathname === "/auth/v1/user") return options.badAuth ? Response.json({ message: "invalid" }, { status: 401 }) : Response.json({ id: actor, is_anonymous: false, email_confirmed_at: new Date(now).toISOString() });
     if (url.pathname.startsWith("/rest/")) {
-      assert.equal(method, "GET");
+      assert.ok(["GET", "HEAD"].includes(method));
       assert.equal(new Headers(init?.headers).get("authorization"), "Bearer test.jwt.token");
       assert.equal(url.searchParams.get("facility_id"), `eq.${facility}`);
       if (url.pathname.endsWith("care_members")) return Response.json(options.roster ?? members);
-      if (url.pathname.endsWith("care_incidents")) return Response.json(options.empty ? [] : [incident]);
+      if (url.pathname.endsWith("care_incidents")) {
+        if (method === "HEAD") {
+          assert.equal(url.searchParams.get("select"), "id");
+          assert.equal(url.searchParams.get("phase"), "in.(dispatched,acknowledged,arrived)");
+          const count = url.searchParams.get("assigned_to") === `eq.${options.busy}` ? 1 : 0;
+          return new Response(null, { status: options.availabilityError ? 503 : 200, headers: { "content-range": `*/${count}` } });
+        }
+        return Response.json((options.empty ? [] : options.records ?? [incident]).filter(i =>
+          (!url.searchParams.has("room") || url.searchParams.get("room") === `eq.${i.room}`) &&
+          (!url.searchParams.has("id") || url.searchParams.get("id") === `eq.${i.id}`)));
+      }
       if (url.pathname.endsWith("care_incident_events")) return Response.json([]);
     }
     if (url.hostname === "generativelanguage.googleapis.com") return Response.json({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify(options.result ?? answer()) }] } }] });
@@ -101,7 +111,59 @@ test("assistant retrieves records through caller RLS, ignores client facts and p
   assert.match(text, /Glare cannot be excluded/); assert.doesNotMatch(text, /CLIENT_INVENTION|IGNORE RULES|test.jwt.token|private-test-code|private-path/);
   assert.match(provider.body.systemInstruction.parts[0].text, /no write tools/);
   assert.equal(provider.body.tools, undefined);
-  assert.equal(n.calls.filter(c => c.method !== "GET").length, 1);
+  assert.equal(n.calls.filter(c => !["GET", "HEAD"].includes(c.method)).length, 1);
+});
+
+test("suite queries filter on the server and do not send another suite's concern to the model", async () => {
+  const other = { ...incident, id: "30000000-0000-4000-8000-000000000099", room: "A101", resolution: "OTHER_SUITE_PRIVATE_NOTE" };
+  const n = mockNetwork({ records: [other, incident] });
+  const response = await createGeminiHandler({ fetch: n.mock, now: () => now })(request({ ...body, room: "A102", incidentId: "" }), env);
+  assert.equal(response.status, 200);
+  const recordQuery = new URL(n.calls.find(c => c.url.includes("care_incidents") && c.method === "GET")!.url);
+  assert.equal(recordQuery.searchParams.get("room"), "eq.A102");
+  const eventQuery = new URL(n.calls.find(c => c.url.includes("care_incident_events"))!.url);
+  assert.equal(eventQuery.searchParams.get("incident_id"), `in.(${incident.id})`);
+  const prompt = JSON.stringify(n.calls.find(c => /googleapis/.test(c.url))!.body);
+  assert.match(prompt, /Suite A102 only/);
+  assert.doesNotMatch(prompt, /A101|OTHER_SUITE_PRIVATE_NOTE|000000000099/);
+});
+
+test("suite and concern mismatch is rejected rather than opening the other suite", async () => {
+  const n = mockNetwork();
+  const response = await createGeminiHandler({ fetch: n.mock, now: () => now })(request({ ...body, room: "A103" }), env);
+  assert.equal(response.status, 404);
+  assert.ok(!n.calls.some(c => /googleapis/.test(c.url)));
+});
+
+test("empty suite context stays empty and does not borrow another suite's records", async () => {
+  const result = { paragraphs: [{ text: "No concerns loaded for this suite.", sourceIds: ["workspace:scope"] }], action: { kind: "none", incidentId: "", caregiverId: "" } };
+  const n = mockNetwork({ result });
+  const response = await createGeminiHandler({ fetch: n.mock, now: () => now })(request({ ...body, room: "A104", incidentId: "" }), env);
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.deepEqual(data.versions, {});
+  assert.match(data.scope, /Suite A104 only/);
+  assert.ok(!n.calls.some(c => /care_incident_events/.test(c.url)));
+  const payload = JSON.parse(n.calls.find(c => /googleapis/.test(c.url))!.body.contents[0].parts[0].text);
+  assert.doesNotMatch(JSON.stringify(payload.sources), /Possible floor spill|A102/);
+});
+
+test("invalid suite selectors fail before any query or model request", async () => {
+  for (const room of ["A999", "A102,A101", ["A102"], {}, null]) {
+    const n = mockNetwork();
+    const response = await createGeminiHandler({ fetch: n.mock, now: () => now })(request({ ...body, room }), env);
+    assert.equal(response.status, 400);
+    assert.equal(n.calls.length, 0);
+  }
+});
+
+test("suite-scoped AI still rejects a responder reserved elsewhere and fails closed on unavailable occupancy", async () => {
+  for (const [options, status] of [[{ busy: responder }, 502], [{ availabilityError: true }, 503]] as const) {
+    const n = mockNetwork({ ...options, result: { ...answer(), action: { kind: "assign", incidentId: incident.id, caregiverId: responder } } });
+    const response = await createGeminiHandler({ fetch: n.mock, now: () => now })(request({ ...body, room: "A102" }), env);
+    assert.equal(response.status, status);
+    assert.ok(!n.calls.some(c => c.url.includes("/rpc/")));
+  }
 });
 test("assignment is a proposal only; an unavailable caregiver fails closed", async () => {
   for (const [id, status] of [[responder, 200], [actor, 502]] as const) {

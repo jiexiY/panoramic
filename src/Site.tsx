@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import { ArrowLeft, HeartHandshake, Webcam } from "lucide-react";
 import SiteLink, { type Navigate } from "./SiteLink";
 import { resolveRoute, routeTitle, type WorkspacePage } from "./routes";
+import type { SuiteId } from "./suiteRecords";
 
 const Workspace = lazy(() => import("./Workspace"));
 const locationState = () => ({ pathname: window.location.pathname, hash: window.location.hash });
@@ -22,6 +23,7 @@ export default function Site() {
   const route = resolveRoute(location.pathname);
   const [workspaceOpened, setWorkspaceOpened] = useState(route.surface === "workspace");
   const lastPage = useRef<WorkspacePage>(route.surface === "workspace" ? route.page : "monitor");
+  const lastSuite = useRef<SuiteId | undefined>(route.surface === "workspace" ? route.suite : undefined);
   const navigate = useCallback<Navigate>((to) => {
     const target = new URL(to, window.location.origin);
     if (target.origin !== window.location.origin) return;
@@ -46,7 +48,7 @@ export default function Site() {
     return () => { window.removeEventListener("popstate", update); window.removeEventListener("hashchange", update); };
   }, []);
   useEffect(() => {
-    if (route.surface === "workspace") { setWorkspaceOpened(true); lastPage.current = route.page; }
+    if (route.surface === "workspace") { setWorkspaceOpened(true); lastPage.current = route.page; lastSuite.current = route.suite; }
     document.title = routeTitle(route);
   }, [location.pathname]);
   useLayoutEffect(() => {
@@ -61,7 +63,7 @@ export default function Site() {
   }, [location]);
   return <>
     {route.surface === "entry" && <ProjectLanding navigate={navigate} />}
-    {(workspaceOpened || route.surface === "workspace") && <div hidden={route.surface !== "workspace"} data-active-page={route.surface === "workspace" ? "true" : undefined}><Suspense fallback={<main className="workspace-loading" role="status">Opening care workspace…</main>}><Workspace page={route.surface === "workspace" ? route.page : lastPage.current} navigate={navigate} /></Suspense></div>}
+    {(workspaceOpened || route.surface === "workspace") && <div hidden={route.surface !== "workspace"} data-active-page={route.surface === "workspace" ? "true" : undefined}><Suspense fallback={<main className="workspace-loading" role="status">Opening care workspace…</main>}><Workspace page={route.surface === "workspace" ? route.page : lastPage.current} suite={route.surface === "workspace" ? route.suite : lastSuite.current} navigate={navigate} /></Suspense></div>}
     {route.surface === "not-found" && <main className="welcome-main" data-active-page="true"><h1>Page not found</h1><SiteLink to="/" navigate={navigate} className="site-button">Back to Panoramic <ArrowLeft size={16} /></SiteLink></main>}
   </>;
 }

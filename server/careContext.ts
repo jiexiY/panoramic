@@ -3,13 +3,14 @@ import { eligibleResponders, incidentStatus, type SharedIncident, type TeamMembe
 import { parseScene } from "../src/scene.ts";
 import { hazardGuidance } from "../src/hazardGuidance.ts";
 import type { EvidenceSource } from "../src/copilot.ts";
+import type { SuiteId } from "../src/suiteRecords.ts";
 
 export class ContextError extends Error { status: number; constructor(status: number, message: string) { super(message); this.status = status; } }
 export type CareContext = { sources: EvidenceSource[]; allowedAssignments: Record<string, string[]>; versions: Record<string, number>; scope: string; snapshotAt: string };
-export function buildCareContext(incidents: SharedIncident[], members: TeamMember[], events: IncidentEvent[], actor: string, now: number, selected: boolean): CareContext {
+export function buildCareContext(incidents: SharedIncident[], members: TeamMember[], events: IncidentEvent[], actor: string, now: number, selected: boolean, room?: SuiteId, reservations: Pick<SharedIncident, "assigned_to" | "phase">[] = incidents): CareContext {
   const sources: EvidenceSource[] = hazardGuidance.map(g => ({ ...g }));
   const me = members.find(m => m.user_id === actor);
-  const candidates = eligibleResponders(members, incidents, now);
+  const candidates = eligibleResponders(members, reservations, now);
   const allowedAssignments: Record<string, string[]> = {};
   const versions: Record<string, number> = {};
   for (const i of incidents) {
@@ -29,11 +30,11 @@ export function buildCareContext(incidents: SharedIncident[], members: TeamMembe
   for (const m of members) sources.push({ id: `member:${m.user_id}`, title: m.display_name,
     text: JSON.stringify({ role: m.role, eligibleForEnvironmentalCheck: m.qualified, availableAsOfSnapshot: candidates.some(c => c.user_id === m.user_id), availableUntil: m.available_until, responseOrder: m.response_order }) });
   for (const e of events.filter(e => incidents.some(i => i.id === e.incident_id))) sources.push({ id: `event:${e.id}`, incidentId: e.incident_id, title: `${e.action} · ${e.created_at}`, text: e.detail.slice(0, 1200) });
-  const scope = selected ? "Selected concern and its recent response events" : "Up to 100 open concerns and 200 latest response events; resolved concerns and full shift history are not included";
+  const scope = (room ? `Suite ${room} only. ` : "") + (selected ? "Selected concern and its recent response events" : "Up to 100 open concerns and 200 latest response events; resolved concerns and full shift history are not included");
   sources.push({ id: "workspace:scope", title: "Workspace snapshot", text: `${scope}. ${incidents.length} concerns loaded. Phone/SMS delivery, resident tracking and live sensors are not connected. Availability is a short-lived indication, not an attendance guarantee.` });
   return { sources, allowedAssignments, versions, scope, snapshotAt: new Date(now).toISOString() };
 }
-export async function loadCareContext(request: Request, env: Record<string, string | undefined>, facilityId: string, incidentId: string, requestFetch: typeof fetch, now: number): Promise<CareContext> {
+export async function loadCareContext(request: Request, env: Record<string, string | undefined>, facilityId: string, incidentId: string, requestFetch: typeof fetch, now: number, room?: SuiteId): Promise<CareContext> {
   const authorization = request.headers.get("authorization") ?? "";
   if (!/^Bearer [A-Za-z0-9._-]+$/.test(authorization) || authorization.length > 10000) throw new ContextError(401, "Sign in to ask about your care-team records.");
   const url = env.VITE_SUPABASE_URL, key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -47,12 +48,21 @@ export async function loadCareContext(request: Request, env: Record<string, stri
   const members = roster.data as TeamMember[];
   if (!members.some(m => m.user_id === identity.data.user.id)) throw new ContextError(403, "You do not have access to this workspace.");
   let query = client.from("care_incidents").select("*").eq("facility_id", facilityId);
+  if (room) query = query.eq("room", room);
   query = incidentId ? query.eq("id", incidentId) : query.neq("phase", "resolved");
   const records = await query.order("created_at", { ascending: false }).limit(100);
   if (records.error) throw new ContextError(503, "Could not read current concerns.");
   const incidents = records.data as SharedIncident[];
-  if (incidentId && !incidents.length) throw new ContextError(404, "This concern is not available in your workspace.");
+  if (incidentId && !incidents.length) throw new ContextError(404, "This concern is not available in the selected workspace or suite.");
+  // Check occupancy across the facility without adding other suites' records to AI evidence.
+  // Count per roster member to avoid a row-limit truncating the reservation check.
+  const availability = await Promise.all(members.map(async member => {
+    const held = await client.from("care_incidents").select("id", { count: "exact", head: true })
+      .eq("facility_id", facilityId).eq("assigned_to", member.user_id).in("phase", ["dispatched", "acknowledged", "arrived"]);
+    if (held.error || held.count === null) throw new ContextError(503, "Could not verify responder availability.");
+    return { assigned_to: member.user_id, phase: held.count > 0 ? "dispatched" as const : "resolved" as const };
+  }));
   const events = incidents.length ? await client.from("care_incident_events").select("*").eq("facility_id", facilityId).in("incident_id", incidents.map(i => i.id)).order("created_at", { ascending: false }).limit(200) : { data: [], error: null };
   if (events.error) throw new ContextError(503, "Could not read the response timeline.");
-  return buildCareContext(incidents, members, events.data as IncidentEvent[], identity.data.user.id, now, !!incidentId);
+  return buildCareContext(incidents, members, events.data as IncidentEvent[], identity.data.user.id, now, !!incidentId, room, availability);
 }

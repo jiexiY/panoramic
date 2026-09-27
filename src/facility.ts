@@ -1,8 +1,8 @@
 import { advanceIncident, startIncident, type Caregiver, type Incident, type Scene } from "./scene.ts";
 import { highestRoutePriority, type WalkingRoute } from "./routeRisk.ts";
 
-export const suiteIds = ["A101", "A102", "A103", "A104"] as const;
-export type SuiteId = typeof suiteIds[number];
+import type { SuiteId } from "./suiteRecords";
+export { suiteIds, type SuiteId } from "./suiteRecords.ts";
 export type SpaceId = SuiteId | "supervision";
 export type FacilityStaff = Caregiver & { role: "Caregiver" | "Registered nurse"; location: SpaceId };
 export type FacilityState = { loaded: boolean; incident: Incident | null; staff: FacilityStaff[] };

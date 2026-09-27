@@ -24,9 +24,9 @@
 .observation-source { display: inline-block; margin: 0; padding: 3px 5px; border-radius: 3px; background: #edf1eb; color: #5a6c62; font-size: 9px; font-weight: 500; }
 .room-monitor-workspace { border: 1px solid #dde1d7; border-radius: 9px; background: #fffefb; overflow: hidden; scroll-margin-top: 20px; }
 .room-monitor-selector { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 6px; border-bottom: 1px solid #e4e6df; background: #f6f7f2; }
-.room-monitor-selector button { border: 1px solid transparent; background: transparent; padding: 11px 5px; border-radius: 5px; color: #64766b; font-size: 12px; }
-.room-monitor-selector button[aria-pressed=true] { border-color: #d5dfd2; background: #fffefb; color: #294b3b; font-weight: 650; box-shadow: 0 1px 3px #293e3210; }
-.room-monitor-selector button:focus-visible { outline: 2px solid #436f5d; outline-offset: -2px; }
+.room-monitor-selector a { border: 1px solid transparent; background: transparent; padding: 11px 5px; border-radius: 5px; color: #64766b; font-size: 12px; text-align: center; text-decoration: none; }
+.room-monitor-selector a[aria-current=page] { border-color: #d5dfd2; background: #fffefb; color: #294b3b; font-weight: 650; box-shadow: 0 1px 3px #293e3210; }
+.room-monitor-selector a:focus-visible { outline: 2px solid #436f5d; outline-offset: -2px; }
 .room-monitor { padding: 20px; }
 .room-monitor-heading, .room-zone-heading, .room-route-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .room-monitor-heading { margin-bottom: 18px; }
@@ -57,5 +57,5 @@
 @media (max-width: 580px) {
   .room-monitor { padding: 14px; }
   .room-monitor-zone { padding: 12px; }
-  .room-monitor-selector button { font-size: 11px; padding: 10px 3px; }
+  .room-monitor-selector a { font-size: 11px; padding: 10px 3px; }
 }

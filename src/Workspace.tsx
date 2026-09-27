@@ -56,6 +56,7 @@ import { usePlaybackTeam } from "./usePlaybackTeam";
 import "./playback.css";
 import SiteLink, { type Navigate } from "./SiteLink";
 import { workspacePaths, type WorkspacePage } from "./routes";
+import type { SuiteId } from "./suiteRecords";
 
 const time = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
@@ -69,7 +70,7 @@ const date = (value: string) =>
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-export default function Workspace({ page, navigate }: { page: WorkspacePage; navigate: Navigate }) {
+export default function Workspace({ page, suite, navigate }: { page: WorkspacePage; suite?: SuiteId; navigate: Navigate }) {
   const setPage = (next: WorkspacePage) => navigate(workspacePaths[next]);
   const isCareSession = page === "session" || page === "history";
   const [state, setState] = useState<State>(() => emptyState());
@@ -103,7 +104,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
     const heading = [...document.querySelectorAll<HTMLElement>('[data-active-page="true"] .app-shell h1')].find(item => item.getClientRects().length > 0);
     heading?.setAttribute("tabindex", "-1");
     heading?.focus({ preventScroll: true });
-  }, [page]);
+  }, [page, suite]);
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
     window.addEventListener("online", update);
@@ -372,6 +373,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
             <b>
               {page === "monitor" ? "Dashboard" : page === "spatial" ? "Resident Floor" : "Care session"}
             </b>
+            {page === "spatial" && suite && <><ChevronRight size={14} /><b>Suite {suite}</b></>}
           </div>
           <div className="top-actions">
             {(hasSession || busy) && <span className={`connection ${row ? "connected" : ""}`}>
@@ -427,7 +429,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           )}
           {playback.active && <div className="playback-bar"><div><b>Recording playback · this browser</b><small>No care-team records or real notifications are created.</small></div><label>View as<select aria-label="Playback role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label><button className="text-button" onClick={playback.start}>Restart</button><button className="text-button" onClick={playback.stop}>Exit playback</button></div>}
           <div hidden={page !== "monitor"}><SceneMonitor key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
-          <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} workflowScanning={playback.scanning} onStopWorkflow={playback.pause} onMonitorFrame={playback.monitorFrame} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
+          <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} suite={suite} navigate={navigate} workflowScanning={playback.scanning} onStopWorkflow={playback.pause} onMonitorFrame={playback.monitorFrame} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
           {isCareSession && <>
             <section className="page-heading">
               <h1>Care session</h1>

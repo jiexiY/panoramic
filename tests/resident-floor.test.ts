@@ -6,7 +6,7 @@ const source = (file: string) => readFileSync(new URL(`../src/${file}`, import.m
 
 test("Resident Floor heading has no facility or floor eyebrow in any mode", () => {
   const facility = source("FacilityWorkspace.tsx");
-  assert.match(facility, /<section className="page-heading facility-heading">\s*<h1>Resident Floor<\/h1>\s*<\/section>/);
+  assert.match(facility, /<h1>\{suite \? `Suite \$\{suite\}` : "Resident Floor"\}<\/h1>/);
   assert.doesNotMatch(facility, /FLOOR 01|RESIDENTIAL CARE|className="eyebrow"/);
 });
 
@@ -27,7 +27,7 @@ test("room sidebar omits the layout card while preserving the floor map and room
 test("Resident Floor omits duplicate labels and sidebar cards while retaining response controls", () => {
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /Care-center floor|Building2|facility-summary|room-directory|CareTeamPanel|facility-assistant-tabs|setSidebar|setFilter/);
-  assert.match(facility, /<ObservationStatus on=\{observationOn\} pending=\{recordingPending\} onToggle=\{toggleObservation\} \/>/);
+  assert.match(facility, /onToggle=\{monitoringRoom === "A101" \? toggleObservation : undefined\}/);
   assert.match(facility, /<aside className="facility-sidebar" aria-label="Panoramic assistant">\s*<PanoramicAssistant/);
   assert.match(facility, /<h2>Active concerns<\/h2>/);
   assert.match(facility, /<h2>Activity<\/h2>/);
@@ -82,7 +82,7 @@ test("manual observation controls real playback state and stops it when hidden",
   assert.match(room, /active && room === "A101" && workflowScanning/);
   assert.match(facility, /if \(!active\) \{ recordingAction\(\{ type: "pause" \}\); onStopWorkflow\(\)/);
   assert.match(facility, /if \(workflowScanning\) onStopWorkflow\(\)/);
-  assert.match(facility, /onToggle=\{toggleObservation\}/);
+  assert.match(facility, /onToggle=\{monitoringRoom === "A101" \? toggleObservation : undefined\}/);
   assert.match(room, /onError=\{\(\) => onRecordingAction\(\{ type: "failed", version: recording.version \}\)\}/);
   assert.doesNotMatch(source("FacilityWorkspace.tsx"), /No observations|Live updates|Saved observations/);
   const status = source("ObservationStatus.tsx");
