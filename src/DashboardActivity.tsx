@@ -19,7 +19,6 @@ export default function DashboardActivity({ room, team, monitorEntries, onSignIn
   const [analyses, setAnalyses] = useState<ActivityEntry[]>([]);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const rows = dashboardActivity(room, team.incidents, team.events, [...monitorEntries, ...analyses]);
-  const livingArea = rows.find(e => e.zone === "Living area" && e.kind === "analysis");
   return <section className="dashboard-activity" aria-label={`Suite ${room} activity`}>
     <header className="dashboard-activity-heading">
       <div><h2>Activity</h2><p>Suite {room} · Monitoring, analysis & response</p></div>
@@ -35,14 +34,18 @@ export default function DashboardActivity({ room, team, monitorEntries, onSignIn
         <p><strong>{row.zone}</strong> · {row.text}</p>
       </li>)}</ol> : <p className="activity-empty">No results recorded for Suite {room} yet. New monitoring and response updates will appear here.</p>}
     </div>
-    <div className="activity-living-area">
-      <div><h3>Living area</h3><p>{livingArea ? `Latest frame analyzed at ${activityTime(livingArea.at)}` : "No living-area frame analyzed for this suite."}</p></div>
+    {/* Keep an in-progress analysis accessible if monitoring results arrive. */}
+    {(rows.length === 0 || analysisOpen) && <div className="activity-living-area">
+      <div><h3>Living area</h3><p>No living-area frame analyzed for this suite.</p></div>
       <button className="secondary" aria-expanded={analysisOpen} aria-controls="living-area-analysis" onClick={() => setAnalysisOpen(open => !open)}>{analysisOpen ? "Close analysis" : "Analyze living area"}</button>
-    </div>
+    </div>}
     {analysisOpen && <div id="living-area-analysis" className="activity-analysis">
       <p className="activity-analysis-note">Analyze an unoccupied-room image or a paused video frame. Results join this suite’s Activity; this is not continuous camera analysis.</p>
       <SceneMonitor key={`${room}:${team.mode}`} embedded activityMode scopeRoom={room} team={team} onSignIn={onSignIn}
-        onAnalysis={(id, zone, analysis) => setAnalyses(current => appendActivity(current, analysisActivity(id, room, zone, analysis)))} />
+        onAnalysis={(id, zone, analysis) => {
+          setAnalyses(current => appendActivity(current, analysisActivity(id, room, zone, analysis)));
+          setAnalysisOpen(false);
+        }} />
     </div>}
   </section>;
 }

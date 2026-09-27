@@ -87,3 +87,13 @@ test("dashboard Activity replaces old review cards and keeps explicit suite-boun
   assert.match(scene, /!privacyConfirmed/);
   assert.match(source("MonitoringDashboard.tsx"), /key=\{team.facilityId \?\? "local"\}/);
 });
+
+test("living-area empty-state prompt disappears after suite Activity results arrive", () => {
+  const activity = source("DashboardActivity.tsx");
+  assert.match(activity, /\(rows.length === 0 \|\| analysisOpen\) && <div className="activity-living-area"/);
+  assert.match(activity, /onAnalysis=\{\(id, zone, analysis\) => \{\s*setAnalyses\([\s\S]*?setAnalysisOpen\(false\);/);
+  assert.equal(dashboardActivity("A104", [], [], []).length, 0);
+  const entries = runs.map(run => trackingActivity(run, at));
+  assert.ok(dashboardActivity("A104", [], [], entries).length > 0);
+  assert.equal(dashboardActivity("A104", [], [], entries.filter(row => row.room !== "A104")).length, 0);
+});
