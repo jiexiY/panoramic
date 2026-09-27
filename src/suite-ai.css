@@ -13,6 +13,8 @@
 .suite-ai-tabs button { border: 0; border-bottom: 2px solid transparent; background: none; padding: 13px 3px; color: #6f7b71; font: inherit; font-size: 11px; }
 .suite-ai-tabs button[aria-current] { border-color: #456756; color: #29473a; font-weight: 650; }
 .suite-ai-content { padding: 18px; display: grid; gap: 14px; }
+.suite-ai-content[data-view=report] { display: block; max-height: min(62vh, 620px); overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+.suite-ai-content[data-view=report]:focus-visible { outline: 2px solid #698974; outline-offset: -3px; }
 .suite-ai-content p { font-size: 12px; line-height: 1.65; margin: 0; }
 .suite-ai-content h3 { font-size: 13px; margin: 0; }
 .suite-ai-section-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -62,7 +64,6 @@
 .station-voice-dialog input[type=password] { width: 100%; box-sizing: border-box; border: 1px solid #ced7cb; border-radius: 5px; padding: 9px; }
 .station-voice-dialog .muted { color: #798675; }
 .suite-ai .muted { color: #798675; }
-.assistant-demo-note { margin: 12px 0; padding: 9px; color: #71806f; background: #f4f6ef; font-size: 10px!important; }
 @media (max-width:1180px) { .facility-page .facility-grid { grid-template-columns: minmax(0,1fr) 350px; } }
 @media (max-width:1020px) { .facility-page .facility-grid { grid-template-columns: 1fr; } }
 @media (max-width:580px) { .suite-ai-content { padding: 15px; } .suite-ai-tabs button { font-size: 10px; } }

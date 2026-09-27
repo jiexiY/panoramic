@@ -11,6 +11,7 @@ import SuiteAI from "./SuiteAI";
 import MonitorStatus from "./MonitorStatus";
 import { StationVoiceProvider } from "./StationVoice";
 import { incidentVoiceMessage } from "./stationAnnouncement";
+import { AssistantAccessProvider } from "./AssistantAccessProvider";
 import "./facility.css";
 import "./room-monitoring.css";
 
@@ -63,6 +64,7 @@ export default function FacilityWorkspace({
     );
   };
   return (
+    <AssistantAccessProvider key={`${team.userId}:${team.facilityId}:${team.mode}`}>
     <StationVoiceProvider key={`${team.userId}:${team.facilityId}`} supervisor={team.me?.role === "coordinator"} active={!team.stale} visible={active} scope={monitoringRoom}
       messages={team.incidents.flatMap(i => { if (!isSuiteId(i.room)) return []; const message = incidentVoiceMessage(i.room, i); return message ? [message] : []; })}>
     <div className="facility-page">
@@ -108,6 +110,6 @@ export default function FacilityWorkspace({
           <SuiteAI key={`${team.userId}:${team.facilityId}:${monitoringRoom}`} room={monitoringRoom} team={team} selectedId={current?.id ?? ""} onSelect={showIncident} onSignIn={onSignIn} processing={monitoringRoom === "A101" && processing} active={active} />
         </aside>
       </div>
-    </div></StationVoiceProvider>
+    </div></StationVoiceProvider></AssistantAccessProvider>
   );
 }

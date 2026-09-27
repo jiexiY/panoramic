@@ -95,6 +95,11 @@ export function createGeminiHandler(deps: Dependencies = {}) {
       const body = await readBody(request);
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new ApiError(400, "Invalid request.");
       const operation = body.operation;
+      if (operation === "verify_access") {
+        if (Object.keys(body).some(key => key !== "operation")) throw new ApiError(400, "Access checks do not accept record data.");
+        // The same configuration, code and origin gates apply. No provider call or care records.
+        return json({ verified: true, model, message: "Workspace access verified. No Gemini generation was requested." });
+      }
       let parts: unknown[];
       let schema: unknown;
       let instruction = prompt;

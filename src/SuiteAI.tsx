@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Download } from "lucide-react";
 import type { CareTeam } from "./useCareTeam";
 import { incidentStatus } from "./incidents";
@@ -21,13 +21,24 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
   const records = suiteRecords(room, team.incidents, team.events);
   const current = records.incidents.find(i => i.id === selectedId) ?? records.open[0] ?? records.incidents[0];
   const [tab, setTab] = useState<Tab>("station");
+  const [exporting, setExporting] = useState(false), [exportError, setExportError] = useState("");
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (contentRef.current) contentRef.current.scrollTop = 0; }, [tab, room]);
   const visibleEvents = useActivitySequence(`${team.facilityId}:${room}`, records.events, tab === "activity" && active);
   const suggested = current ? proposedResponder(current, team.members, team.incidents, team.clock) : null;
   const voiceMessage = current ? incidentVoiceMessage(room, current) : null;
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([suiteReport(room, team.incidents, team.events, team.members)], { type: "text/plain;charset=utf-8" }));
-    const a = document.createElement("a"); a.href = url; a.download = `panoramic-suite-${room}-report.txt`; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const download = async () => {
+    if (exporting) return;
+    setExporting(true); setExportError("");
+    // Capture this suite before loading the PDF library, even if records change later.
+    const report = suiteReport(room, team.incidents, team.events, team.members);
+    try {
+      const { createSuiteReportPdf } = await import("./suiteReportPdf");
+      const url = URL.createObjectURL(createSuiteReportPdf(room, report).output("blob"));
+      const a = document.createElement("a"); a.href = url; a.download = `panoramic-suite-${room}-report.pdf`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { setExportError("The PDF could not be exported. Your report is unchanged; please try again."); }
+    finally { setExporting(false); }
   };
   return <section className="suite-ai card" aria-label={`Panoramic AI · Suite ${room}`}>
     <header className="suite-ai-heading"><div><h2>Panoramic AI</h2></div><span>Suite {room}</span></header>
@@ -38,7 +49,7 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
     <nav className="suite-ai-tabs" aria-label={`Suite ${room} AI sections`}>
       {([["station", "Station response"], ["activity", "Activity"], ["report", "Suite report"], ["chat", "Chat"]] as const).map(([value, label]) => <button key={value} aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}>{label}</button>)}
     </nav>
-    <div className="suite-ai-content">
+    <div ref={contentRef} className="suite-ai-content" data-view={tab} tabIndex={tab === "report" ? 0 : undefined} role={tab === "report" ? "region" : undefined} aria-label={tab === "report" ? `Suite ${room} scrollable report` : undefined}>
       {tab === "station" && <>
         <div className="suite-ai-section-title"><h3>Active concerns</h3><span className="small-count">{records.open.length}</span></div>
         {records.open.map(i => <button key={i.id} className="suite-concern" aria-pressed={current?.id === i.id} onClick={() => onSelect(i.id, i.room)}><span className="route-badge" style={{ background: routeLevels[i.priority].color, color: routeLevels[i.priority].ink }}>{routeLevels[i.priority].rank ? `L${routeLevels[i.priority].rank}` : "?"}</span><span><b>{i.zone}</b><small>{incidentStatus(i)}</small></span><ArrowRight size={14} /></button>)}
@@ -53,7 +64,8 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
         </>}
       </>}
       {tab === "activity" && <section aria-label={`Suite ${room} activity`}><h3>Activity</h3><div role="log" aria-live="polite" aria-relevant="additions text">{records.events.length ? <ol className="suite-ai-activity">{visibleEvents.map(e => <li key={e.id}><header><time dateTime={e.created_at}>[{activityTime(e.created_at)}]</time><StationVoice message={eventVoiceMessage(room, e, records.incidents)} /></header><p>{e.detail}</p></li>)}</ol> : <p>No activity yet for Suite {room}.</p>}</div></section>}
-      {tab === "report" && <section aria-label={`Suite ${room} report`}><div className="suite-ai-section-title"><h3>Suite report</h3><button className="text-button" onClick={download}><Download size={14} /> Export</button></div>
+      {tab === "report" && <section aria-label={`Suite ${room} report`}><div className="suite-ai-section-title"><h3>Suite report</h3><button className="text-button" disabled={exporting} onClick={() => { void download(); }}><Download size={14} /> {exporting ? "Exporting…" : "Export PDF"}</button></div>
+        {exportError && <p role="alert">{exportError}</p>}
         <p>{records.open.length} open · {records.incidents.filter(i => i.phase === "resolved").length} closed</p>
         {!!records.incidents.length && <label className="team-field">Response record<select value={current?.id ?? ""} onChange={e => { onSelect(e.target.value, room); }}>
           {records.incidents.map(i => <option key={i.id} value={i.id}>{i.zone} · {incidentStatus(i)} · {new Date(i.created_at).toLocaleTimeString()}</option>)}

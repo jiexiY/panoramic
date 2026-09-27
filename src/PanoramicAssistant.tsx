@@ -6,6 +6,7 @@ import type { AssistantResult } from "./copilot";
 import DispatchResponse from "./DispatchResponse";
 import type { SuiteId } from "./suiteRecords";
 import { buildDemoSnapshot } from "./demoAssistant";
+import { useAssistantAccess } from "./AssistantAccessProvider";
 import "./assistant.css";
 
 type Turn = { id: string; question: string; result?: AssistantResult; error?: string };
@@ -17,29 +18,18 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
   const [scopeId, setScopeId] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
-  const [code, setCode] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [settings, setSettings] = useState(true);
-  const [ready, setReady] = useState(false);
-  const [model, setModel] = useState("Gemini");
-  const [status, setStatus] = useState("Checking connection…");
+  const { access, code, consent, ready, verified, verifying, checking, model, status, error: accessError } = useAssistantAccess();
+  const [settings, setSettings] = useState(!verified || !consent);
   const endRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const inFlight = useRef(false);
   useEffect(() => { setScopeId(selectedId && incidents.some(i => i.id === selectedId) ? selectedId : ""); }, [selectedId, team.facilityId, room]);
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetch("/api/gemini", { signal: controller.signal }).then(r => r.json()).then(r => {
-      setReady(r.configured === true); setModel(r.model || "Gemini");
-      setStatus(r.configured ? "Server configured; answer connection not yet verified" : "AI connection is not configured");
-    }).catch(() => { if (!controller.signal.aborted) setStatus("AI connection unavailable"); });
-    return () => { controller.abort(); abortRef.current?.abort(); };
-  }, []);
+  useEffect(() => () => { abortRef.current?.abort(); }, []);
   useEffect(() => { if (turns.length) endRef.current?.scrollIntoView({ block: "nearest", behavior: "instant" }); }, [busy, turns]);
   const demo = team.mode === "playback" && !!room;
-  const canAsk = !!team.facility && !team.stale && ready && consent && code.trim().length >= 16 && !busy;
+  const canAsk = !!team.facility && !team.stale && ready && verified && consent && code.trim().length >= 16 && !busy;
   const ask = async (text: string) => {
-    if (!canAsk || inFlight.current || !text.trim() || (!demo && !cloud) || !team.facilityId) { if (!consent || !code) setSettings(true); return; }
+    if (!canAsk || inFlight.current || !text.trim() || (!demo && !cloud) || !team.facilityId) { if (!consent || !verified) setSettings(true); return; }
     inFlight.current = true; setBusy(true); setQuestion("");
     const id = crypto.randomUUID();
     const controller = new AbortController(); abortRef.current = controller;
@@ -61,8 +51,11 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
         headers, body: JSON.stringify(body),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "The request could not be completed.");
-      if (!controller.signal.aborted) { setStatus("Gemini answer received"); setSettings(false); setTurns(t => t.map(turn => turn.id === id ? { ...turn, result } : turn)); }
+      if (!response.ok) {
+        if (response.status === 401 && !controller.signal.aborted) { access.invalidate(result.error || "Reconnect workspace access."); setSettings(true); }
+        throw new Error(result.error || "The request could not be completed.");
+      }
+      if (!controller.signal.aborted) { access.answerReceived(); setSettings(false); setTurns(t => t.map(turn => turn.id === id ? { ...turn, result } : turn)); }
     } catch (e) {
       if (!controller.signal.aborted) setTurns(t => t.map(turn => turn.id === id ? { ...turn, error: e instanceof Error ? e.message : "Request failed. No action was taken." } : turn));
     } finally { if (!controller.signal.aborted) { setBusy(false); inFlight.current = false; } }
@@ -75,15 +68,18 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
     <div className="assistant-scope"><FileText size={14} /><select aria-label="AI record scope" value={scopeId} onChange={e => setScopeId(e.target.value)} disabled={busy}>
       <option value="">{room ? `Suite ${room} · ${demo ? "demo records" : "open concerns"}` : "Open concerns"}</option>{incidents.map(i => <option key={i.id} value={i.id}>{i.room} · {i.zone} · {new Date(i.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</option>)}
     </select><ChevronDown size={12} /></div>
-    {demo && <p className="assistant-demo-note">Gemini · selected suite’s demo records. No automatic actions.</p>}
-    {settings && <div className="assistant-settings"><label className="team-field">Gemini workspace access code<input type="password" autoComplete="off" value={code} onChange={e => setCode(e.target.value)} /></label>
-      <small>Use the separate workspace code, not your Google API key. It is kept only in this page’s memory.</small>
-      <label className="assistant-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>My question and selected {demo ? "demo " : ""}records contain no sensitive resident information. Send their text to Google for this answer. Free-tier content may be used to improve Google’s products.</span></label>
-      <small>{model} · {status}</small></div>}
+    {settings && <div className="assistant-settings"><label className="team-field">Workspace access code<input type="password" autoComplete="off" value={code} onChange={e => access.setCode(e.target.value)} disabled={busy} placeholder="Your private Panoramic code" /></label>
+      <small>Not your Google API key. Connect once across suites and tabs; reloading clears access. Credentials are never saved.</small>
+      <label className="assistant-consent"><input type="checkbox" checked={consent} onChange={e => access.setConsent(e.target.checked)} disabled={busy} /><span>My questions and selected {demo ? "demo " : ""}records contain no sensitive resident information. Allow their text to be sent to Google when I ask. Free-tier content may be used to improve Google’s products.</span></label>
+      {accessError && <p className="form-error" role="alert">{accessError}</p>}
+      <div className="button-row"><button type="button" className="primary" disabled={checking || verifying || busy || !ready || !consent || code.trim().length < 16} onClick={() => { void access.verify().then(ok => { if (ok) setSettings(false); }); }}>{verifying ? "Verifying…" : "Verify access"}</button>
+        <button type="button" className="text-button" disabled={busy || checking || verifying} onClick={() => { void access.checkConnection(); }}>Check connection</button>
+        {verified && <button type="button" className="text-button" disabled={busy} onClick={() => access.forget()}>Forget access</button>}</div>
+      <small role="status">{model} · {status}</small></div>}
     <div className="assistant-messages" aria-live="polite" aria-busy={busy}>
       {!turns.length && <div className="assistant-empty"><MessageSquare size={25} /><h3>What needs attention?</h3><p>Ask about a concern, available responders, or the response timeline.</p>
         {!team.userId ? <button className="secondary" onClick={onSignIn}>Sign in to your workspace</button> : !team.facility ? <p>Connect a care team to open its records.</p> : <div className="assistant-starters">
-          {["Which concerns still need a response?", "Who is available to check this concern?", "Summarize the response so far."].map(text => <button key={text} onClick={() => { setQuestion(text); if (!consent || !code) setSettings(true); }}>{text}<ArrowUp size={13} /></button>)}
+          {["Which concerns still need a response?", "Who is available to check this concern?", "Summarize the response so far."].map(text => <button key={text} onClick={() => { setQuestion(text); if (!consent || !verified) setSettings(true); }}>{text}<ArrowUp size={13} /></button>)}
         </div>}
       </div>}
       {turns.map(turn => {

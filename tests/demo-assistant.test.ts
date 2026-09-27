@@ -107,7 +107,7 @@ test("chat UI calls Gemini in demo mode and does not persist access codes", () =
   const ui = readFileSync(new URL("../src/PanoramicAssistant.tsx", import.meta.url), "utf8");
   assert.match(ui, /operation: "demo_assistant"/);
   assert.match(ui, /buildDemoSnapshot\(room,/);
-  assert.match(ui, /ready && consent && code.trim\(\).length >= 16/);
+  assert.match(ui, /ready && verified && consent && code.trim\(\).length >= 16/);
   assert.doesNotMatch(ui, /recordedSuiteReply|localReply|localStorage|sessionStorage/);
   assert.match(ui, /cloud!.auth.getSession/); // Real records retain their authenticated path.
 });

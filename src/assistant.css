@@ -6,7 +6,8 @@
 .assistant-scope { margin: 12px 16px; background: #f3f5ef; border: 1px solid #e5e9df; border-radius: 8px; display: flex; align-items: center; padding: 0 10px; gap: 7px; color: #536457; }
 .assistant-scope select { appearance: none; background: none; border: 0; padding: 10px 0; flex: 1; width: 0; font: inherit; font-size: 12px; color: inherit; }
 .assistant-settings { margin: 12px 16px; padding: 13px; background: #f7f7f2; border: 1px solid #e0e5da; border-radius: 9px; display: grid; gap: 12px; }
-.assistant-settings input[type=password] { width: 100%; border: 1px solid #cdd8cc; border-radius: 6px; padding: 9px; }
+.assistant-settings input[type=password] { width: 100%; box-sizing: border-box; border: 1px solid #cdd8cc; border-radius: 6px; padding: 9px; }
+.assistant-settings .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .assistant-settings small { font-size: 10px; color: #687468; }
 .assistant-consent { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; line-height: 1.6; }
 .assistant-consent input { flex: 0 0 auto; margin-top: 3px; }
