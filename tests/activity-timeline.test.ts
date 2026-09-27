@@ -5,6 +5,8 @@ import { activityTime, analysisActivity, appendActivity, dashboardActivity, trac
 import { playbackStart } from "../src/playback.ts";
 import { parseTrackingRun, playbackTracking, trackingSources } from "../src/suiteTracking.ts";
 import type { Analysis } from "../src/scene.ts";
+import { nextActivityIds } from "../src/activitySequence.ts";
+import { suiteIds, suiteRecords } from "../src/suiteRecords.ts";
 
 const at = "2026-09-27T16:20:30.000Z";
 const runs = trackingSources.map(source => parseTrackingRun(JSON.parse(readFileSync(new URL(`../public/demo/${source.stem}.json`, import.meta.url), "utf8")), source));
@@ -40,8 +42,9 @@ test("response updates use their stored time and retain earlier activity without
   const incident = { ...current, phase: "arrived" as const, updated_at: later };
   const event = { id: "arrival", incident_id: incident.id, actor_id: "caregiver", action: "arrive", detail: "Arrival confirmed by caregiver.", created_at: later };
   const rows = dashboardActivity("A102", [incident], [...state.events, event, { ...event, id: "orphan", incident_id: "other-suite" }], []);
-  assert.equal(rows[0].at, later);
-  assert.match(rows[0].text, /Caregiver attending/);
+  assert.equal(rows.at(-1)!.at, later);
+  assert.match(rows.at(-1)!.text, /Caregiver attending/);
+  assert.equal(rows.at(-2)!.id, "event:arrival");
   assert.equal(rows.filter(row => row.id.startsWith("response:")).length, 1);
   assert.ok(rows.some(row => row.id === "event:arrival"));
   assert.ok(rows.some(row => row.at === at));
@@ -64,7 +67,7 @@ test("living-area results use provider analysis timestamps and survive alongside
   assert.equal(row.at, at);
   assert.match(row.text, /One frame only/);
   const later: ActivityEntry = { ...row, id: "later", at: "2026-09-27T17:00:00Z", text: "New result" };
-  assert.deepEqual(dashboardActivity("A102", [], [], [row, later, row]).map(e => e.id), ["later", row.id]);
+  assert.deepEqual(dashboardActivity("A102", [], [], [later, row, row]).map(e => e.id), [row.id, "later"]);
   assert.deepEqual(dashboardActivity("A103", [], [], [row, later]), []);
 });
 
@@ -74,7 +77,8 @@ test("dashboard Activity replaces old review cards and keeps explicit suite-boun
   assert.doesNotMatch(source("RoomMonitoring.tsx"), /SourceStatus|Source:/);
   assert.match(activity, /role="log"/);
   assert.match(activity, /\[\{activityTime\(row.at\)\}\]/);
-  assert.match(activity, /not a live camera/);
+  assert.doesNotMatch(activity, /activity-context|newest first|Sample playback · not a live camera/);
+  assert.match(activity, /visibleRows.map/);
   assert.match(activity, /key=\{`\$\{room\}:\$\{team.mode\}`\}/);
   assert.match(activity, /scopeRoom=\{room\}/);
   assert.match(scene, /!activityMode && <aside className="response-column"/);
@@ -86,6 +90,57 @@ test("dashboard Activity replaces old review cards and keeps explicit suite-boun
   assert.match(scene, /Analysis sends this frame to Google/);
   assert.match(scene, /!privacyConfirmed/);
   assert.match(source("MonitoringDashboard.tsx"), /key=\{team.facilityId \?\? "local"\}/);
+});
+
+test("all suites preserve the recorded detect-assess-request order at identical timestamps", () => {
+  let state = playbackStart(Date.parse(at));
+  for (const run of runs) state = playbackTracking(state, run, Date.parse(at));
+  for (const room of suiteIds) {
+    const rows = dashboardActivity(room, state.incidents, state.events, runs.map(run => trackingActivity(run, at)));
+    const eventIds = rows.filter(row => row.id.startsWith("event:")).map(row => row.id.slice(6));
+    assert.deepEqual(eventIds, suiteRecords(room, state.incidents, state.events).events.map(event => event.id));
+    const lastEvent = rows.findLastIndex(row => row.id.startsWith("event:"));
+    const firstSummary = rows.findIndex(row => row.id.startsWith("response:"));
+    if (firstSummary >= 0) assert.ok(firstSummary > lastEvent);
+    for (let n = 1; n < rows.length; n++) assert.ok(Date.parse(rows[n].at) >= Date.parse(rows[n - 1].at));
+  }
+});
+
+test("activity sequencing reveals one received row at a time and does not replay or invent rows", () => {
+  const ordered = ["monitor", "detected", "assessed", "station", "response"];
+  let visible: string[] = [];
+  for (let n = 1; n <= ordered.length; n++) {
+    visible = nextActivityIds(visible, ordered);
+    assert.deepEqual(visible, ordered.slice(0, n));
+  }
+  assert.equal(nextActivityIds(visible, ordered), visible);
+  assert.deepEqual(nextActivityIds(visible, [...ordered, "accepted", "arrived"]), [...ordered, "accepted"]);
+  assert.deepEqual(nextActivityIds(visible, ["another-suite"]), ["another-suite"]);
+  assert.deepEqual(nextActivityIds(visible, []), []);
+  assert.deepEqual(nextActivityIds([], ["same", "same"]), ["same"]);
+});
+
+test("suite activity sorts by recorded time, preserves ties and leaves input events unchanged", () => {
+  const state = playbackTracking(playbackStart(Date.parse(at)), runs[0], Date.parse(at));
+  const current = state.incidents.find(i => i.room === "A102")!;
+  const late = { ...state.events[0], id: "late", incident_id: current.id, created_at: "2026-09-27T18:00:00Z" };
+  const input = [late, ...state.events];
+  const copy = [...input];
+  const sorted = suiteRecords("A102", [current], input).events;
+  assert.equal(sorted.at(-1)!.id, "late");
+  assert.deepEqual(input, copy);
+  assert.deepEqual(sorted.slice(0, -1).map(e => e.id), state.events.filter(e => e.incident_id === current.id).map(e => e.id));
+});
+
+test("all suite response lines use bracketed themes without the old message card or repeated header", () => {
+  const suite = source("SuiteAI.tsx");
+  assert.doesNotMatch(suite, /className="station-message"|Panoramic → Supervision station|Proposed:|\.reverse\(\)/);
+  for (const theme of ["[Panoramic to supervision station]", "[Review]", "[Propose]"]) assert.ok(suite.includes(theme));
+  assert.match(suite, /StationVoice message=\{voiceMessage\}/);
+  assert.match(suite, /visibleEvents.map/);
+  assert.match(suite, /\[\{activityTime\(e.created_at\)\}\]/);
+  assert.match(source("useActivitySequence.ts"), /clearInterval\(timer\)/);
+  assert.match(source("useActivitySequence.ts"), /\[scope, enabled\]/);
 });
 
 test("living-area empty-state prompt disappears after suite Activity results arrive", () => {

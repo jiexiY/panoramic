@@ -10,6 +10,8 @@ import IncidentDesk from "./IncidentDesk";
 import DispatchResponse from "./DispatchResponse";
 import PanoramicAssistant from "./PanoramicAssistant";
 import StationVoice, { StationVoiceSettings } from "./StationVoice";
+import { activityTime } from "./activityTimeline";
+import { useActivitySequence } from "./useActivitySequence";
 import "./suite-ai.css";
 
 type Tab = "station" | "activity" | "report" | "chat";
@@ -19,6 +21,7 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
   const records = suiteRecords(room, team.incidents, team.events);
   const current = records.incidents.find(i => i.id === selectedId) ?? records.open[0] ?? records.incidents[0];
   const [tab, setTab] = useState<Tab>("station");
+  const visibleEvents = useActivitySequence(`${team.facilityId}:${room}`, records.events, tab === "activity" && active);
   const suggested = current ? proposedResponder(current, team.members, team.incidents, team.clock) : null;
   const voiceMessage = current ? incidentVoiceMessage(room, current) : null;
   const download = () => {
@@ -39,19 +42,17 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
       {tab === "station" && <>
         <div className="suite-ai-section-title"><h3>Active concerns</h3><span className="small-count">{records.open.length}</span></div>
         {records.open.map(i => <button key={i.id} className="suite-concern" aria-pressed={current?.id === i.id} onClick={() => onSelect(i.id, i.room)}><span className="route-badge" style={{ background: routeLevels[i.priority].color, color: routeLevels[i.priority].ink }}>{routeLevels[i.priority].rank ? `L${routeLevels[i.priority].rank}` : "?"}</span><span><b>{i.zone}</b><small>{incidentStatus(i)}</small></span><ArrowRight size={14} /></button>)}
-        {!current && <section className="station-message" aria-label="Panoramic monitoring update"><header><small>Panoramic → Supervision station</small><StationVoice message={{ key: `${room}:monitoring:${processing}`, announcement: { room, priority: "unassessed", update: processing ? "detected" : "monitoring" } }} /></header><p className="suite-ai-empty">{processing ? "A hazard event was received. Measuring its position against the marked route before opening a concern." : `No hazard event for Suite ${room} yet. Monitoring comes first; a detected hazard triggers route assessment and a station request.`}</p></section>}
+        {!current && <div className="station-response-line"><p><strong>[Panoramic to supervision station]</strong> {processing ? "A hazard event was received. Measuring its position against the marked route before opening a concern." : `No hazard event for Suite ${room} yet. Monitoring comes first; a detected hazard triggers route assessment and a station request.`}</p><StationVoice message={{ key: `${room}:monitoring:${processing}`, announcement: { room, priority: "unassessed", update: processing ? "detected" : "monitoring" } }} /></div>}
         {current && <>
-          <section className="station-message" aria-label="Panoramic message to supervision"><header><small>Panoramic → Supervision station</small><StationVoice message={voiceMessage} /></header>
-            <p>{voiceMessage ? stationAnnouncement(room, voiceMessage.announcement.priority, voiceMessage.announcement.update, voiceMessage.announcement.zone) : incidentStatus(current)}</p>
-            <p>{current.observation.scene.brief}</p>
-            {suggested && <p><b>Proposed: {suggested.display_name}</b><br /><small>Available, qualified flag, response order {suggested.response_order}. Not clinical triage or measured distance.</small></p>}
-          </section>
+          <div className="station-response-line"><p><strong>[Panoramic to supervision station]</strong> {voiceMessage ? stationAnnouncement(room, voiceMessage.announcement.priority, voiceMessage.announcement.update, voiceMessage.announcement.zone).replace(/^Panoramic to supervision station\. /, "") : incidentStatus(current)}</p><StationVoice message={voiceMessage} /></div>
+          <p><strong>[Review]</strong> {current.observation.scene.brief}</p>
+          {suggested && <p className="station-proposal"><strong>[Propose]</strong> {suggested.display_name}<br /><small>Available, qualified flag, response order {suggested.response_order}. Not clinical triage or measured distance.</small></p>}
           <DispatchResponse key={current.id} team={team} incident={current} preferred={suggested?.user_id} />
           {current.phase === "flagged" && team.me?.role !== "coordinator" && <p>Waiting for a supervisor to approve the proposed assignment.</p>}
           <button className="secondary full" onClick={() => setTab("report")}>Open response & sign-offs <ArrowRight size={14} /></button>
         </>}
       </>}
-      {tab === "activity" && <section aria-label={`Suite ${room} activity`}><h3>Activity</h3>{records.events.length ? <ol className="suite-ai-activity">{[...records.events].reverse().map(e => <li key={e.id}><header><time>{new Date(e.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time><StationVoice message={eventVoiceMessage(room, e, records.incidents)} /></header><p>{e.detail}</p></li>)}</ol> : <p>No activity yet for Suite {room}.</p>}</section>}
+      {tab === "activity" && <section aria-label={`Suite ${room} activity`}><h3>Activity</h3><div role="log" aria-live="polite" aria-relevant="additions text">{records.events.length ? <ol className="suite-ai-activity">{visibleEvents.map(e => <li key={e.id}><header><time dateTime={e.created_at}>[{activityTime(e.created_at)}]</time><StationVoice message={eventVoiceMessage(room, e, records.incidents)} /></header><p>{e.detail}</p></li>)}</ol> : <p>No activity yet for Suite {room}.</p>}</div></section>}
       {tab === "report" && <section aria-label={`Suite ${room} report`}><div className="suite-ai-section-title"><h3>Suite report</h3><button className="text-button" onClick={download}><Download size={14} /> Export</button></div>
         <p>{records.open.length} open · {records.incidents.filter(i => i.phase === "resolved").length} closed</p>
         {!!records.incidents.length && <label className="team-field">Response record<select value={current?.id ?? ""} onChange={e => { onSelect(e.target.value, room); }}>

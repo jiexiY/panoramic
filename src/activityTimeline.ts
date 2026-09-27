@@ -41,20 +41,21 @@ export function dashboardActivity(room: SuiteId, incidents: SharedIncident[], ev
   const byId = new Map(scoped.incidents.map(i => [i.id, i]));
   const rows: ActivityEntry[] = [
     ...local.filter(e => e.room === room),
-    ...scoped.incidents.map(i => ({
-      id: `response:${i.id}`, room, zone: i.zone, at: i.updated_at, kind: "response" as const,
-      text: `${incidentStatus(i)} · ${routeLevels[i.priority].label}. ${i.observation.scene.brief}${i.resolution ? ` Response: ${i.resolution}` : ""}`,
-    })),
     ...scoped.events.map(e => ({
       id: `event:${e.id}`, room, zone: byId.get(e.incident_id)!.zone,
       at: e.created_at, text: e.detail.startsWith(`${byId.get(e.incident_id)!.zone} · `) ? e.detail.slice(byId.get(e.incident_id)!.zone.length + 3) : e.detail, kind: "response" as const,
     })),
+    ...scoped.incidents.map(i => ({
+      id: `response:${i.id}`, room, zone: i.zone, at: i.updated_at, kind: "response" as const,
+      text: `${incidentStatus(i)} · ${routeLevels[i.priority].label}. ${i.observation.scene.brief}${i.resolution ? ` Response: ${i.resolution}` : ""}`,
+    })),
   ];
   return rows.filter(e => Number.isFinite(Date.parse(e.at)))
     .filter((e, n, all) => all.findIndex(other => other.id === e.id) === n)
-    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at)
-      || Number(b.id.startsWith("response:")) - Number(a.id.startsWith("response:"))
-      || a.id.localeCompare(b.id));
+    // Stable ties preserve recorded event order: detect, assess, request.
+    // A current-state summary follows the events that produced that state.
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at)
+      || Number(a.id.startsWith("response:")) - Number(b.id.startsWith("response:")));
 }
 
 export function activityTime(at: string): string {

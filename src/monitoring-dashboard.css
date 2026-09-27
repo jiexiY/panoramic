@@ -11,7 +11,6 @@
 .dashboard-activity-heading p { font-size: 12px; color: #758279; margin: 6px 0 0; }
 .activity-clock { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #758279; }
 .activity-clock time { font-size: 14px; font-variant-numeric: tabular-nums; color: #294754; }
-.activity-context { padding: 12px 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #69776f; background: #f5f7f2; border-block: 1px solid #e5e9df; }
 .activity-feed { max-height: 430px; overflow-y: auto; padding: 0 24px; scrollbar-gutter: stable; }
 .activity-feed ol { list-style: none; padding: 0; margin: 0; }
 .activity-feed li { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 12px; padding: 16px 0; border-bottom: 1px solid #e8ece3; font-size: 13px; line-height: 1.75; }
@@ -37,7 +36,7 @@
   .dashboard-monitor-heading { align-items: flex-start; flex-direction: column; }
   .dashboard-monitor-heading a { font-size: 11px; }
   .dashboard-activity-heading, .activity-living-area { align-items: flex-start; flex-direction: column; padding: 18px 16px; }
-  .activity-context, .activity-analysis { padding: 14px 16px; }
+  .activity-analysis { padding: 14px 16px; }
   .activity-feed { padding: 0 16px; }
   .activity-feed li { grid-template-columns: 76px minmax(0, 1fr); gap: 8px; font-size: 12px; }
   .activity-feed time { font-size: 11px; }

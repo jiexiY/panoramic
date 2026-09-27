@@ -11,6 +11,7 @@ export function suiteRecords(room: SuiteId, incidents: SharedIncident[], events:
   return {
     incidents: records,
     open: records.filter(i => i.phase !== "resolved"),
-    events: events.filter(e => ids.has(e.incident_id)),
+    events: events.filter(e => ids.has(e.incident_id))
+      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)),
   };
 }

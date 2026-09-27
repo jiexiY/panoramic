@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SuiteId } from "./suiteRecords";
 import type { CareTeam } from "./useCareTeam";
 import SceneMonitor from "./SceneMonitor";
 import { activityTime, analysisActivity, appendActivity, dashboardActivity, type ActivityEntry } from "./activityTimeline";
+import { useActivitySequence } from "./useActivitySequence";
 
 function ActivityClock() {
   const [now, setNow] = useState(() => new Date().toISOString());
@@ -19,17 +20,23 @@ export default function DashboardActivity({ room, team, monitorEntries, onSignIn
   const [analyses, setAnalyses] = useState<ActivityEntry[]>([]);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const rows = dashboardActivity(room, team.incidents, team.events, [...monitorEntries, ...analyses]);
+  const visibleRows = useActivitySequence(`${team.facilityId}:${room}`, rows);
+  const feed = useRef<HTMLDivElement>(null), followNewest = useRef(true);
+  const visibleKey = visibleRows.map(row => `${row.id}:${row.at}`).join("|");
+  useEffect(() => { followNewest.current = true; }, [room]);
+  useEffect(() => {
+    if (feed.current && followNewest.current) feed.current.scrollTop = feed.current.scrollHeight;
+  }, [room, visibleKey]);
   return <section className="dashboard-activity" aria-label={`Suite ${room} activity`}>
     <header className="dashboard-activity-heading">
       <div><h2>Activity</h2><p>Suite {room} · Monitoring, analysis & response</p></div>
       <ActivityClock />
     </header>
-    <div className="activity-context">
-      <span>Updates as results arrive · newest first</span>
-      <span>{team.mode === "playback" ? "Sample playback · not a live camera" : "Saved records & reviewed frames"}</span>
-    </div>
-    <div className="activity-feed" role="log" aria-label={`Suite ${room} timestamped updates`} aria-live="polite" aria-relevant="additions text">
-      {rows.length ? <ol>{rows.map(row => <li key={row.id}>
+    <div className="activity-feed" ref={feed} onScroll={event => {
+      const node = event.currentTarget;
+      followNewest.current = node.scrollHeight - node.scrollTop - node.clientHeight < 48;
+    }} role="log" aria-label={`Suite ${room} timestamped updates`} aria-live="polite" aria-relevant="additions text">
+      {rows.length ? <ol>{visibleRows.map(row => <li key={row.id}>
         <time dateTime={row.at} title={new Date(row.at).toLocaleString()}>[{activityTime(row.at)}]</time>
         <p><strong>{row.zone}</strong> · {row.text}</p>
       </li>)}</ol> : <p className="activity-empty">No results recorded for Suite {room} yet. New monitoring and response updates will appear here.</p>}
