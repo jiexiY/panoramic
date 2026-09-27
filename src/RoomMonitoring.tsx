@@ -2,6 +2,10 @@ import { useEffect, useState, useRef, type Dispatch } from "react";
 import { BedDouble, Download, Play, ShowerHead, Square } from "lucide-react";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import { SourceStatus } from "./MonitorStatus";
+import ImportedMonitorImage from "./ImportedMonitorImage";
+import { monitoringImage } from "./monitoringImages";
+import SuiteTrackingMonitor from "./SuiteTrackingMonitor";
+import { trackingSource, type TrackingRun } from "./suiteTracking";
 import type { RecordingAction, RecordingState } from "./recordingObservation";
 
 const trackingMedia = {
@@ -18,26 +22,37 @@ type Props = {
   closed: boolean;
   canReview: boolean;
   onClearFrame: () => void;
+  demoEnabled: boolean;
+  onTracking: (run: TrackingRun) => void;
 };
 
-export default function RoomMonitoring({ room, priority, recording, onRecordingAction, clearVisible, closed, canReview, onClearFrame }: Props) {
+export default function RoomMonitoring({ room, priority, recording, onRecordingAction, clearVisible, closed, canReview, onClearFrame, demoEnabled, onTracking }: Props) {
   const [dryReference, setDryReference] = useState(false);
   const clearPending = useRef(false);
   useEffect(() => { if (recording.mode === "loading" || recording.mode === "closed") { setDryReference(false); clearPending.current = false; } }, [recording.mode]);
   const playing = recording.mode === "loading" || recording.mode === "playing";
   const mediaError = recording.mode === "error";
+  const bedroomImage = monitoringImage(room, "bedroom");
+  const bathroomImage = monitoringImage(room, "bathroom");
+  const bedroomTracking = trackingSource(room, "bedroom");
+  const bathroomTracking = trackingSource(room, "bathroom");
 
   const level = routeLevels[priority];
   return (
     <article className="room-monitor" aria-label={`Suite ${room} monitoring`}>
       <div className="room-monitor-heading">
         <h2>Suite {room}</h2>
-        <span>Room monitoring</span>
+        <span role="status" aria-label={`Suite ${room} monitor: On`}>Monitor: On</span>
       </div>
       <div className="room-monitor-zones">
         <section className="room-monitor-zone" aria-label={`${room} bedroom monitoring`}>
-          <div className="room-zone-heading"><h3><BedDouble size={16} /> Bedroom monitoring</h3></div>
-          <p className="monitor-source-empty">No monitoring source connected</p>
+          <div className="room-zone-heading">
+            <h3><BedDouble size={16} /> Bedroom monitoring</h3>
+            {bedroomImage && <SourceStatus room={room} recording={recording} zone="bedroom" />}
+          </div>
+          {bedroomTracking ? <SuiteTrackingMonitor key={bedroomTracking.stem} source={bedroomTracking} enabled={demoEnabled} onMeasured={onTracking} /> : bedroomImage
+            ? <ImportedMonitorImage key={bedroomImage.src} image={bedroomImage} label={`${room} bedroom image data`} />
+            : <p className="monitor-source-empty">No monitoring source connected</p>}
         </section>
         <section className="room-monitor-zone" aria-label={`${room} bathroom monitoring`}>
           <div className="room-zone-heading">
@@ -65,10 +80,12 @@ export default function RoomMonitoring({ room, priority, recording, onRecordingA
                 {mediaError && <div className="notice error" role="alert">Bathroom image unavailable. <button className="text-button" onClick={() => onRecordingAction({ type: "close" })}>Retry image</button></div>}
                 <details className="evidence-caption">
                   <summary>Image details</summary>
-                  <p>AI-edited water image with manually annotated regions. Playback sends the recorded hazard event into a browser-local response workflow, not the connected care team's records. The dry reference is the original image, not a live cleanup detection. No external nursing-home system is connected.</p>
+                  <p>AI-edited water image with manually annotated regions. The local workspace starts all configured sources automatically, including this recording. Dashboard displays the previews; Resident Floor holds the map and Panoramic AI response workflow. Its hazard event enters a browser-local response workflow, not the connected care team's records. The dry reference is the original image, not a live cleanup detection. No external nursing-home system is connected.</p>
                 </details>
               </section>
-          ) : <p className="monitor-source-empty">No monitoring source connected</p>}
+          ) : bathroomTracking ? <SuiteTrackingMonitor key={bathroomTracking.stem} source={bathroomTracking} enabled={demoEnabled} onMeasured={onTracking} /> : bathroomImage
+            ? <ImportedMonitorImage key={bathroomImage.src} image={bathroomImage} label={`${room} bathroom image data`} />
+            : <p className="monitor-source-empty">No monitoring source connected</p>}
         </section>
       </div>
       <section className="room-route-concern" aria-label={`${room} route concern`}>

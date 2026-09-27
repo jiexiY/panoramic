@@ -6,6 +6,8 @@ import DispatchResponse from "./DispatchResponse";
 import { cloud } from "./cloud";
 import { routeLevels } from "./routeRisk";
 import RouteOverlay from "./RouteOverlay";
+import { leakReferenceImage } from "./leakSequence";
+import { trackingReference } from "./suiteTracking";
 import "./team.css";
 
 export default function IncidentDesk({
@@ -26,7 +28,7 @@ export default function IncidentDesk({
     let url = "";
     setImage("");
     setImageError("");
-    if (incident.observation.source === "recording") setImage("/demo/bathroom-water.jpg");
+    if (incident.observation.source === "recording") setImage(trackingReference(incident.room, incident.zone, incident.media_name) || (incident.room === "A104" && incident.media_name === "a104-water-leak-opencv.gif" ? leakReferenceImage(incident.frame_time) : incident.room === "A101" && incident.zone === "Bathroom" && incident.media_name === "bathroom-tracking.gif" ? "/demo/bathroom-water.jpg" : ""));
     if (incident.evidence_path && cloud)
       void cloud.storage
         .from("care-evidence")
@@ -46,7 +48,7 @@ export default function IncidentDesk({
       active = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [incident.id, incident.evidence_path, team.userId]);
+  }, [incident.id, incident.evidence_path, incident.frame_time, incident.media_name, incident.room, incident.zone, team.userId]);
   const assigned = team.members.find((m) => m.user_id === incident.assigned_to);
   const mine = incident.assigned_to === team.userId;
   const canAccept =

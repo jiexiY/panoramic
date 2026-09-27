@@ -1,19 +1,14 @@
-import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  Eye,
 } from "lucide-react";
 import { suiteIds, suiteRecords, isSuiteId, type SuiteId } from "./suiteRecords";
 import SiteLink, { type Navigate } from "./SiteLink";
-import { suitePath } from "./routes";
+import { dashboardSuitePath, suitePath } from "./routes";
 import { routeLevels, type RoutePriority } from "./routeRisk";
 import type { CareTeam } from "./useCareTeam";
-import { incidentStatus, noHazardVisible } from "./incidents";
-import PanoramicAssistant from "./PanoramicAssistant";
-import IncidentDesk from "./IncidentDesk";
-import RoomMonitoring from "./RoomMonitoring";
+import SuiteAI from "./SuiteAI";
 import MonitorStatus from "./MonitorStatus";
-import { initialRecording, recordingReducer } from "./recordingObservation";
 import "./facility.css";
 import "./room-monitoring.css";
 
@@ -22,7 +17,7 @@ type Props = {
   suite?: SuiteId;
   navigate: Navigate;
   active: boolean;
-  onMonitorFrame: (value: "hazard" | "clear" | "unknown") => void;
+  processing: boolean;
   team: CareTeam;
   onSignIn: () => void;
 };
@@ -30,19 +25,17 @@ export default function FacilityWorkspace({
   suite,
   navigate,
   active,
-  onMonitorFrame,
+  processing,
   team,
   onSignIn,
 }: Props) {
   const monitoringRoom = suite ?? "A101";
   const selectSuite = (room: string | null) => { if (isSuiteId(room)) navigate(suitePath(room)); };
   const [selectedId, setSelectedId] = useState("");
-  const [recording, recordingAction] = useReducer(recordingReducer, initialRecording);
-  const incidentRef = useRef<HTMLDivElement>(null);
+  const incidentRef = useRef<HTMLElement>(null);
   useEffect(() => { setSelectedId(""); }, [team.facilityId, team.mode, monitoringRoom]);
-  useEffect(() => { if (team.mode !== "playback") recordingAction({ type: "close" }); }, [team.facilityId, team.mode]);
   const roomRecords = suiteRecords(monitoringRoom, team.incidents, team.events);
-  const { open, events, incidents } = roomRecords;
+  const { open, incidents } = roomRecords;
   const current =
     incidents.find((i) => i.id === selectedId) ??
     open[0] ??
@@ -71,6 +64,7 @@ export default function FacilityWorkspace({
     <div className="facility-page">
       <section className="page-heading facility-heading">
         <h1>{suite ? `Suite ${suite}` : "Resident Floor"}</h1>
+        <SiteLink className="secondary" to={dashboardSuitePath(monitoringRoom)} navigate={navigate}>View monitoring <ArrowRight size={15} /></SiteLink>
       </section>
       {team.facility && team.stale && (
         <div className="notice error" role="alert">
@@ -101,115 +95,13 @@ export default function FacilityWorkspace({
               />
             </Suspense>
           </section>
-          <div className="room-monitor-workspace">
-            <nav className="room-monitor-selector" aria-label="Room monitoring selection">
-              {suiteIds.map(id => <SiteLink key={id} to={suitePath(id)} navigate={navigate} aria-current={monitoringRoom === id ? "page" : undefined}>Suite {id}</SiteLink>)}
-            </nav>
-            {/* Keep sources mounted across suite navigation; only their presentation changes. */}
-            {suiteIds.map(room => {
-              const records = suiteRecords(room, team.incidents, team.events);
-              return <div key={room} hidden={room !== monitoringRoom}>
-                <RoomMonitoring room={room} priority={priorities[room] ?? "unassessed"}
-                  recording={recording} onRecordingAction={action => {
-                    recordingAction(action);
-                    if (room !== "A101") return;
-                    if (action.type === "loaded" && action.version === recording.version && recording.mode === "loading") onMonitorFrame("hazard");
-                    if (action.type === "failed" && action.version === recording.version) onMonitorFrame("unknown");
-                  }}
-                  clearVisible={records.open.length > 0 && records.open.every(noHazardVisible)}
-                  closed={!records.open.length && !!records.incidents[0]?.nursing_checked_by}
-                  canReview={team.mode === "playback" && records.open.length > 0}
-                  onClearFrame={() => { if (room === "A101") onMonitorFrame("clear"); }} />
-              </div>;
-            })}
-          </div>
-          <div className="facility-bottom-grid" role="region" aria-label={`Suite ${monitoringRoom} follow-up`}>
-            <section className="facility-card">
-              <div className="facility-card-heading">
-                <h2>Active concerns</h2>
-                <span className="small-count">{open.length}</span>
-              </div>
-              {open.length ? (
-                open.map((i) => (
-                  <button
-                    key={i.id}
-                    className={`queue-row ${i.escalated_at ? "escalated" : ""}`}
-                    onClick={() => showIncident(i.id, i.room)}
-                  >
-                    <span
-                      className="alert-rank"
-                      style={{
-                        background: routeLevels[i.priority].color,
-                        color: routeLevels[i.priority].ink,
-                      }}
-                    >
-                      {routeLevels[i.priority].rank
-                        ? `L${routeLevels[i.priority].rank}`
-                        : "?"}
-                    </span>
-                    <span>
-                      <b>
-                        {i.room} · {i.zone}
-                      </b>
-                      <small>
-                        {i.escalated_at
-                          ? "Escalated · coordinator attention"
-                          : incidentStatus(i)}
-                      </small>
-                    </span>
-                    <ArrowRight size={16} />
-                  </button>
-                ))
-              ) : (
-                <div className="facility-empty">No open concerns for Suite {monitoringRoom}</div>
-              )}
-            </section>
-            <section className="facility-card">
-              <div className="facility-card-heading">
-                <h2>Activity</h2>
-                <Eye size={16} />
-              </div>
-              {events.length ? (
-                <ol className="facility-activity">
-                  {events
-                    .slice(-8)
-                    .reverse()
-                    .map((e) => (
-                      <li key={e.id}>
-                        <time>
-                          {new Date(e.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </time>
-                        <span>{e.detail}</span>
-                      </li>
-                    ))}
-                </ol>
-              ) : (
-                <div className="facility-empty">No activity yet for Suite {monitoringRoom}</div>
-              )}
-            </section>
-          </div>
-          {current && (
-            <div ref={incidentRef}>
-              <div className="incident-picker">
-                {incidents.map((i) => (
-                  <button
-                    key={i.id}
-                    aria-pressed={i.id === current.id}
-                    onClick={() => showIncident(i.id, i.room)}
-                  >
-                    {i.room} · {i.phase === "resolved" ? "Recorded" : i.zone}
-                  </button>
-                ))}
-              </div>
-              <IncidentDesk key={current.id} team={team} incident={current} />
-            </div>
-          )}
+          <nav className="room-monitor-selector facility-suite-navigation" aria-label="Resident Floor suite selection">
+            {suiteIds.map(id => <SiteLink key={id} to={suitePath(id)} navigate={navigate} aria-current={monitoringRoom === id ? "page" : undefined}>Suite {id}</SiteLink>)}
+          </nav>
+
         </div>
-        <aside className="facility-sidebar" aria-label="Panoramic assistant">
-          <PanoramicAssistant key={`${team.userId}:${team.facilityId}:${monitoringRoom}`} room={monitoringRoom} team={team} selectedId={current?.id ?? ""} onSelect={showIncident} onSignIn={onSignIn} />
+        <aside ref={incidentRef} className="facility-sidebar" aria-label="Panoramic assistant">
+          <SuiteAI key={`${team.userId}:${team.facilityId}:${monitoringRoom}`} room={monitoringRoom} team={team} selectedId={current?.id ?? ""} onSelect={showIncident} onSignIn={onSignIn} processing={monitoringRoom === "A101" && processing} active={active} />
         </aside>
       </div>
     </div>

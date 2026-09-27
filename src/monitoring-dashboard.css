@@ -1,0 +1,21 @@
+.dashboard-monitor-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.dashboard-monitor-heading h2 { margin: 0; font-size: 18px; font-weight: 650; }
+.dashboard-monitor-heading p { color: #758279; font-size: 12px; margin: 5px 0 0; }
+.dashboard-monitor-heading a, .facility-heading a { text-decoration: none; }
+.monitoring-dashboard .room-monitor-zones { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
+.monitoring-dashboard .room-monitor-zone { min-width: 0; }
+.monitoring-dashboard .room-route-concern { margin-top: 20px; }
+.dashboard-review { max-width: 1640px; margin: 24px auto 0; border: 1px solid #dde1d7; border-radius: 9px; background: #fffefb; }
+.dashboard-review > summary { padding: 18px 20px; color: #486354; font-size: 13px; cursor: pointer; }
+.dashboard-review > div { padding: 0 20px 20px; }
+.dashboard-review .page-heading { margin-top: 8px; }
+.dashboard-review .page-heading h2 { font-size: 22px; }
+.facility-suite-navigation { border: 1px solid #dde1d7; border-radius: 7px; }
+@media (max-width: 1050px) {
+  .monitoring-dashboard .room-monitor-zones { grid-template-columns: 1fr; }
+}
+@media (max-width: 580px) {
+  .dashboard-monitor-heading { align-items: flex-start; flex-direction: column; }
+  .dashboard-monitor-heading a { font-size: 11px; }
+  .dashboard-review > div { padding: 0 12px 12px; }
+}

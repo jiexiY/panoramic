@@ -1,11 +1,14 @@
 .env*
 node_modules
 .git
+.vercel
+dist
 output
 tests
 scripts
 devpost-*.png
 devpost-submission.md
 .devpost-hackathon-state.json
-docs/archive
+docs
+supabase/.temp
 output-*.png

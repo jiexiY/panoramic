@@ -14,12 +14,15 @@ export const workspacePaths: Record<WorkspacePage, string> = {
 };
 
 export const suitePath = (suite: SuiteId) => `${workspacePaths.spatial}/${suite}`;
+export const dashboardSuitePath = (suite: SuiteId) => `${workspacePaths.monitor}/dashboard/${suite}`;
 
 export function resolveRoute(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "") || "/";
   if (path === "/" || path === "/welcome") return { surface: "entry" };
   if (path === "/app/supervision") return { surface: "workspace", page: "spatial" };
   if (path === "/app/history") return { surface: "workspace", page: "history" };
+  const monitoredSuite = path.startsWith("/app/dashboard/") ? path.slice("/app/dashboard/".length) : null;
+  if (isSuiteId(monitoredSuite)) return { surface: "workspace", page: "monitor", suite: monitoredSuite };
   const suite = path.startsWith(workspacePaths.spatial + "/") ? path.slice(workspacePaths.spatial.length + 1) : null;
   if (isSuiteId(suite)) return { surface: "workspace", page: "spatial", suite };
   for (const [page, url] of Object.entries(workspacePaths)) {

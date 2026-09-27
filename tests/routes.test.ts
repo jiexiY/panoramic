@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { resolveRoute, routeTitle, workspacePaths, suitePath } from "../src/routes.ts";
+import { resolveRoute, routeTitle, workspacePaths, suitePath, dashboardSuitePath } from "../src/routes.ts";
 import { suiteIds } from "../src/suiteRecords.ts";
 
 test("project opens directly to the entrance, with no advertising surface", () => {
@@ -31,8 +31,17 @@ test("each surface has a useful document title", () => {
 });
 test("production rewrites cover direct app entry without rewriting the API", () => {
   const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
-  assert.deepEqual(config.rewrites.map((item: {source: string}) => item.source), [...Object.values(workspacePaths), "/app/spatial/:suite"]);
+  assert.deepEqual(config.rewrites.map((item: {source: string}) => item.source), [...Object.values(workspacePaths), "/app/spatial/:suite", "/app/dashboard/:suite"]);
   assert.ok(config.rewrites.every((item: {destination: string}) => item.destination === "/index.html"));
+});
+
+test("Dashboard suite links preserve the selected suite without borrowing floor routes", () => {
+  for (const suite of suiteIds) {
+    for (const suffix of ["", "/"]) assert.deepEqual(resolveRoute(dashboardSuitePath(suite) + suffix), { surface: "workspace", page: "monitor", suite });
+    assert.equal(routeTitle(resolveRoute(dashboardSuitePath(suite))), `Suite ${suite} · Dashboard — Panoramic`);
+    assert.notEqual(dashboardSuitePath(suite), suitePath(suite));
+  }
+  for (const path of ["/app/dashboard/A999", "/app/dashboard/a101", "/app/dashboard/A101/other"]) assert.deepEqual(resolveRoute(path), { surface: "not-found" });
 });
 
 test("each suite has a distinct bookmarkable page, and unknown suites never fall back to A101", () => {

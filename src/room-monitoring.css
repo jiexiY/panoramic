@@ -31,6 +31,10 @@
 .room-monitor-zone { padding: 15px; border: 1px solid #e4e7df; border-radius: 6px; scroll-margin-top: 24px; }
 .room-zone-heading h3 { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 650; margin: 0; }
 .monitor-source-empty { color: #7e8a81; font-size: 11px; margin: 12px 0 0; }
+.monitor-still-image { display: block; width: 100%; height: auto; }
+.tracking-summary { padding: 12px; font-size: 11px; color: #476658; line-height: 1.6; border-top: 1px solid #e4e7df; }
+.tracking-region-list { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 5px; color: #344f55; }
+.monitor-image-message { margin: 12px; font-size: 11px; color: #68796f; }
 .room-monitor-zone .facility-evidence { margin-top: 14px; border-radius: 5px; }
 .room-monitor-zone .facility-panel-header { padding: 10px; flex-wrap: wrap; gap: 8px; font-size: 10px; }
 .room-monitor-zone .facility-panel-header > div { flex-wrap: wrap; }

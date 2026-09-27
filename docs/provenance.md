@@ -4,10 +4,8 @@ This repository was initialized on September 25, 2026 in America/New_York (Septe
 
 On September 26, 2026, the product and its existing GitHub and Vercel projects were renamed from SteadySide to Panoramic. This was a name change, not a new repository or a reset of the project's history. Earlier verification records and archived material retain the name used at the time.
 
-## Earlier work exists
+## Implementation record
 
-- Before this implementation, the founder explored elder bathing support and built a separate shower-control simulator: https://github.com/jiexiY/showerhaven.
-- Product discussion, the founder's story, the SteadySide name, and a caregiver-assistant product brief predate this repository. Some previous work predates the event's hacking period.
 - This repository's React interface, TypeScript transition implementation, Supabase schema, and tests were written anew. No earlier app source, video, soundtrack, or graphical assets were copied into it.
 - Codex assisted with implementation, research, documentation, and testing. Third-party libraries and icons are listed in the README and lockfile.
 

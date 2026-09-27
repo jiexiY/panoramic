@@ -16,22 +16,25 @@ test("workspace omits the workflow launcher and helper text but retains A101 rec
   assert.match(source("RoomMonitoring.tsx"), /Play tracking/);
 });
 
-test("room sidebar omits the layout card while preserving the floor map and room monitoring", () => {
+test("Resident Floor keeps the map and suite selection; Dashboard owns monitoring", () => {
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /SuitePlan|room-detail|suite-plan-caption|>LAYOUT</);
   assert.match(facility, /<FacilityMap/);
-  assert.match(facility, /<RoomMonitoring/);
-  assert.match(facility, /className="room-monitor-selector" aria-label="Room monitoring selection"/);
+  assert.doesNotMatch(facility, /<RoomMonitoring|room-monitor-workspace/);
+  assert.match(facility, /aria-label="Resident Floor suite selection"/);
+  assert.match(source("MonitoringDashboard.tsx"), /<RoomMonitoring/);
+  assert.match(source("MonitoringDashboard.tsx"), /aria-label="Dashboard suite selection"/);
 });
 
 test("Resident Floor omits duplicate labels and sidebar cards while retaining response controls", () => {
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /Care-center floor|Building2|facility-summary|room-directory|CareTeamPanel|facility-assistant-tabs|setSidebar|setFilter/);
   assert.match(facility, /<MonitorStatus \/>/);
-  assert.match(facility, /<aside className="facility-sidebar" aria-label="Panoramic assistant">\s*<PanoramicAssistant/);
-  assert.match(facility, /<h2>Active concerns<\/h2>/);
-  assert.match(facility, /<h2>Activity<\/h2>/);
-  assert.match(facility, /<IncidentDesk/);
+  assert.match(facility, /<aside ref=\{incidentRef\} className="facility-sidebar" aria-label="Panoramic assistant">\s*<SuiteAI/);
+  assert.doesNotMatch(facility, /facility-bottom-grid|<IncidentDesk/);
+  assert.match(source("SuiteAI.tsx"), /<h3>Active concerns<\/h3>/);
+  assert.match(source("SuiteAI.tsx"), /<h3>Activity<\/h3>/);
+  assert.match(source("SuiteAI.tsx"), /<IncidentDesk/);
   assert.match(source("FacilityMap.tsx"), /suite labels or room tabs/);
   assert.match(source("SceneMonitor.tsx"), /<CareTeamPanel/);
   assert.match(source("Workspace.tsx"), /Monitoring Resident Floor now/);
@@ -60,15 +63,15 @@ test("Resident Floor replaces spatial labels without duplicate supervision navig
   const facility = source("FacilityWorkspace.tsx");
   assert.doesNotMatch(facility, /Supervision desk|supervision-row|Caregivers & nurses|onMode/);
   assert.doesNotMatch(source("Workspace.tsx"), /setPage\("supervision"\)|page === "supervision"/);
-  assert.match(facility, /<IncidentDesk/);
+  assert.match(source("SuiteAI.tsx"), /<IncidentDesk/);
 });
 
 test("recording controls and route concern belong to room monitoring, not the floor header or sidebar", () => {
   const facility = source("FacilityWorkspace.tsx");
   const room = source("RoomMonitoring.tsx");
   assert.doesNotMatch(facility, /Open bathroom recording|Route concern|facility-evidence/);
-  assert.match(facility, /<RoomMonitoring room=\{room\}/);
-  assert.match(facility, /priority=\{priorities\[room\] \?\? "unassessed"\}/);
+  assert.match(source("MonitoringDashboard.tsx"), /<RoomMonitoring room=\{room\}/);
+  assert.match(source("MonitoringDashboard.tsx"), /priority=\{priorities\[room\] \?\? "unassessed"\}/);
   assert.match(room, /room === "A101" \? \(\s*<section className="facility-evidence" aria-label="Bathroom image data">/);
   assert.match(room, /bathroom monitoring\x60\}[\s\S]*Bathroom image data[\s\S]*room-route-concern/);
   assert.doesNotMatch(room, /evidenceOpen|Open bathroom recording|Close recording/);
@@ -105,7 +108,7 @@ test("monitoring banner refers to the floor monitor, not individual preview play
 });
 
 test("suite navigation keeps each source mounted and does not cancel floor-level processing", () => {
-  const facility = source("FacilityWorkspace.tsx");
+  const facility = source("MonitoringDashboard.tsx");
   assert.match(facility, /suiteIds.map\(room =>/);
   assert.match(facility, /const records = suiteRecords\(room, team.incidents, team.events\)/);
   assert.match(facility, /<div key=\{room\} hidden=\{room !== monitoringRoom\}>/);

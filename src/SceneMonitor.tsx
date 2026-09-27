@@ -27,9 +27,11 @@ import "./monitor.css";
 export default function SceneMonitor({
   team,
   onSignIn,
+  embedded = false,
 }: {
   team: CareTeam;
   onSignIn: () => void;
+  embedded?: boolean;
 }) {
   const [status, setStatus] = useState<{
     configured: boolean;
@@ -268,7 +270,7 @@ export default function SceneMonitor({
   return (
     <div className="monitor-page">
       <section className="page-heading">
-        <h1>Living area review</h1>
+        {embedded ? <h2>Room data review</h2> : <h1>Living area review</h1>}
       </section>
       {error && (
         <div className="notice error" role="alert">

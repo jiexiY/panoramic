@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { playbackStart, playbackWater, playbackObservation, playbackCommand, playbackFacility } from "./playback";
+import { playbackStart, playbackWater, playbackObservation, playbackCommand, playbackFacility, isBathroomRecording } from "./playback";
 import type { CareTeam } from "./useCareTeam";
 import type { SharedIncident } from "./incidents";
+import { playbackTracking, type TrackingRun } from "./suiteTracking";
 
 export function usePlaybackTeam() {
   const [active, setActive] = useState(false);
@@ -16,7 +17,7 @@ export function usePlaybackTeam() {
   useEffect(() => {
     if (!active || !scanning) return;
     const timer = setTimeout(() => {
-      const next = ref.current.incidents.some(i=>i.phase!=="resolved") ? playbackObservation(ref.current, "hazard", Date.now()) : playbackWater(ref.current, Date.now());
+      const next = ref.current.incidents.some(i=>isBathroomRecording(i) && i.phase!=="resolved") ? playbackObservation(ref.current, "hazard", Date.now()) : playbackWater(ref.current, Date.now());
       ref.current = next; setState(next); setScanning(false);
     }, 2500);
     return () => clearTimeout(timer);
@@ -37,11 +38,16 @@ export function usePlaybackTeam() {
     try { const next = playbackCommand(ref.current, actor, action, payload, Date.now()); ref.current = next; setState(next); setError(""); return next.incidents.find(i => i.id === payload.id); }
     catch(e) { const message = e instanceof Error ? e.message : "Response failed."; setError(message); throw new Error(message); }
   };
+  const tracking = (run: TrackingRun) => {
+    if (!activeRef.current) start();
+    const next = playbackTracking(ref.current, run, Date.now());
+    ref.current = next; setState(next);
+  };
   const team: CareTeam = { mode: "playback", userId: actor, facilityId: playbackFacility.id, facility: playbackFacility, facilities: [playbackFacility],
     setFacilityId: () => {}, incidents: state.incidents, members: state.members, events: state.events, me: state.members.find(m => m.user_id === actor)!,
     error, setError, busy: false, loading: false, connected: false, syncedAt: clock, stale: false, clock, refresh: async () => {}, command,
     publish: async () => { throw new Error("Exit recording playback before saving an analyzed image to a care team."); },
     act: (i: SharedIncident, action: string, note = "") => command(action, {id:i.id,version:i.version,request_id:crypto.randomUUID(),note}),
   };
-  return {active, scanning, actor, setActor, start, stop, pause, monitorFrame, team};
+  return {active, scanning, actor, setActor, start, stop, pause, monitorFrame, tracking, team};
 }

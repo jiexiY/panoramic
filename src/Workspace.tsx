@@ -51,6 +51,7 @@ import {
 import "./style.css";
 import SceneMonitor from "./SceneMonitor";
 import FacilityWorkspace from "./FacilityWorkspace";
+import MonitoringDashboard from "./MonitoringDashboard";
 import { useCareTeam } from "./useCareTeam";
 import { usePlaybackTeam } from "./usePlaybackTeam";
 import "./playback.css";
@@ -373,7 +374,7 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
             <b>
               {page === "monitor" ? "Dashboard" : page === "spatial" ? "Resident Floor" : "Care session"}
             </b>
-            {page === "spatial" && suite && <><ChevronRight size={14} /><b>Suite {suite}</b></>}
+            {(page === "spatial" || page === "monitor") && suite && <><ChevronRight size={14} /><b>Suite {suite}</b></>}
           </div>
           <div className="top-actions">
             {(hasSession || busy) && <span className={`connection ${row ? "connected" : ""}`}>
@@ -428,8 +429,11 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
             </div>
           )}
           {playback.active && <div className="playback-bar"><div><b role="status">Monitoring Resident Floor now</b></div><label>View as<select aria-label="Monitoring role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label></div>}
-          <div hidden={page !== "monitor"}><SceneMonitor key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
-          <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} suite={suite} navigate={navigate} onMonitorFrame={playback.monitorFrame} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
+          <div hidden={page !== "monitor"}>
+            <MonitoringDashboard key={owner ?? 'signed-out'} suite={suite} navigate={navigate} onMonitorFrame={playback.monitorFrame} onTracking={playback.tracking} team={careTeam} autoStartRecording={!restoring && !owner} />
+            <details className="dashboard-review"><summary>Review additional room data</summary><div><SceneMonitor embedded key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div></details>
+          </div>
+          <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} suite={suite} navigate={navigate} processing={playback.scanning} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
           {isCareSession && <>
             <section className="page-heading">
               <h1>Care session</h1>

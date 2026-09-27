@@ -1,9 +1,11 @@
 import { bathroomRoute, bathroomScene } from "./facility.ts";
-import { highestRoutePriority } from "./routeRisk.ts";
+import { highestRoutePriority, routeLevels, type WalkingRoute } from "./routeRisk.ts";
 import { eligibleResponders, noHazardVisible, type SharedIncident, type TeamMember, type IncidentEvent } from "./incidents.ts";
-import { type Analysis } from "./scene.ts";
+import { parseScene, type Analysis, type Scene } from "./scene.ts";
+import { isAnnouncementPriority, stationAnnouncement } from "./stationAnnouncement.ts";
 
 export type PlaybackState = { incidents: SharedIncident[]; members: TeamMember[]; events: IncidentEvent[] };
+export const isBathroomRecording = (i: SharedIncident) => i.room === "A101" && i.zone === "Bathroom" && i.media_name === "bathroom-tracking.gif" && i.observation.source === "recording";
 export const playbackFacility = { id: "recording-playback", name: "Bathroom workflow", owner_id: "supervisor" };
 export function playbackStart(now: number): PlaybackState {
   return { incidents: [], events: [], members: [
@@ -13,20 +15,32 @@ export function playbackStart(now: number): PlaybackState {
   ].map(m => ({...m, role: m.role as TeamMember["role"], facility_id: playbackFacility.id, available_until: new Date(now + 86_400_000).toISOString()})) };
 }
 export function playbackWater(state: PlaybackState, now: number): PlaybackState {
-  if (state.incidents.some(i => i.phase !== "resolved")) return state;
+  return playbackDetections(state, bathroomScene, bathroomRoute, now);
+}
+
+// The demo supplies annotated OpenCV regions. A future live detector must supply
+// validated observations; normal furniture or a missing frame must not open a hazard.
+export function playbackDetections(state: PlaybackState, input: Scene, route: WalkingRoute | null, now: number): PlaybackState {
+  const scene = parseScene(input);
+  if (!scene.observations.some(o => o.kind !== "object")) return state;
+  if (state.incidents.some(i => isBathroomRecording(i) && i.phase !== "resolved")) return state;
   const at = new Date(now).toISOString(), id = `bathroom-recording-${state.incidents.length + 1}`;
+  const priority = highestRoutePriority(scene.observations, route);
+  const suggested = eligibleResponders(state.members, state.incidents, now)[0];
   const incident: SharedIncident = { id, facility_id: playbackFacility.id, created_by: "supervisor", room: "A101", zone: "Bathroom",
-    observation: { source: "recording", model: "Annotated OpenCV recording", analyzedAt: at, scene: bathroomScene },
-    route: bathroomRoute, priority: highestRoutePriority(bathroomScene.observations, bathroomRoute), media_name: "bathroom-tracking.gif", frame_time: 2.5,
-    evidence_path: null, phase: "flagged", suggested_to: "caregiver-01", assigned_to: null, resolution: "", version: 0,
+    observation: { source: "recording", model: "Annotated OpenCV recording", analyzedAt: at, scene },
+    route, priority, media_name: "bathroom-tracking.gif", frame_time: 2.5,
+    evidence_path: null, phase: "flagged", suggested_to: suggested?.user_id ?? null, assigned_to: null, resolution: "", version: 0,
     created_at: at, updated_at: at, due_at: new Date(now + 120000).toISOString(), escalated_at: null };
   return {...state, incidents: [incident, ...state.incidents], events: [...state.events,
-    {id: `${id}-water-observed`, incident_id: id, actor_id: null, action: "flagged", detail: "Monitor · recorded water region overlaps the route. L3 concern opened.", created_at: at},
-    {id: `${id}-station-request`, incident_id: id, actor_id: null, action: "station_request", detail: "Panoramic → supervision station: A101 bathroom, L3. Check the floor before the resident enters. Review available responders; assignment requested.", created_at: at},
+    {id: `${id}-detected`, incident_id: id, actor_id: null, action: "detected", detail: "Monitor → OpenCV recording: annotated candidate hazard received. Recorded input, not live inference.", created_at: at},
+    {id: `${id}-assessed`, incident_id: id, actor_id: null, action: "assessed", detail: `Route assessment · ${routeLevels[priority].label}. Calculated from hazard regions and the marked route, not a clinical risk score.`, created_at: at},
+    {id: `${id}-water-observed`, incident_id: id, actor_id: null, action: "flagged", detail: `Panoramic · A101 bathroom concern opened. ${suggested ? `Proposed ${suggested.display_name}` : "No eligible responder available"}; supervision approval required.`, created_at: at},
+    {id: `${id}-station-request`, incident_id: id, actor_id: null, action: "station_request", detail: isAnnouncementPriority(priority) ? stationAnnouncement("A101", priority) : "Supervision review required.", created_at: at},
   ]};
 }
 export function playbackObservation(state: PlaybackState, value: "clear" | "hazard" | "unknown", now: number): PlaybackState {
-  const original = state.incidents.find(i => i.phase !== "resolved");
+  const original = state.incidents.find(i => isBathroomRecording(i) && i.phase !== "resolved");
   if (!original) return state;
   const at = new Date(now).toISOString();
   const review: Analysis | null = value === "unknown" ? null : {

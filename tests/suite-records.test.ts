@@ -37,5 +37,7 @@ test("suite page defaults, record links, and assistant lifecycle cannot fall bac
   assert.match(facility, /to=\{suitePath\(id\)\}/);
   assert.doesNotMatch(facility, /team.incidents\[0\]|team.events\s*\.slice/);
   // Dispatch must retain the global team for double-booking checks.
-  assert.match(facility, /<IncidentDesk key=\{current.id\} team=\{team\} incident=\{current\}/);
+  const suiteAI = readFileSync(new URL("../src/SuiteAI.tsx", import.meta.url), "utf8");
+  assert.match(suiteAI, /suiteRecords\(room, team.incidents, team.events\)/);
+  assert.match(suiteAI, /<IncidentDesk key=\{current.id\} team=\{team\} incident=\{current\}/);
 });

@@ -5,3 +5,6 @@ dist/
 .vercel/
 output/
 *.log
+__pycache__/
+*.pyc
+supabase/.temp/
