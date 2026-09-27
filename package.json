@@ -16,6 +16,7 @@
   "dependencies": {
     "@supabase/supabase-js": "2.117.2",
     "lucide-react": "1.48.0",
+    "ogl": "1.0.11",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "three": "^0.186.1"

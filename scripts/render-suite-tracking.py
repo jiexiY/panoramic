@@ -155,7 +155,7 @@ def render(config, out):
                 color = flow.GREEN if region['kind']=='object' else (flow.RED if region['priority']=='crossing' else AMBER) if stage == 'settled' else flow.YELLOW
                 flow.draw_box(camera,polygon,f"ID {n+1:02d}  {region['label'].lower()}",color)
         canvas = cv2.copyMakeBorder(camera,36,54,0,0,cv2.BORDER_CONSTANT,value=flow.BG)
-        flow.cv_text(canvas,f"{config['suite']} / {config['zone'].upper()}  |  OpenCV LK FEATURE TRACKING",(12,24),scale=.53)
+        flow.cv_text(canvas,f"{config['suite']} / {config['zone'].upper()}  |  OpenCV LK TRACKING",(12,24),scale=.53)
         hazards = [r for r in regions if r['kind']!='object']
         priority = max(hazards,key=lambda r: {"away":1,"near":2,"crossing":3}[r['priority']])['priority'] if hazards else "unassessed"
         status = {"crossing":"L3 / MARKED REGION CROSSES ROUTE","near":"L2 / MARKED REGION NEAR ROUTE","away":"L1 / MARKED REGION OFF ROUTE","unassessed":"FIXTURE TRACKING / NO HAZARD ANNOTATION"}[priority]
@@ -163,7 +163,7 @@ def render(config, out):
         result_color = flow.RED if priority == 'crossing' else AMBER if hazards else flow.GREEN
         flow.cv_text(canvas,phase_label,(12,height+58),result_color if stage == 'settled' else flow.GREEN,.45)
         flow.cv_text(canvas,f"{count} tracks | frame {index+1:02d}/{COUNT} | fit {error:.3f}px",(610,height+58),scale=.42)
-        flow.cv_text(canvas,"Synthetic camera motion | Human-marked labels + route | Not live detection",(12,height+78),(210,210,210),.40)
+        flow.cv_text(canvas,"Synthetic camera motion | Human-marked labels + route",(12,height+78),(210,210,210),.40)
         frames.append(Image.fromarray(cv2.cvtColor(canvas,cv2.COLOR_BGR2RGB)))
         measurements.append(dict(frame=index,stage=stage,feature_count=count,median_fit_error_px=round(error,5),
             regions=regions,route=np.clip(np.round(route/[WIDTH,height]*1000),0,1000).astype(int).tolist(),

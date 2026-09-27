@@ -41,7 +41,8 @@ test("all follow-up UI is housed in the suite AI system and demo chat is clearly
   assert.match(panel, /<header className="suite-ai-heading"><div><h2>Panoramic AI<\/h2><\/div>/);
   assert.doesNotMatch(panel, /Sparkles/);
   assert.doesNotMatch(read("PanoramicAssistant.tsx"),/if \(team.mode === "playback"\) return/);
-  assert.match(read("PanoramicAssistant.tsx"),/rules-based replies, no language-model request/);
+  assert.match(read("PanoramicAssistant.tsx"),/Gemini · selected suite’s demo records/);
+  assert.doesNotMatch(read("PanoramicAssistant.tsx"),/recordedSuiteReply|localReply/);
   assert.match(read("FacilityWorkspace.tsx"), /supervisor=\{team.me\?\.role === "coordinator"\} active=\{active && !team.stale\}/);
   assert.match(read("StationVoice.tsx"), /if \(!active \|\| !supervisor\) return/);
   assert.doesNotMatch(read("StationVoice.tsx"), /Automatically announce|<details|<audio|enabled && consent/);
