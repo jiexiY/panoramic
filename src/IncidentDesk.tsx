@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, Download, Image as ImageIcon } from "lucide-react";
 import type { CareTeam } from "./useCareTeam";
-import { handoffText, phaseLabels, type SharedIncident } from "./incidents";
+import { handoffText, incidentStatus, noHazardVisible, type SharedIncident } from "./incidents";
 import DispatchResponse from "./DispatchResponse";
 import { cloud } from "./cloud";
 import { routeLevels } from "./routeRisk";
@@ -58,7 +58,7 @@ export default function IncidentDesk({
     );
   const events = team.events.filter((e) => e.incident_id === incident.id);
   const busy = team.busy || team.stale;
-  const act = (action: "acknowledge" | "arrive" | "resolve" | "decline") => {
+  const act = (action: "acknowledge" | "arrive" | "resolve" | "decline" | "supervision_check" | "nursing_check") => {
     void team.act(incident, action, note).catch(() => {});
   };
   const download = () => {
@@ -87,7 +87,7 @@ export default function IncidentDesk({
         >
           {incident.escalated_at
             ? "ESCALATED"
-            : phaseLabels[incident.phase].toUpperCase()}
+            : incidentStatus(incident).toUpperCase()}
         </span>
       </div>
       <h2>
@@ -177,7 +177,7 @@ export default function IncidentDesk({
         </small>
       </details>
       <ol className="response-progress" aria-label="Response progress">
-        {(["flagged", "dispatched", "acknowledged", "arrived", "resolved"] as const).map((phase, index) => <li key={phase} data-complete={index <= ["flagged", "dispatched", "acknowledged", "arrived", "resolved"].indexOf(incident.phase)} aria-current={phase === incident.phase ? "step" : undefined}>{["Flagged", "Assigned", "Accepted", "Arrived", "Resolved"][index]}</li>)}
+        {(["flagged", "dispatched", "acknowledged", "arrived", "resolved"] as const).map((phase, index) => <li key={phase} data-complete={index <= ["flagged", "dispatched", "acknowledged", "arrived", "resolved"].indexOf(incident.phase)} aria-current={phase === incident.phase ? "step" : undefined}>{["Flagged", "Assigned", "Accepted", "Arrived", "Both stations signed"][index]}</li>)}
       </ol>
       <DispatchResponse team={team} incident={incident} />
       {incident.phase === "flagged" && team.me?.role !== "coordinator" && <p>Waiting for the supervision station to assign a responder.</p>}
@@ -211,7 +211,7 @@ export default function IncidentDesk({
       {incident.phase === "arrived" && (
         <div className="incident-action">
           <p>{assigned?.display_name} is attending</p>
-          {mine && (
+          {mine && !incident.closure_requested && (
             <>
               <label className="team-field">
                 What did you check or do?
@@ -228,12 +228,25 @@ export default function IncidentDesk({
                 disabled={busy || note.trim().length < 8}
                 onClick={() => act("resolve")}
               >
-                Save resolution <Check size={16} />
+                Request safety sign-off <Check size={16} />
               </button>
             </>
           )}
         </div>
       )}
+      {incident.phase !== "resolved" && <section className="station-checks" aria-label="Station sign-offs">
+        <h3>Safety verification</h3>
+        <p>{noHazardVisible(incident) ? "No hazard visible in the follow-up frame. Physical safety still needs staff confirmation." : "Waiting for a clear follow-up frame. The concern remains open."}</p>
+        {incident.review_observation && <details><summary>Follow-up observation</summary><p>{incident.review_observation.scene.brief}</p><p>{incident.review_observation.scene.uncertainty}</p><small>{incident.review_observation.model} · {new Date(incident.review_observation.analyzedAt).toLocaleString()}</small></details>}
+        {incident.closure_requested && <p className="recorded-note">Caregiver outcome: {incident.resolution}</p>}
+        <div className="station-check"><b>1. Supervision station</b><span>{incident.supervision_checked_by ? "Checked · nursing review requested" : "Pending physical safety check"}</span>
+          {team.me?.role === "coordinator" && !incident.supervision_checked_by && <button className="secondary full" disabled={busy || !incident.closure_requested || !noHazardVisible(incident)} onClick={() => act("supervision_check")}>Confirm physical safety check</button>}
+        </div>
+        <div className="station-check"><b>2. Nursing station</b><span>{incident.nursing_checked_by ? "Checked" : "Pending independent sign-off"}</span>
+          {team.me?.role === "nurse" && !incident.nursing_checked_by && <button className="primary full" disabled={busy || !incident.supervision_checked_by || !noHazardVisible(incident) || incident.supervision_checked_by === team.userId} onClick={() => act("nursing_check")}>Confirm nursing check & close</button>}
+        </div>
+      </section>}
+      {team.error && <p className="form-error" role="alert">{team.error}</p>}
       {incident.phase === "resolved" && (
         <p className="recorded-note">{incident.resolution}</p>
       )}

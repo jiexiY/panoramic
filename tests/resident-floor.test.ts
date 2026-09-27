@@ -47,7 +47,7 @@ test("recording controls and route concern belong to room monitoring, not the fl
   const facility = source("FacilityWorkspace.tsx");
   const room = source("RoomMonitoring.tsx");
   assert.doesNotMatch(facility, /Open bathroom recording|Route concern|facility-evidence/);
-  assert.match(facility, /<RoomMonitoring key=\{\x60\$\{team.facilityId\}:\$\{monitoringRoom\}\x60\}/);
+  assert.match(facility, /<RoomMonitoring key=\{monitoringRoom\}/);
   assert.match(facility, /priority=\{priorities\[monitoringRoom\] \?\? "unassessed"\}/);
   assert.match(room, /room === "A101" \? \(\s*<section className="facility-evidence" aria-label="Bathroom image data">/);
   assert.match(room, /bathroom monitoring\x60\}[\s\S]*Bathroom image data[\s\S]*room-route-concern/);
@@ -60,7 +60,7 @@ test("manual observation controls real playback state and stops it when hidden",
   const facility = source("FacilityWorkspace.tsx");
   assert.match(room, /recordingIsOn\(recording, active, room\)/);
   assert.match(room, /active && room === "A101" && workflowScanning/);
-  assert.match(facility, /if \(!active\) recordingAction\(\{ type: "pause" \}\)/);
+  assert.match(facility, /if \(!active\) \{ recordingAction\(\{ type: "pause" \}\); onStopWorkflow\(\)/);
   assert.match(facility, /if \(workflowScanning\) onStopWorkflow\(\)/);
   assert.match(facility, /onToggle=\{toggleObservation\}/);
   assert.match(room, /onError=\{\(\) => onRecordingAction\(\{ type: "failed", version: recording.version \}\)\}/);

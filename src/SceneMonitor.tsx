@@ -13,6 +13,7 @@ import RouteOverlay from "./RouteOverlay";
 import RoutePlanner from "./RoutePlanner";
 import {
   assessRouteHazard,
+  highestRoutePriority,
   routeLevels,
   type RoutePoint,
   type WalkingRoute,
@@ -50,6 +51,8 @@ export default function SceneMonitor({
   const [routeDraft, setRouteDraft] = useState<RoutePoint[]>([]);
   const [drawingRoute, setDrawingRoute] = useState(false);
   const [savedId, setSavedId] = useState("");
+  const [reviewId, setReviewId] = useState("");
+  const reviewTarget = team.incidents.find(i => i.id === reviewId && i.phase !== "resolved");
   const [recordId, setRecordId] = useState(() => crypto.randomUUID());
   const [selected, setSelected] = useState<number | null>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -96,7 +99,7 @@ export default function SceneMonitor({
     setRecordId(crypto.randomUUID());
     setError("");
     setSelected(null);
-    setWalkingRoute(null);
+    setWalkingRoute(reviewTarget?.route ?? null);
     setRouteDraft([]);
     setDrawingRoute(false);
     setPrivacyConfirmed(false);
@@ -165,6 +168,16 @@ export default function SceneMonitor({
     }
   }
   async function saveObservation(value: Analysis) {
+    if (reviewId) {
+      if (!reviewTarget) throw new Error("This concern is no longer open. Refresh before reviewing it.");
+      const row = await team.command("review_observation", {
+        id: reviewTarget.id, version: reviewTarget.version, request_id: recordId,
+        room, zone, observation: value,
+        priority: highestRoutePriority(value.scene.observations, reviewTarget.route),
+      });
+      setSavedId(row.id);
+      return;
+    }
     const row = await team.publish(
       {
         id: recordId,
@@ -224,7 +237,7 @@ export default function SceneMonitor({
       };
       setAnalysis(value);
       if (
-        value.scene.observations.some((o) => o.kind !== "object") &&
+        (reviewId || value.scene.observations.some((o) => o.kind !== "object")) &&
         team.facility
       )
         await saveObservation(value);
@@ -351,7 +364,7 @@ export default function SceneMonitor({
               draft={routeDraft}
               drawing={drawingRoute}
               observations={analysis?.scene.observations ?? []}
-              disabled={locked || !!analysis}
+              disabled={locked || !!analysis || !!reviewId}
               onRoute={setWalkingRoute}
               onDraft={setRouteDraft}
               onDrawing={setDrawingRoute}
@@ -373,11 +386,16 @@ export default function SceneMonitor({
                 </button>
               </div>
               <div className="room-targets">
+                {team.facility && team.mode !== "playback" && <label className="team-field">Review purpose<select value={reviewId} disabled={locked || !!analysis} onChange={e=>{
+                  setReviewId(e.target.value);
+                  const target=team.incidents.find(i=>i.id===e.target.value);
+                  if(target) { setRoom(target.room); setZone(target.zone); setWalkingRoute(target.route); } else setWalkingRoute(null);
+                }}><option value="">New concern</option>{team.incidents.filter(i=>i.phase!=="resolved").map(i=><option key={i.id} value={i.id}>Follow up {i.room} · {i.zone}</option>)}</select></label>}
                 <label className="team-field">
                   Room
                   <select
                     value={room}
-                    disabled={locked || !!analysis}
+                    disabled={locked || !!analysis || !!reviewId}
                     onChange={(e) => setRoom(e.target.value)}
                   >
                     {rooms.map((r) => (
@@ -389,7 +407,7 @@ export default function SceneMonitor({
                   Area
                   <select
                     value={zone}
-                    disabled={locked || !!analysis}
+                    disabled={locked || !!analysis || !!reviewId}
                     onChange={(e) => setZone(e.target.value)}
                   >
                     {zones.map((z) => (
@@ -548,6 +566,7 @@ export default function SceneMonitor({
         </div>
         <aside className="response-column" aria-label="Caregiver response">
           <CareTeamPanel team={team} onSignIn={onSignIn} />
+          {analysis && reviewId && !savedId && <button className="secondary full" disabled={locked || team.stale} onClick={() => void retrySave()}>Retry saving follow-up</button>}
           {saved ? (
             <IncidentDesk key={saved.id} team={team} incident={saved} />
           ) : (

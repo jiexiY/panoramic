@@ -284,7 +284,7 @@ export function useCareTeam(userId: string | null) {
   };
   const act = (
     incident: SharedIncident,
-    action: "acknowledge" | "arrive" | "resolve" | "decline",
+    action: "acknowledge" | "arrive" | "resolve" | "decline" | "supervision_check" | "nursing_check",
     note = "",
   ) =>
     command(action, {

@@ -17,6 +17,7 @@ export default function CareTeamPanel({
   const [memberName, setMemberName] = useState("");
   const [eligible, setEligible] = useState(false);
   const [order, setOrder] = useState(1);
+  const [memberRole, setMemberRole] = useState<"caregiver" | "nurse">("caregiver");
   const [edit, setEdit] = useState(false);
   const run = (job: Promise<unknown>) => {
     void job.catch(() => {});
@@ -123,7 +124,7 @@ export default function CareTeamPanel({
                   {m.user_id === team.userId ? " · you" : ""}
                 </b>
                 <small>
-                  {m.role === "coordinator" ? "Coordinator" : "Caregiver"}
+                  {m.role === "coordinator" ? "Supervision" : m.role === "nurse" ? "Nursing station" : "Caregiver"}
                   {!m.qualified ? " · eligibility not confirmed" : ""}
                 </small>
               </div>
@@ -177,6 +178,7 @@ export default function CareTeamPanel({
                         display_name: memberName,
                         qualified: eligible,
                         response_order: order,
+                        role: memberRole,
                       })
                       .then(() => {
                         setEmail("");
@@ -207,6 +209,7 @@ export default function CareTeamPanel({
                     placeholder="Caregiver 01"
                   />
                 </label>
+                <label>Station role<select value={memberRole} onChange={e=>setMemberRole(e.target.value as "caregiver" | "nurse")}><option value="caregiver">Caregiver</option><option value="nurse">Nursing station</option></select></label>
                 <label>
                   Response order
                   <input

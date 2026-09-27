@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { playbackStart, playbackWater, playbackCommand, playbackFacility } from "./playback";
+import { playbackStart, playbackWater, playbackObservation, playbackCommand, playbackFacility } from "./playback";
 import type { CareTeam } from "./useCareTeam";
 import type { SharedIncident } from "./incidents";
 
@@ -11,14 +11,28 @@ export function usePlaybackTeam() {
   const ref = useRef(state); ref.current = state;
   const [error, setError] = useState("");
   const [clock, setClock] = useState(Date.now());
+  const activeRef = useRef(active); activeRef.current = active;
   useEffect(() => { if (!active) return; const timer = setInterval(() => setClock(Date.now()), 1000); return () => clearInterval(timer); }, [active]);
   useEffect(() => {
     if (!active || !scanning) return;
-    const timer = setTimeout(() => { setState(s => playbackWater(s, Date.now())); setScanning(false); }, 2500);
+    const timer = setTimeout(() => {
+      const next = ref.current.incidents.some(i=>i.phase!=="resolved") ? playbackObservation(ref.current, "hazard", Date.now()) : playbackWater(ref.current, Date.now());
+      ref.current = next; setState(next); setScanning(false);
+    }, 2500);
     return () => clearTimeout(timer);
   }, [active, scanning]);
-  const start = () => { setState(playbackStart(Date.now())); setActor("supervisor"); setError(""); setActive(true); setScanning(true); };
+  const start = () => { const next = playbackStart(Date.now()); ref.current = next; setState(next); setActor("supervisor"); setError(""); activeRef.current = true; setActive(true); setScanning(false); };
   const stop = () => { setActive(false); setScanning(false); };
+  const pause = () => setScanning(false);
+  const monitorFrame = (value: "hazard" | "clear" | "unknown") => {
+    if (value === "hazard") {
+      if (!activeRef.current) start();
+      setScanning(true);
+    } else if (activeRef.current) {
+      setScanning(false);
+      const next = playbackObservation(ref.current, value, Date.now()); ref.current = next; setState(next);
+    }
+  };
   const command = async (action: string, payload: Record<string, unknown>) => {
     try { const next = playbackCommand(ref.current, actor, action, payload, Date.now()); ref.current = next; setState(next); setError(""); return next.incidents.find(i => i.id === payload.id); }
     catch(e) { const message = e instanceof Error ? e.message : "Response failed."; setError(message); throw new Error(message); }
@@ -29,5 +43,5 @@ export function usePlaybackTeam() {
     publish: async () => { throw new Error("Exit recording playback before saving an analyzed image to a care team."); },
     act: (i: SharedIncident, action: string, note = "") => command(action, {id:i.id,version:i.version,request_id:crypto.randomUUID(),note}),
   };
-  return {active, scanning, actor, setActor, start, stop, team};
+  return {active, scanning, actor, setActor, start, stop, pause, monitorFrame, team};
 }

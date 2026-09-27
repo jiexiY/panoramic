@@ -11,7 +11,7 @@ export type TeamMember = {
   facility_id: string;
   user_id: string;
   display_name: string;
-  role: "coordinator" | "caregiver";
+  role: "coordinator" | "caregiver" | "nurse";
   qualified: boolean;
   available: boolean;
   available_until: string | null;
@@ -38,6 +38,10 @@ export type SharedIncident = {
   updated_at: string;
   due_at: string;
   escalated_at: string | null;
+  review_observation?: Analysis | null;
+  closure_requested?: boolean;
+  supervision_checked_by?: string | null;
+  nursing_checked_by?: string | null;
 };
 export type IncidentEvent = {
   id: string;
@@ -104,6 +108,16 @@ export const phaseLabels: Record<SharedIncident["phase"], string> = {
   flagged: "Awaiting assignment", dispatched: "Awaiting acceptance", acknowledged: "Arrival pending",
   arrived: "Caregiver attending", resolved: "Response recorded",
 };
+export function noHazardVisible(incident: SharedIncident) {
+  return !!incident.review_observation && !incident.review_observation.scene.observations.some(o => o.kind !== "object");
+}
+export function incidentStatus(incident: SharedIncident) {
+  if (incident.phase === "resolved") return incident.nursing_checked_by ? "Closed · both stations confirmed" : phaseLabels.resolved;
+  if (incident.supervision_checked_by) return "Nursing sign-off pending";
+  if (incident.closure_requested && noHazardVisible(incident)) return "Supervision safety check pending";
+  if (noHazardVisible(incident)) return "No hazard visible · caregiver check pending";
+  return phaseLabels[incident.phase];
+}
 export function handoffText(
   incident: SharedIncident,
   events: IncidentEvent[],
@@ -134,5 +148,8 @@ export function handoffText(
       .map((e) => `${e.created_at} · ${e.detail}`),
     "",
     `Outcome: ${incident.resolution || "Not recorded"}`,
+    `Latest observation: ${incident.review_observation?.scene.brief ?? "No follow-up frame"}`,
+    `Supervision sign-off: ${incident.supervision_checked_by ?? "Pending"}`,
+    `Nursing sign-off: ${incident.nursing_checked_by ?? "Pending"}`,
   ].join("\n");
 }

@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { eligibleResponders, phaseLabels, type SharedIncident, type TeamMember, type IncidentEvent } from "../src/incidents.ts";
+import { eligibleResponders, incidentStatus, type SharedIncident, type TeamMember, type IncidentEvent } from "../src/incidents.ts";
 import { parseScene } from "../src/scene.ts";
 import { hazardGuidance } from "../src/hazardGuidance.ts";
 import type { EvidenceSource } from "../src/copilot.ts";
@@ -17,7 +17,9 @@ export function buildCareContext(incidents: SharedIncident[], members: TeamMembe
     versions[i.id] = i.version;
     const assignee = members.find(m => m.user_id === i.assigned_to)?.display_name ?? "Nobody assigned";
     sources.push({ id: `incident:${i.id}`, incidentId: i.id, title: `${i.room} · ${i.zone}`, text: JSON.stringify({
-      room: i.room, area: i.zone, status: phaseLabels[i.phase], observation: scene.brief, uncertainty: scene.uncertainty,
+      room: i.room, area: i.zone, status: incidentStatus(i), observation: scene.brief, uncertainty: scene.uncertainty,
+      followup: i.review_observation?.scene, closureRequested: !!i.closure_requested,
+      supervisionSigned: !!i.supervision_checked_by, nursingSigned: !!i.nursing_checked_by,
       objects: scene.observations.map(o => ({ label: o.label, kind: o.kind, evidence: o.evidence })),
       analyzedAt: i.observation.analyzedAt, model: i.observation.model, route: i.route?.name ?? "Not assessed",
       routePriority: i.priority, assignee, escalationAt: i.escalated_at, dueAt: i.due_at, outcome: i.resolution || "Not recorded",

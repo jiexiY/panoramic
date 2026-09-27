@@ -29,7 +29,7 @@ test("bathroom image is inline and recorded playback stays identified", () => {
   assert.match(facility, /Play tracking/);
   assert.match(facility, /IMAGE DATA/);
   assert.match(facility, /Image details/);
-  assert.match(facility.replace(/\s+/g, ' '), /Viewing the image or playing the recording does not create a care-team alert/);
+  assert.match(facility.replace(/\s+/g, ' '), /browser-local response workflow, not the connected care team's records/);
   assert.doesNotMatch(facility, /facilityTransition|startIncident|bathroomScene/);
   const renderer = source("scripts/render-bathroom-tracking.py");
   assert.doesNotMatch(renderer, /STAGED DEMO|Human-marked objects and sample route/);

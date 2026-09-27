@@ -2,15 +2,15 @@
 
 [Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
-**Release focus:** Environmental hazard review → supervision → caregiver assignment → acceptance → arrival → recorded outcome. Daily notes and audio capture are deferred and removed. The supervisor-first database upgrade is applied; 118 local tests pass, including upgrade preservation checks. Bathroom playback runs without accounts or provider calls. Live Gemini output and authenticated multi-client behavior remain unverified. See [release checks](docs/prevention-release.md).
+**Release focus:** Hazard event → route level → active concern + activity → supervision assignment → caregiver acceptance + arrival → follow-up observation → supervision check → independent nursing sign-off → closed activity. Daily notes and audio capture remain deferred. The station-signoff database upgrade is applied; 141 local tests pass. Bathroom playback runs without accounts or provider calls. Live Gemini output and authenticated multi-client behavior remain unverified. See [prevention loop](docs/prevention-loop.md).
 
 ## Product entry and home
 
-The application has two main surfaces: the project entrance at `/` and the caregiver home at `/app`. **Open care workspace** enters the product directly. There is no advertising page, sales CTA, founder story, or technology explainer in the running application. The former `/welcome` URL redirects to `/` so old links still work. Care sessions and history remain tabs within the workspace at `/app/session` and `/app/history`; all workspace URLs support direct entry and refresh.
+The application has two main surfaces: the project entrance at `/` and the caregiver home at `/app`. **Open Workplace** enters the product directly. There is no advertising page, sales CTA, founder story, or technology explainer in the running application. The former `/welcome` URL redirects to `/` so old links still work. Care sessions and history remain tabs within the workspace at `/app/session` and `/app/history`; all workspace URLs support direct entry and refresh.
 
 Navigating between the entrance and workspace retains an opened workspace in tab memory. Unsaved local media clears on refresh; shared incidents restore from Supabase after sign-in. The entrance does not mount the workspace or initiate its provider-readiness check. Concise privacy, recording-source, save and connection statuses remain next to the relevant actions. No visitor analytics or tracking were added.
 
-The entrance contains a centered care icon above the bold product name and the workspace button. A fresh workspace has no room images, observations, caregivers, activity, or care sessions. **Add room image** opens the upload controls and privacy confirmation. A coordinator creates an isolated workspace and adds confirmed caregiver accounts with eligibility and response order. **New session** opens a care session with the selected support arrangement. Sign-in alone does not create a record.
+The entrance contains a centered care icon above the bold product name and the workspace button. A fresh workspace has no room images, observations, caregivers, activity, or care sessions. **Add data** opens the upload controls and privacy confirmation. A coordinator creates an isolated workspace and adds confirmed caregiver accounts with eligibility and response order. **New session** opens a care session with the selected support arrangement. Sign-in alone does not create a record.
 
 The removed marketing page's source and styling are preserved in `docs/archive/` for recovery and excluded from deployment. Project background and technical documentation remain in this repository, outside the product UI.
 
@@ -40,7 +40,9 @@ Unsigned-in analysis remains local. Shared incidents, evidence and response hist
 
 ### Bathroom response
 
-Choose **Run bathroom workflow** in Scene review to open the response in Resident Floor. The annotated recording's known water-region event creates a local concern. Assign a caregiver, switch to their playback view, accept, confirm arrival and record an outcome. The response record displays the timeline and provides **Download handoff record**. This playback does not claim a fresh detection or write to the shared team.
+In **Resident Floor**, use A101's **Play tracking** or the observation switch. Once the media loads, its annotated water event moves the route marker to L3, opens one concern, and logs a built-in supervision request. Assign a caregiver, switch the playback role to accept and arrive, and record an outcome. **Review dry reference** loads the original dry image and requests a physical safety check; it does not assert that anyone cleaned the room. Supervision must confirm first, followed by the independent nursing role. Only then does the active concern close; Activity and the handoff retain its history. Playback never calls a model, contacts an external nursing system, or writes to the shared care team.
+
+For authenticated shared concerns, Scene review's **Review purpose** selects an existing incident for a fresh, same-room follow-up analysis. The database enforces the caregiver outcome and both station checks, rejects stale/replayed evidence and cross-facility access, and invalidates approvals when a new hazard is recorded. The new migration `supabase/migrations/20260927004542_prevention_signoffs.sql` must also be applied after the fresh-install schema when setting up a new backend. Existing closed records are preserved.
 
 Daily notes are not part of this release. The previous implementation remains recoverable in Git history.
 
@@ -83,7 +85,7 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Updates and escalation | Supabase Realtime + pg_cron | Notify open clients of saved changes; check response deadlines every 30 seconds |
 | Concurrent editing | PostgreSQL revision trigger + conditional updates | Reject stale-tab overwrites instead of silently losing a newer record |
 | Hosting | Vercel | Serve the frontend and server-only Gemini endpoint; care-session data uses authenticated Supabase requests |
-| Verification | Node test runner + isolated PGlite PostgreSQL | 118 passing local tests; hosted multi-client and provider checks remain pending |
+| Verification | Node test runner + isolated PGlite PostgreSQL | 141 passing local tests; hosted multi-client and provider checks remain pending |
 
 The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Daily notes and audio capture are deferred. Always-on listening, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
 

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { playbackStart, playbackWater, playbackCommand } from "../src/playback.ts";
+import { playbackStart, playbackWater, playbackObservation, playbackCommand } from "../src/playback.ts";
 import { publishPayload, handoffText } from "../src/incidents.ts";
 import { createGeminiHandler } from "../server/gemini.ts";
 import { resolveRoute } from "../src/routes.ts";
@@ -13,7 +13,7 @@ test("bathroom playback creates one recording concern and cannot publish it as r
   assert.equal(playbackWater(s,now+500).incidents.length,1);
   assert.throws(()=>publishPayload("real-facility",{id:"x",room:"A101",zone:"Bathroom",analysis:i.observation,route:i.route,mediaName:"recording",frameTime:2.5}),/provenance/);
 });
-test("bathroom workflow requires supervision, assignment, acceptance, arrival and an outcome", () => {
+test("bathroom workflow requires clear evidence, caregiver outcome, and both station sign-offs", () => {
   let s=playbackWater(playbackStart(now),now), n=0;
   const act=(actor:string,action:string,note="")=>{s=playbackCommand(s,actor,action,{id:s.incidents[0].id,version:s.incidents[0].version,request_id:`r${++n}`,caregiver_id:"caregiver-01",note},now+n*1000);};
   assert.throws(()=>act("caregiver-01","acknowledge")); assert.throws(()=>act("caregiver-01","dispatch"));
@@ -21,10 +21,34 @@ test("bathroom workflow requires supervision, assignment, acceptance, arrival an
   assert.throws(()=>act("supervisor","acknowledge")); assert.throws(()=>act("caregiver-01","resolve","Too early"));
   act("caregiver-01","acknowledge"); act("caregiver-01","arrive"); assert.throws(()=>act("caregiver-01","resolve","ok"));
   act("caregiver-01","resolve","Checked the floor and recorded follow-up.");
-  assert.equal(s.incidents[0].phase,"resolved"); assert.equal(s.events.length,5);
+  assert.equal(s.incidents[0].phase,"arrived");
+  assert.throws(()=>act("supervisor","supervision_check"),/clear follow-up/);
+  s=playbackObservation(s,"clear",now+20000);
+  assert.equal(s.incidents[0].phase,"arrived");
+  assert.throws(()=>act("caregiver-01","supervision_check"),/Only supervision/);
+  assert.throws(()=>act("nurse-01","nursing_check"),/after supervision/);
+  act("supervisor","supervision_check");
+  assert.equal(s.incidents[0].phase,"arrived");
+  assert.throws(()=>act("caregiver-01","nursing_check"),/independent nursing/);
+  act("nurse-01","nursing_check");
+  assert.equal(s.incidents[0].phase,"resolved");
   assert.equal(s.members.find(m=>m.user_id==="caregiver-01")?.available,false);
   const handoff=handoffText(s.incidents[0],s.events,s.members);
   assert.match(handoff,/Checked the floor/); assert.match(handoff,/recording/i);
+  assert.match(handoff,/Nursing sign-off: nurse-01/);
+  assert.equal(playbackWater(s,now+60000).incidents.length,2);
+});
+
+test("new hazards and unavailable observations invalidate clear evidence and pending approvals", () => {
+  let s=playbackWater(playbackStart(now),now);
+  const act=(actor:string,action:string)=>{s=playbackCommand(s,actor,action,{id:s.incidents[0].id,version:s.incidents[0].version,request_id:crypto.randomUUID(),caregiver_id:"caregiver-01",note:"Checked and dried the area."},now);};
+  act("supervisor","dispatch"); act("caregiver-01","acknowledge"); act("caregiver-01","arrive"); act("caregiver-01","resolve");
+  s=playbackObservation(s,"clear",now); act("supervisor","supervision_check");
+  s=playbackObservation(s,"hazard",now+1000);
+  assert.equal(s.incidents[0].supervision_checked_by,null); assert.equal(s.incidents[0].closure_requested,false);
+  assert.throws(()=>act("nurse-01","nursing_check"));
+  s=playbackObservation(s,"unknown",now+2000);
+  assert.equal(s.incidents[0].review_observation,null); assert.equal(s.incidents[0].phase,"arrived");
 });
 test("playback rejects stale commands and returns declined work to supervision", () => {
   let s=playbackWater(playbackStart(now),now);

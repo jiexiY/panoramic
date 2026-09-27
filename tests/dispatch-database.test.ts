@@ -38,18 +38,20 @@ for (const mode of ["fresh", "upgrade"]) test(`isolated PostgreSQL (${mode}): su
       assert.deepEqual((await db.query("select relacl::text,relrowsecurity from pg_class where oid='public.care_incidents'::regclass")).rows,grants);
       assert.equal((await db.query<{detail:string}>("select detail from public.care_incident_events where incident_id=$1",[record])).rows[0].detail,"Keep this old event");
     }
-    const ids = Array.from({ length: 5 }, () => crypto.randomUUID());
+    await db.exec(readFileSync(new URL("../supabase/migrations/20260927004542_prevention_signoffs.sql", import.meta.url), "utf8"));
+    const ids = Array.from({ length: 6 }, () => crypto.randomUUID());
     for (let n = 0; n < ids.length; n++) await db.query("insert into auth.users values($1,$2,false,now())", [ids[n], `local${n}@example.invalid`]);
-    const [coordinator, caregiver, other, outsider, secondCoordinator] = ids;
+    const [coordinator, caregiver, other, outsider, secondCoordinator, nurse] = ids;
     const asUser = async (id: string) => { await db.exec("reset role"); await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]); await db.exec("set role authenticated"); };
     const command = async (action: string, payload: object) => (await db.query<{ result: any }>("select public.care_command($1,$2::jsonb) as result", [action, JSON.stringify(payload)])).rows[0].result;
     await asUser(coordinator);
     const facility = (await command("create_facility", { name: "Isolated Test Center", display_name: "Test Coordinator" })).facility_id;
     for (const n of [1,2]) await command("add_member", { facility_id: facility, email: `local${n}@example.invalid`, display_name: `Test Caregiver ${n}`, qualified: true, response_order: n });
+    await command("add_member", {facility_id:facility,email:"local5@example.invalid",display_name:"Test Nursing Station",role:"nurse",qualified:true});
     for (const actor of [caregiver, other]) { await asUser(actor); await command("availability", { facility_id: facility, available: true }); }
     await asUser(coordinator);
     const make = () => ({ facility_id: facility, id: crypto.randomUUID(), room: "A102", zone: "Bathroom", route: null, priority: "unassessed", media_name: "local-test.png", frame_time: null,
-      observation: { source: "gemini", model: "contract-fixture-not-provider", analyzedAt: new Date().toISOString(), scene: { observations: [{ label: "Possible spill", evidence: "Liquid-like reflection", kind: "possible_spill", box: [500,400,900,800] }], brief: "Check apparent liquid on floor.", uncertainty: "Could be glare." } } });
+      observation: { source: "gemini", model: "contract-fixture-not-provider", analyzedAt: new Date(Date.now()-1000).toISOString(), scene: { observations: [{ label: "Possible spill", evidence: "Liquid-like reflection", kind: "possible_spill", box: [500,400,900,800] }], brief: "Check apparent liquid on floor.", uncertainty: "Could be glare." } } });
     let incident = await command("publish", make());
     const payload = (extra = {}) => ({ facility_id: facility, id: incident.id, version: incident.version, request_id: crypto.randomUUID(), ...extra });
     await t.test("publishing only queues a concern; caregiver cannot self-dispatch", async () => {
@@ -102,7 +104,7 @@ for (const mode of ["fresh", "upgrade"]) test(`isolated PostgreSQL (${mode}): su
       await assert.rejects(command("resolve", payload({ note: "Floor checked and dried." })), /Confirm arrival/);
       incident = await command("arrive", payload()); assert.equal(incident.phase, "arrived");
     });
-    await t.test("database escalation is idempotent and resolution remains caregiver-confirmed", async () => {
+    await t.test("database escalation is idempotent and caregiver outcome cannot close a response", async () => {
       await db.exec("reset role");
       await db.query("update public.care_incidents set due_at=now()-interval '1 second' where id=$1", [incident.id]);
       await db.query("select panoramic_private.escalate_due()");
@@ -112,8 +114,38 @@ for (const mode of ["fresh", "upgrade"]) test(`isolated PostgreSQL (${mode}): su
       await asUser(other);
       incident = (await db.query<{ i: any }>("select to_jsonb(i) i from public.care_incidents i where id=$1", [incident.id])).rows[0].i;
       incident = await command("resolve", payload({ note: "Inspected the area; reflection was glare. No spill found." }));
-      assert.equal(incident.phase, "resolved"); assert.match(incident.resolution, /No spill found/);
+      assert.equal(incident.phase, "arrived"); assert.equal(incident.closure_requested,true); assert.match(incident.resolution, /No spill found/);
       assert.equal(incident.escalated_at, null);
+    });
+    const followup=(offset=0)=>({source:"gemini",model:"contract-fixture-not-provider",analyzedAt:new Date(Date.now()+offset).toISOString(),scene:{observations:[],brief:"No candidate hazard in frame.",uncertainty:"A camera cannot establish physical safety."}});
+    await t.test("fresh same-room evidence and distinct station permissions are required",async()=>{
+      await asUser(coordinator);
+      await assert.rejects(command("supervision_check",payload()),/clear follow-up/);
+      await assert.rejects(command("review_observation",payload({room:"A101",zone:"Bathroom",observation:followup()})),/same room/);
+      await assert.rejects(command("review_observation",payload({room:"A102",zone:"Bathroom",observation:{...followup(),analyzedAt:new Date(Date.now()-360000).toISOString()}})),/fresh/);
+      const observation=followup();
+      const req=payload({room:"A102",zone:"Bathroom",observation});
+      incident=await command("review_observation",req);
+      assert.equal((await command("review_observation",req)).version,incident.version);
+      await asUser(nurse); await assert.rejects(command("nursing_check",payload()),/after supervision/);
+      await asUser(caregiver); await assert.rejects(command("supervision_check",payload()),/Only supervision/);
+      await assert.rejects(db.query("select panoramic_private.command('resolve',$1::jsonb)",[JSON.stringify(payload({note:"Try to bypass station checks."}))]),/permission denied/);
+      await asUser(coordinator); incident=await command("supervision_check",payload());
+      assert.equal(incident.phase,"arrived"); assert.equal(incident.supervision_checked_by,coordinator);
+      await assert.rejects(command("nursing_check",payload()),/independent nursing/);
+    });
+    await t.test("a renewed hazard invalidates approvals; only dual sign-off closes and retries are idempotent",async()=>{
+      const hazard={...followup(10),scene:{...followup().scene,observations:make().observation.scene.observations}};
+      incident=await command("review_observation",payload({room:"A102",zone:"Bathroom",observation:hazard,priority:"unassessed"}));
+      assert.equal(incident.supervision_checked_by,null); assert.equal(incident.closure_requested,false);
+      await asUser(nurse); await assert.rejects(command("nursing_check",payload()),/clear follow-up/);
+      await asUser(other); incident=await command("resolve",payload({note:"Rechecked and dried the floor again."}));
+      incident=await command("review_observation",payload({room:"A102",zone:"Bathroom",observation:followup(100)}));
+      await asUser(coordinator); incident=await command("supervision_check",payload());
+      await asUser(nurse); const request=payload(); incident=await command("nursing_check",request);
+      assert.equal(incident.phase,"resolved"); assert.equal(incident.nursing_checked_by,nurse);
+      assert.equal((await command("nursing_check",request)).version,incident.version);
+      await assert.rejects(command("review_observation",payload({room:"A102",zone:"Bathroom",observation:followup(200)})),/closed/);
     });
     await t.test("security grants and RLS are enabled on every exposed team table", async () => {
       await db.exec("reset role");
