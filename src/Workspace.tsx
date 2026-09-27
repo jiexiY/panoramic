@@ -24,7 +24,7 @@ import {
   Users,
   X,
   AlertTriangle,
-  LogIn,
+  UserRound,
   BookOpen,
 } from "lucide-react";
 import {
@@ -389,9 +389,9 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
                   : "Not saved to cloud"}
             </span>}
             {!owner && (
-              <button className="text-button" onClick={() => setAuthOpen(true)}>
-                <LogIn size={16} /> Sign in
-              </button>
+              <span className="profile-avatar" role="img" aria-label="Placeholder profile" title="Profile placeholder">
+                <UserRound size={18} strokeWidth={1.7} aria-hidden="true" />
+              </span>
             )}
             {owner && <button className="text-button" onClick={() => void cloud?.auth.signOut()}>Sign out</button>}
           </div>

@@ -7,6 +7,19 @@ import { startIncident } from "../src/scene.ts";
 
 const source = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
+test("topbar replaces the signed-out action with a presentation-only profile avatar", () => {
+  const workspace = source("src/Workspace.tsx");
+  const topbar = workspace.match(/<header className="topbar">([\s\S]*?)<\/header>/)?.[1];
+  assert.ok(topbar);
+  assert.doesNotMatch(topbar, /Sign in|setAuthOpen\(true\)|<LogIn/);
+  assert.match(topbar, /!owner && \(\s*<span className="profile-avatar" role="img" aria-label="Placeholder profile"/);
+  assert.match(topbar, /<UserRound[^>]*aria-hidden="true"/);
+  assert.ok(topbar.includes('owner && <button className="text-button" onClick={() => void cloud?.auth.signOut()}>Sign out</button>'));
+  assert.match(workspace, /onSignIn=\{\(\) => setAuthOpen\(true\)\}/);
+  assert.match(workspace, /setOwner\(session\?\.user.id \?\? null\)/);
+  assert.match(source("src/style.css"), /\.profile-avatar\s*\{[^}]*border-radius: 50%;/);
+});
+
 test("scene review empty state uses room data labels", () => {
   const monitor = source("src/SceneMonitor.tsx");
   assert.match(monitor, /<span>ROOM DATA<\/span>/);

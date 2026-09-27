@@ -284,6 +284,17 @@ small {
   align-items: center;
   gap: 17px;
 }
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cdd8cf;
+  border-radius: 50%;
+  background: #e5ece6;
+  color: #466879;
+}
 .connection {
   display: flex;
   align-items: center;
