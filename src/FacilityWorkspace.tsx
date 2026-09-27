@@ -12,6 +12,7 @@ import MonitorStatus from "./MonitorStatus";
 import { StationVoiceProvider } from "./StationVoice";
 import { incidentVoiceMessage } from "./stationAnnouncement";
 import { AssistantAccessProvider } from "./AssistantAccessProvider";
+import { demoVoiceMessages } from "./stationVoiceLibrary";
 import "./facility.css";
 import "./room-monitoring.css";
 
@@ -66,6 +67,7 @@ export default function FacilityWorkspace({
   return (
     <AssistantAccessProvider key={`${team.userId}:${team.facilityId}:${team.mode}`}>
     <StationVoiceProvider key={`${team.userId}:${team.facilityId}`} supervisor={team.me?.role === "coordinator"} active={!team.stale} visible={active} scope={monitoringRoom}
+      libraryMessages={team.mode === "playback" ? demoVoiceMessages(team.incidents, team.events) : undefined}
       messages={team.incidents.flatMap(i => { if (!isSuiteId(i.room)) return []; const message = incidentVoiceMessage(i.room, i); return message ? [message] : []; })}>
     <div className="facility-page">
       <section className="page-heading facility-heading">

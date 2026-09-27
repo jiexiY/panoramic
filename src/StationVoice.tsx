@@ -3,11 +3,12 @@ import { LoaderCircle, Square, Volume2, X } from "lucide-react";
 import { stationAnnouncement, type VoiceMessage } from "./stationAnnouncement";
 import { createStationVoicePlayer, type VoicePlayback } from "./stationVoicePlayer";
 import { createStationVoiceQueue, voiceAutoLimits } from "./stationVoiceQueue";
+import SavedStationAudio from "./SavedStationAudio";
 
 const connectionTest: VoiceMessage = { key: "station-connection-test", announcement: { room: "A101", priority: "unassessed", update: "recorded" } };
 const VoiceContext = createContext<{ state: VoicePlayback; available: boolean; automatic: boolean; notice: string; prepared: (message: VoiceMessage) => boolean; configure: () => void; activate: (message: VoiceMessage) => void } | null>(null);
 
-export function StationVoiceProvider({ supervisor, active, visible, scope, messages, children }: { supervisor: boolean; active: boolean; visible: boolean; scope: string; messages: VoiceMessage[]; children: ReactNode }) {
+export function StationVoiceProvider({ supervisor, active, visible, scope, messages, libraryMessages, children }: { supervisor: boolean; active: boolean; visible: boolean; scope: string; messages: VoiceMessage[]; libraryMessages?: VoiceMessage[]; children: ReactNode }) {
   const [ready, setReady] = useState(false), [checking, setChecking] = useState(true);
   const [code, setCode] = useState(""), [consent, setConsent] = useState(false);
   const [connection, setConnection] = useState("Checking voice connection…");
@@ -18,7 +19,7 @@ export function StationVoiceProvider({ supervisor, active, visible, scope, messa
   const messagesRef = useRef(messages); messagesRef.current = messages;
   const dialog = useRef<HTMLDialogElement>(null), headingId = useId();
   const [player] = useState(() => createStationVoicePlayer({ fetch: (...args) => fetch(...args), createAudio: () => new Audio(),
-    createUrl: blob => URL.createObjectURL(blob), revokeUrl: url => URL.revokeObjectURL(url) }));
+    createUrl: blob => URL.createObjectURL(blob), revokeUrl: url => URL.revokeObjectURL(url), cacheLimit: 64 }));
   const state = useSyncExternalStore(player.subscribe, player.getSnapshot);
   useEffect(() => {
     const request = new AbortController();
@@ -63,7 +64,7 @@ export function StationVoiceProvider({ supervisor, active, visible, scope, messa
   }, [selection, settingsOpen]);
   const activate = (message: VoiceMessage) => {
     if (!active || !visible || !supervisor) return;
-    if (!ready || !consent || code.length < 16 || state.phase === "error") { player.stop(); setSelection(message); return; }
+    if (!player.isPrepared(message) && (!ready || !consent || code.length < 16 || state.phase === "error")) { player.stop(); setSelection(message); return; }
     void player.play(message, { code, consent });
   };
   const playSelection = () => {
@@ -79,7 +80,7 @@ export function StationVoiceProvider({ supervisor, active, visible, scope, messa
       {selection && <p className="station-voice-preview">{stationAnnouncement(selection.announcement.room, selection.announcement.priority, selection.announcement.update, selection.announcement.zone)}</p>}
       <label className="team-field">Private voice access code<input type="password" autoComplete="off" value={code} onChange={e => setCode(e.target.value)} placeholder="Not your ElevenLabs API key" /></label>
       <label className="assistant-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>Send fixed, non-sensitive station response text to ElevenLabs. No names or free-text care notes are sent.</span></label>
-      <p className="muted">The API key stays on the server. Enter the separate station code and enable automatic audio once per workspace session. Setup and prepared audio stay in memory across all suites and the Dashboard. Reloading clears access; credentials are never saved.</p>
+      <p className="muted">The API key stays on the server. Enter the separate station code to generate new audio. Setup stays in memory across suites and the Dashboard. Reloading clears access; credentials are never saved. Saved demo-library clips can still play after a reload without generating again.</p>
       <p className="muted">Automatic mode prepares current and new station responses, one at a time, at most {voiceAutoLimits.clips} new clips / {voiceAutoLimits.characters.toLocaleString()} characters in this session. Repeated text reuses its clip. Provider quotas may stop generation earlier. Audio does not play or dispatch anyone automatically.</p>
       {autoStatus && <p role="status">{autoStatus}</p>}
       {state.key === connectionTest.key && <p role={state.phase === "error" ? "alert" : "status"}>{state.message}</p>}
@@ -88,6 +89,7 @@ export function StationVoiceProvider({ supervisor, active, visible, scope, messa
       {selection && <button type="button" className="secondary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={playSelection}>Play this announcement</button>}
       <button type="button" className="primary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={() => { player.stopPlayback(); if (!automatic) { queue.retryFailed(); setAutoStatus("Sarah will prepare new station responses automatically, including while you view the Dashboard."); } setAutomatic(!automatic); closeSettings(); }}>{automatic ? "Pause automatic audio" : "Enable automatic audio"}</button>
       <button type="button" className="text-button" onClick={() => { player.reset(); setAutomatic(false); setCode(""); setConsent(false); setAutoStatus(""); }}>Forget voice access</button>
+      {libraryMessages && <SavedStationAudio player={player} messages={libraryMessages} code={code} consent={consent} enabled={ready && active && supervisor} beforeStart={() => setAutomatic(false)} />}
     </dialog>
   </VoiceContext.Provider>;
 }

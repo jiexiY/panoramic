@@ -2,7 +2,7 @@ import { stationAnnouncement, type VoiceMessage } from "./stationAnnouncement.ts
 
 export type VoicePlayback = { key: string; phase: "idle" | "loading" | "playing" | "ready" | "error"; message: string };
 type PlayerAudio = Pick<HTMLAudioElement, "src" | "play" | "pause" | "onended" | "onerror">;
-type Dependencies = { fetch: typeof fetch; createAudio: () => PlayerAudio; createUrl: (blob: Blob) => string; revokeUrl: (url: string) => void };
+type Dependencies = { fetch: typeof fetch; createAudio: () => PlayerAudio; createUrl: (blob: Blob) => string; revokeUrl: (url: string) => void; cacheLimit?: number };
 
 export const voiceText = (message: VoiceMessage) => {
   const a = message.announcement;
@@ -15,6 +15,7 @@ export function createStationVoicePlayer(deps: Dependencies) {
   let generation = 0, controller: AbortController | null = null, audio: PlayerAudio | null = null;
   let preparingOnly = false;
   const listeners = new Set<() => void>(), cache = new Map<string, string>();
+  const clips = new Map<string, Blob>();
   const set = (next: VoicePlayback) => { state = next; listeners.forEach(listener => listener()); };
   const stop = () => {
     generation++; controller?.abort(); controller = null; preparingOnly = false;
@@ -31,7 +32,13 @@ export function createStationVoicePlayer(deps: Dependencies) {
       // Only audible, outdated speech must stop immediately.
       if (!preparingOnly && state.key.startsWith("current:") && !messages.some(message => message.key === state.key)) stop();
     },
-    reset() { stop(); cache.forEach(deps.revokeUrl); cache.clear(); },
+    reset() { stop(); cache.forEach(deps.revokeUrl); cache.clear(); clips.clear(); },
+    clip: (message: VoiceMessage) => clips.get(voiceText(message)),
+    restore(text: string, blob: Blob) {
+      if (cache.has(text) || cache.size >= (deps.cacheLimit ?? 12)) return;
+      cache.set(text, deps.createUrl(blob)); clips.set(text, blob);
+      set({ ...state });
+    },
     isPrepared: (message: VoiceMessage) => cache.has(voiceText(message)),
     async prepare(message: VoiceMessage, credentials: { code: string; consent: boolean }) {
       if (["loading", "playing"].includes(state.phase)) return false;
@@ -39,7 +46,7 @@ export function createStationVoicePlayer(deps: Dependencies) {
       return cache.has(voiceText(message));
     },
     async play(message: VoiceMessage, credentials: { code: string; consent: boolean }, prepareOnly = false) {
-      if (!credentials.consent || credentials.code.length < 16) return;
+      if (!cache.has(voiceText(message)) && (!credentials.consent || credentials.code.length < 16)) return;
       if (state.key === message.key && ["loading", "playing"].includes(state.phase)) { stop(); return; }
       stop();
       preparingOnly = prepareOnly;
@@ -60,8 +67,8 @@ export function createStationVoicePlayer(deps: Dependencies) {
           const blob = await response.blob();
           if (version !== generation || request.signal.aborted) return;
           if (!blob.type.startsWith("audio/") || !blob.size || blob.size > 5_000_000) throw new Error("Voice response was not playable audio.");
-          source = deps.createUrl(blob); cache.set(cacheKey, source);
-          if (cache.size > 12) { const oldest = cache.keys().next().value!; deps.revokeUrl(cache.get(oldest)!); cache.delete(oldest); }
+          source = deps.createUrl(blob); cache.set(cacheKey, source); clips.set(cacheKey, blob);
+          if (cache.size > (deps.cacheLimit ?? 12)) { const oldest = cache.keys().next().value!; deps.revokeUrl(cache.get(oldest)!); cache.delete(oldest); clips.delete(oldest); }
         }
         if (version !== generation || request.signal.aborted) return;
         if (prepareOnly) { set({ key: message.key, phase: "ready", message: "Audio ready. Click the speaker to hear this update." }); return; }
