@@ -70,6 +70,6 @@ test("Dashboard monitoring and Resident Floor share one persistent workflow owne
   assert.doesNotMatch(floor, /useReducer|monitorAction|RoomMonitoring|onMonitorFrame|onTracking/);
   assert.match(dashboard, /to=\{suitePath\(monitoringRoom\)\}/);
   assert.match(floor, /to=\{dashboardSuitePath\(monitoringRoom\)\}/);
-  assert.match(workspace, /<details className="dashboard-review"><summary>Review additional room data<\/summary>/);
-  assert.match(workspace, /<SceneMonitor embedded/);
+  assert.doesNotMatch(workspace, /dashboard-review|Review additional room data|<SceneMonitor/);
+  assert.match(dashboard, /<DashboardActivity room=\{monitoringRoom\} team=\{team\}/);
 });

@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, type Dispatch } from "react";
 import { BedDouble, Download, Play, ShowerHead, Square } from "lucide-react";
 import { routeLevels, type RoutePriority } from "./routeRisk";
-import { SourceStatus } from "./MonitorStatus";
 import ImportedMonitorImage from "./ImportedMonitorImage";
 import { monitoringImage } from "./monitoringImages";
 import SuiteTrackingMonitor from "./SuiteTrackingMonitor";
@@ -48,7 +47,6 @@ export default function RoomMonitoring({ room, priority, recording, onRecordingA
         <section className="room-monitor-zone" aria-label={`${room} bedroom monitoring`}>
           <div className="room-zone-heading">
             <h3><BedDouble size={16} /> Bedroom monitoring</h3>
-            {bedroomImage && <SourceStatus room={room} recording={recording} zone="bedroom" />}
           </div>
           {bedroomTracking ? <SuiteTrackingMonitor key={bedroomTracking.stem} source={bedroomTracking} enabled={demoEnabled} onMeasured={onTracking} /> : bedroomImage
             ? <ImportedMonitorImage key={bedroomImage.src} image={bedroomImage} label={`${room} bedroom image data`} />
@@ -57,7 +55,6 @@ export default function RoomMonitoring({ room, priority, recording, onRecordingA
         <section className="room-monitor-zone" aria-label={`${room} bathroom monitoring`}>
           <div className="room-zone-heading">
             <h3><ShowerHead size={16} /> Bathroom monitoring</h3>
-            <SourceStatus room={room} recording={recording} />
           </div>
           {room === "A101" ? (
               <section className="facility-evidence" aria-label="Bathroom image data">

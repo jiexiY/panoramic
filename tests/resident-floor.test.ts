@@ -38,7 +38,7 @@ test("Resident Floor omits duplicate labels and sidebar cards while retaining re
   assert.match(source("FacilityMap.tsx"), /suite labels or room tabs/);
   assert.match(source("SceneMonitor.tsx"), /<CareTeamPanel/);
   assert.doesNotMatch(source("Workspace.tsx"), /Monitoring Resident Floor now/);
-  assert.match(source("RoomMonitoring.tsx"), /<SourceStatus room=\{room\} recording=\{recording\} \/>/);
+  assert.doesNotMatch(source("RoomMonitoring.tsx"), /SourceStatus|Source:/);
 });
 
 test("sidebar uses text labels and a selected vertical marker without icons or a filled highlight", () => {

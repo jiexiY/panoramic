@@ -168,7 +168,8 @@ test("handoff preserves uncertainty and only includes the selected incident hist
 test("operational views share one cloud store instead of independent response machines", () => {
   const ws = source("src/Workspace.tsx");
   assert.match(ws, /useCareTeam\(owner\)/);
-  assert.match(ws, /SceneMonitor[^\n]+team=\{careTeam\}/);
+  assert.match(ws, /MonitoringDashboard[^\n]+team=\{careTeam\}/);
+  assert.match(source("src/DashboardActivity.tsx"), /<SceneMonitor[^\n]+scopeRoom=\{room\} team=\{team\}/);
   assert.match(ws, /FacilityWorkspace[^\n]+team=\{careTeam\}/);
   assert.doesNotMatch(
     source("src/FacilityWorkspace.tsx"),

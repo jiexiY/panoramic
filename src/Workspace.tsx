@@ -49,7 +49,6 @@ import {
   type Row,
 } from "./cloud";
 import "./style.css";
-import SceneMonitor from "./SceneMonitor";
 import FacilityWorkspace from "./FacilityWorkspace";
 import MonitoringDashboard from "./MonitoringDashboard";
 import { useCareTeam } from "./useCareTeam";
@@ -430,8 +429,7 @@ export default function Workspace({ page, suite, navigate }: { page: WorkspacePa
             </div>
           )}
           <div hidden={page !== "monitor"}>
-            <MonitoringDashboard key={owner ?? 'signed-out'} suite={suite} navigate={navigate} onMonitorFrame={playback.monitorFrame} onTracking={playback.tracking} team={careTeam} autoStartRecording={!restoring && !owner} />
-            <details className="dashboard-review"><summary>Review additional room data</summary><div><SceneMonitor embedded key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div></details>
+            <MonitoringDashboard key={owner ?? 'signed-out'} suite={suite} navigate={navigate} onMonitorFrame={playback.monitorFrame} onTracking={playback.tracking} team={careTeam} autoStartRecording={!restoring && !owner} onSignIn={() => setAuthOpen(true)} />
           </div>
           <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} suite={suite} navigate={navigate} processing={playback.scanning} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
           {isCareSession && <>

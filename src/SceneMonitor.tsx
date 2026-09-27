@@ -22,16 +22,23 @@ import { rooms, zones } from "./incidents";
 import type { CareTeam } from "./useCareTeam";
 import CareTeamPanel from "./CareTeamPanel";
 import IncidentDesk from "./IncidentDesk";
+import type { SuiteId } from "./suiteRecords";
 import "./monitor.css";
 
 export default function SceneMonitor({
   team,
   onSignIn,
   embedded = false,
+  activityMode = false,
+  scopeRoom,
+  onAnalysis,
 }: {
   team: CareTeam;
   onSignIn: () => void;
   embedded?: boolean;
+  activityMode?: boolean;
+  scopeRoom?: SuiteId;
+  onAnalysis?: (id: string, zone: string, analysis: Analysis) => void;
 }) {
   const [status, setStatus] = useState<{
     configured: boolean;
@@ -42,31 +49,32 @@ export default function SceneMonitor({
   const [videoUrl, setVideoUrl] = useState("");
   const [frameTime, setFrameTime] = useState<number | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(activityMode);
   const [privacyConfirmed, setPrivacyConfirmed] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [room, setRoom] = useState<string>("A101");
-  const [zone, setZone] = useState<string>("Bathroom");
+  const [room, setRoom] = useState<string>(scopeRoom ?? "A101");
+  const [zone, setZone] = useState<string>(activityMode ? "Living area" : "Bathroom");
   const [walkingRoute, setWalkingRoute] = useState<WalkingRoute | null>(null);
   const [routeDraft, setRouteDraft] = useState<RoutePoint[]>([]);
   const [drawingRoute, setDrawingRoute] = useState(false);
   const [savedId, setSavedId] = useState("");
   const [reviewId, setReviewId] = useState("");
-  const reviewTarget = team.incidents.find(i => i.id === reviewId && i.phase !== "resolved");
+  const roomIncidents = team.incidents.filter(i => i.room === (scopeRoom ?? room));
+  const reviewTarget = roomIncidents.find(i => i.id === reviewId && i.phase !== "resolved");
   const [recordId, setRecordId] = useState(() => crypto.randomUUID());
   const [selected, setSelected] = useState<number | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const inFlight = useRef(false);
   const selectionVersion = useRef(0);
   const setupHeading = useRef<HTMLHeadingElement>(null);
-  const saved = team.incidents.find((i) => i.id === savedId) ??
-    (!image && !analysis ? team.incidents.find((i) => i.phase !== 'resolved') : undefined);
+  const saved = roomIncidents.find((i) => i.id === savedId);
   const candidate = !!analysis?.scene.observations.some(
     (o) => o.kind !== "object",
   );
   const locked = busy || team.busy;
+  const canSaveToTeam = !!team.facility && team.mode !== "playback";
   useEffect(() => {
     if (setupOpen) setupHeading.current?.focus();
   }, [setupOpen]);
@@ -238,9 +246,10 @@ export default function SceneMonitor({
         analyzedAt: result.analyzedAt,
       };
       setAnalysis(value);
+      onAnalysis?.(recordId, zone, value);
       if (
         (reviewId || value.scene.observations.some((o) => o.kind !== "object")) &&
-        team.facility
+        canSaveToTeam
       )
         await saveObservation(value);
     } catch (e) {
@@ -268,10 +277,10 @@ export default function SceneMonitor({
     }
   };
   return (
-    <div className="monitor-page">
-      <section className="page-heading">
+    <div className={`monitor-page${activityMode ? " activity-scene" : ""}`}>
+      {!activityMode && <section className="page-heading">
         {embedded ? <h2>Room data review</h2> : <h1>Living area review</h1>}
-      </section>
+      </section>}
       {error && (
         <div className="notice error" role="alert">
           <AlertTriangle size={18} />
@@ -280,7 +289,7 @@ export default function SceneMonitor({
       )}
       <div className="monitor-grid">
         <div className="scene-column">
-          <section className="scene-panel" aria-label="Scene review">
+          {(!activityMode || image) && <section className="scene-panel" aria-label="Scene review">
             <div className="scene-top">
               <span>ROOM DATA</span>
               {image && <b>{analysis ? "REVIEWED FRAME" : "SELECTED FRAME"}</b>}
@@ -359,7 +368,7 @@ export default function SceneMonitor({
                 )}
               </div>
             )}
-          </section>
+          </section>}
           {image && (
             <RoutePlanner
               route={walkingRoute}
@@ -377,30 +386,30 @@ export default function SceneMonitor({
               <div className="card-title">
                 <ImageIcon size={19} />
                 <h2 ref={setupHeading} tabIndex={-1}>
-                  Room image & analysis
+                  {activityMode ? `Suite ${scopeRoom} · ${zone} analysis` : "Room image & analysis"}
                 </h2>
-                <button
+                {!activityMode && <button
                   className="text-button"
                   aria-label="Close image setup"
                   onClick={() => setSetupOpen(false)}
                 >
                   <X size={18} />
-                </button>
+                </button>}
               </div>
               <div className="room-targets">
                 {team.facility && team.mode !== "playback" && <label className="team-field">Review purpose<select value={reviewId} disabled={locked || !!analysis} onChange={e=>{
                   setReviewId(e.target.value);
-                  const target=team.incidents.find(i=>i.id===e.target.value);
+                  const target=roomIncidents.find(i=>i.id===e.target.value);
                   if(target) { setRoom(target.room); setZone(target.zone); setWalkingRoute(target.route); } else setWalkingRoute(null);
-                }}><option value="">New concern</option>{team.incidents.filter(i=>i.phase!=="resolved").map(i=><option key={i.id} value={i.id}>Follow up {i.room} · {i.zone}</option>)}</select></label>}
+                }}><option value="">New concern</option>{roomIncidents.filter(i=>i.phase!=="resolved").map(i=><option key={i.id} value={i.id}>Follow up {i.room} · {i.zone}</option>)}</select></label>}
                 <label className="team-field">
                   Room
                   <select
                     value={room}
-                    disabled={locked || !!analysis || !!reviewId}
+                    disabled={!!scopeRoom || locked || !!analysis || !!reviewId}
                     onChange={(e) => setRoom(e.target.value)}
                   >
-                    {rooms.map((r) => (
+                    {(scopeRoom ? [scopeRoom] : rooms).map((r) => (
                       <option key={r}>{r}</option>
                     ))}
                   </select>
@@ -474,7 +483,7 @@ export default function SceneMonitor({
                   <small>
                     Analysis sends this frame to Google. Free-tier submissions
                     may be used to improve its products.
-                    {team.facility
+                    {canSaveToTeam
                       ? " Candidate hazards and a private frame are saved to your care-team workspace."
                       : ""}
                   </small>
@@ -520,10 +529,10 @@ export default function SceneMonitor({
                     : "Connecting to image analysis…"}
                 </p>
               )}
-              {team.facility && (
+              {canSaveToTeam && (
                 <p className="fine-print">
                   A candidate hazard will create a response request for{" "}
-                  {team.facility.name}.
+                  {team.facility!.name}.
                 </p>
               )}
             </section>
@@ -566,7 +575,12 @@ export default function SceneMonitor({
             </section>
           )}
         </div>
-        <aside className="response-column" aria-label="Caregiver response">
+        {activityMode && analysis && <div className="activity-analysis-result" role="status">
+          <p>Analysis added to Activity. {savedId ? "Response saved to the care-team record." : candidate || reviewId ? "The response has not been saved to the care team." : "No candidate hazard was identified in this frame; this is not a safety clearance."}</p>
+          {(candidate || reviewId) && !savedId && canSaveToTeam && <button className="secondary" disabled={locked || team.stale || !privacyConfirmed} onClick={() => void retrySave()}>Save response to care team</button>}
+          {!canSaveToTeam && candidate && <button className="text-button" onClick={onSignIn}>Sign in to connect a care-team workspace</button>}
+        </div>}
+        {!activityMode && <aside className="response-column" aria-label="Caregiver response">
           <CareTeamPanel team={team} onSignIn={onSignIn} />
           {analysis && reviewId && !savedId && <button className="secondary full" disabled={locked || team.stale} onClick={() => void retrySave()}>Retry saving follow-up</button>}
           {saved ? (
@@ -606,7 +620,7 @@ export default function SceneMonitor({
               )}
             </section>
           )}
-        </aside>
+        </aside>}
       </div>
     </div>
   );

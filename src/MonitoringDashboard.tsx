@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { suiteIds, suiteRecords, type SuiteId } from "./suiteRecords";
 import SiteLink, { type Navigate } from "./SiteLink";
@@ -11,6 +11,8 @@ import RoomMonitoring from "./RoomMonitoring";
 import MonitorStatus from "./MonitorStatus";
 import { initialFloorMonitoring, floorMonitoringReducer } from "./floorMonitoring";
 import type { TrackingRun } from "./suiteTracking";
+import DashboardActivity from "./DashboardActivity";
+import { appendActivity, trackingActivity, type ActivityEntry } from "./activityTimeline";
 import "./facility.css";
 import "./room-monitoring.css";
 import "./monitoring-dashboard.css";
@@ -22,11 +24,18 @@ type Props = {
   onMonitorFrame: (value: "hazard" | "clear" | "unknown") => void;
   onTracking: (run: TrackingRun) => void;
   team: CareTeam;
+  onSignIn: () => void;
 };
 
-export default function MonitoringDashboard({ suite, navigate, autoStartRecording, onMonitorFrame, onTracking, team }: Props) {
+export default function MonitoringDashboard({ suite, navigate, autoStartRecording, onMonitorFrame, onTracking, team, onSignIn }: Props) {
   const monitoringRoom = suite ?? "A101";
   const [monitors, monitorAction] = useReducer(floorMonitoringReducer, undefined, initialFloorMonitoring);
+  const [monitorEntries, setMonitorEntries] = useState<ActivityEntry[]>([]);
+  function receiveTracking(run: TrackingRun) {
+    const entry = trackingActivity(run, new Date().toISOString());
+    setMonitorEntries(current => appendActivity(current, entry));
+    onTracking(run);
+  }
   // This owner stays mounted across all workspace pages. Page/suite selection
   // changes presentation only; session restoration still gates local samples.
   useEffect(() => { if (autoStartRecording) monitorAction({ type: "start" }); }, [autoStartRecording]);
@@ -54,7 +63,7 @@ export default function MonitoringDashboard({ suite, navigate, autoStartRecordin
         const recording = monitors[room].recording;
         return <div key={room} hidden={room !== monitoringRoom}>
           <RoomMonitoring room={room} priority={priorities[room] ?? "unassessed"}
-            demoEnabled={autoStartRecording} onTracking={onTracking}
+            demoEnabled={autoStartRecording} onTracking={receiveTracking}
             recording={recording} onRecordingAction={action => {
               monitorAction({ type: "recording", room, action });
               if (room !== "A101") return;
@@ -68,5 +77,6 @@ export default function MonitoringDashboard({ suite, navigate, autoStartRecordin
         </div>;
       })}
     </div>
+    <DashboardActivity room={monitoringRoom} team={team} key={team.facilityId ?? "local"} monitorEntries={monitorEntries} onSignIn={onSignIn} />
   </div>;
 }

@@ -132,7 +132,8 @@ test("workspace starts empty and does not create a record on an empty account si
   assert.match(workspace, /page === "session" && !hasSession/);
   assert.match(monitor, /CareTeamPanel team=\{team\}/);
   assert.doesNotMatch(monitor, /recommendCaregiver|advanceIncident/);
-  assert.match(monitor, /const \[setupOpen, setSetupOpen\] = useState\(false\)/);
+  assert.match(monitor, /activityMode = false/);
+  assert.match(monitor, /const \[setupOpen, setSetupOpen\] = useState\(activityMode\)/);
   assert.match(monitor, /No activity yet/);
   assert.doesNotMatch(workspace, /brand-icon|Prototype · fictional data only|Demo caregiver Alex|<footer>/);
 });
