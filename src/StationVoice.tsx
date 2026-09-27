@@ -1,63 +1,72 @@
-import { useEffect, useRef, useState } from "react";
-import { Volume2 } from "lucide-react";
-import { isAnnouncementPriority, stationAnnouncement } from "./stationAnnouncement";
-import type { SharedIncident } from "./incidents";
-import type { SuiteId } from "./suiteRecords";
+import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { LoaderCircle, Square, Volume2, X } from "lucide-react";
+import { stationAnnouncement, type VoiceMessage } from "./stationAnnouncement";
+import { createStationVoicePlayer, type VoicePlayback } from "./stationVoicePlayer";
 
-export default function StationVoice({ room, incident, supervisor, active }: { room: SuiteId; incident?: SharedIncident; supervisor: boolean; active: boolean }) {
-  const [ready, setReady] = useState(false), [enabled, setEnabled] = useState(false);
+const VoiceContext = createContext<{ state: VoicePlayback; available: boolean; activate: (message: VoiceMessage) => void } | null>(null);
+
+export function StationVoiceProvider({ supervisor, active, scope, children }: { supervisor: boolean; active: boolean; scope: string; children: ReactNode }) {
+  const [ready, setReady] = useState(false), [checking, setChecking] = useState(true);
   const [code, setCode] = useState(""), [consent, setConsent] = useState(false);
-  const [status, setStatus] = useState("Checking station voice…"), [audioUrl, setAudioUrl] = useState("");
-  const [busy, setBusy] = useState(false);
-  const audio = useRef<HTMLAudioElement>(null), url = useRef(""), controller = useRef<AbortController | null>(null);
-  const attempted = useRef(new Set<string>());
-  const pending = incident?.room === room && incident.phase === "flagged" && isAnnouncementPriority(incident.priority) ? incident : undefined;
-  const message = pending ? stationAnnouncement(room, pending.priority as Exclude<SharedIncident["priority"], "object">) : "No pending assignment announcement for this suite.";
-  const eventKey = pending ? `${pending.id}:${pending.version}` : "";
+  const [connection, setConnection] = useState("Checking voice connection…");
+  const [selection, setSelection] = useState<VoiceMessage | null>(null);
+  const dialog = useRef<HTMLDialogElement>(null), headingId = useId();
+  const [player] = useState(() => createStationVoicePlayer({ fetch: (...args) => fetch(...args), createAudio: () => new Audio(),
+    createUrl: blob => URL.createObjectURL(blob), revokeUrl: url => URL.revokeObjectURL(url) }));
+  const state = useSyncExternalStore(player.subscribe, player.getSnapshot);
   useEffect(() => {
     const request = new AbortController();
-    void fetch("/api/elevenlabs", { signal: request.signal }).then(r => r.json()).then(r => { setReady(r.configured === true); setStatus(r.message); })
-      .catch(() => { if (!request.signal.aborted) setStatus("Station voice connection unavailable."); });
-    return () => { request.abort(); controller.current?.abort(); if (url.current) URL.revokeObjectURL(url.current); };
-  }, []);
-  // A changed/assigned incident or a different suite must never play an old request.
-  useEffect(() => {
-    controller.current?.abort(); audio.current?.pause(); setBusy(false); setAudioUrl("");
-    if (url.current) { URL.revokeObjectURL(url.current); url.current = ""; }
-  }, [eventKey, supervisor, consent, enabled, code, active]);
-  const announce = async () => {
-    if (!active || !ready || !supervisor || !consent || !code || !pending || busy) return;
-    attempted.current.add(eventKey); setBusy(true); setAudioUrl(""); setStatus("Generating station announcement…");
-    const request = new AbortController(); controller.current = request;
-    try {
-      const response = await fetch("/api/elevenlabs", { method: "POST", signal: request.signal,
-        headers: { "Content-Type": "application/json", "x-voice-access-code": code },
-        body: JSON.stringify({ room, priority: pending.priority, nonSensitiveConfirmed: consent }) });
-      if (!response.ok) throw new Error((await response.json()).error || "Voice request failed.");
-      const blob = await response.blob();
+    void fetch("/api/elevenlabs", { signal: request.signal }).then(r => r.json()).then(r => {
       if (request.signal.aborted) return;
-      if (!blob.type.startsWith("audio/") || !blob.size) throw new Error("Voice response was not playable audio.");
-      if (url.current) URL.revokeObjectURL(url.current);
-      url.current = URL.createObjectURL(blob); setAudioUrl(url.current);
-      setStatus("Audio ready for this browser. Playback is not station acknowledgement.");
-    } catch (error) { if (!request.signal.aborted) setStatus(error instanceof Error ? error.message : "Announcement failed. Read the written message."); }
-    finally { if (!request.signal.aborted) setBusy(false); }
+      setReady(r.configured === true && r.updatesSupported === true); setChecking(false);
+      setConnection(r.configured !== true ? "Station voice is not connected. Configure the voice server first."
+        : r.updatesSupported !== true ? "The voice server needs the message-update release before these announcements can play."
+        : "Sarah · ElevenLabs. New audio uses provider credits; replaying prepared audio does not.");
+    }).catch(() => { if (!request.signal.aborted) { setChecking(false); setConnection("Station voice connection unavailable."); } });
+    return () => { request.abort(); player.reset(); };
+  }, [player]);
+  // Do not continue an old announcement after navigation, status changes, or revoked access.
+  useEffect(() => { player.stop(); setSelection(null); }, [scope, active, supervisor, player]);
+  useEffect(() => { player.reset(); }, [code, consent, player]);
+  useEffect(() => {
+    if (selection) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [selection]);
+  const activate = (message: VoiceMessage) => {
+    if (!active || !supervisor) return;
+    if (!ready || !consent || code.length < 16 || state.phase === "error") { player.stop(); setSelection(message); return; }
+    void player.play(message, { code, consent });
   };
-  useEffect(() => {
-    if (active && enabled && consent && code && ready && supervisor && eventKey && !attempted.current.has(eventKey)) void announce();
-  }, [active, enabled, consent, code, ready, supervisor, eventKey]);
-  useEffect(() => {
-    if (active && audioUrl && enabled) void audio.current?.play().catch(() => setStatus("Your browser blocked automatic audio. Press Play below to hear it."));
-  }, [active, audioUrl, enabled]);
-  return <details className="station-voice">
-    <summary><Volume2 size={15} /> Supervision station voice <span>{ready ? "ElevenLabs ready" : "Not connected"}</span></summary>
-    <p className="station-voice-preview">{message}</p>
-    <p className="muted">Plays on this browser’s speakers, not a remote station. Audio does not approve or dispatch a responder.</p>
-    <label className="team-field">Private voice access code<input type="password" autoComplete="off" value={code} onChange={e => setCode(e.target.value)} placeholder="Not your ElevenLabs API key" /></label>
-    <label className="assistant-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>These suite alerts contain no sensitive resident information. Send only the fixed announcement text shown here to ElevenLabs.</span></label>
-    <label className="assistant-consent"><input type="checkbox" checked={enabled} disabled={!ready || !supervisor || !consent || !code} onChange={e => setEnabled(e.target.checked)} /><span>Automatically announce new pending assignments in this suite while this panel is open.</span></label>
-    <button className="secondary full" disabled={!ready || !supervisor || !consent || !code || !pending || busy} onClick={() => void announce()}>Generate announcement</button>
-    {audioUrl && <audio ref={audio} controls src={audioUrl} onEnded={() => setStatus("Played in this browser; supervision approval is still required.")} aria-label={`Suite ${room} station announcement`} />}
-    <small role="status">{status}</small>
-  </details>;
+  const playSelection = () => {
+    if (!active || !supervisor || !ready || !consent || code.length < 16 || !selection) return;
+    const message = selection; setSelection(null); void player.play(message, { code, consent });
+  };
+  return <VoiceContext.Provider value={{ state, available: active && supervisor, activate }}>
+    {children}
+    <dialog className="station-voice-dialog" ref={dialog} aria-labelledby={headingId} onCancel={() => setSelection(null)} onClose={() => setSelection(null)}>
+      <header><h2 id={headingId}>Play station announcement</h2><button type="button" className="text-button" aria-label="Close voice setup" onClick={() => setSelection(null)}><X size={18} /></button></header>
+      <p>{connection}</p>
+      {selection && <p className="station-voice-preview">{stationAnnouncement(selection.announcement.room, selection.announcement.priority, selection.announcement.update, selection.announcement.zone)}</p>}
+      <label className="team-field">Private voice access code<input type="password" autoComplete="off" value={code} onChange={e => setCode(e.target.value)} placeholder="Not your ElevenLabs API key" /></label>
+      <label className="assistant-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>Send this fixed, non-sensitive suite status summary to ElevenLabs. No names or free-text care notes are sent.</span></label>
+      <p className="muted">Plays through this browser's speakers, not a remote PA system. Hearing an update does not approve or dispatch a responder. Setup lasts only while this suite panel is open.</p>
+      <button type="button" className="primary full" disabled={checking || !ready || !supervisor || !active || !consent || code.length < 16} onClick={playSelection}>Play announcement</button>
+    </dialog>
+  </VoiceContext.Provider>;
+}
+
+// The message itself owns this single icon; there is no separate voice card.
+export default function StationVoice({ message }: { message: VoiceMessage | null }) {
+  const voice = useContext(VoiceContext);
+  if (!voice || !message) return null;
+  const selected = voice.state.key === message.key, phase = selected ? voice.state.phase : "idle";
+  const playing = phase === "playing", loading = phase === "loading";
+  const label = `${playing ? "Stop" : loading ? "Cancel" : "Play"} announcement for ${message.announcement.room} ${message.announcement.zone ?? "suite"} update`;
+  return <span className="station-speaker-wrap">
+    <button type="button" className="station-speaker" aria-label={label} title={voice.available ? label : "Voice playback is available to the supervision role"}
+      aria-pressed={playing} disabled={!voice.available} onClick={() => voice.activate(message)}>
+      {loading ? <LoaderCircle size={16} className="station-speaker-loading" /> : playing ? <Square size={14} /> : <Volume2 size={16} />}
+    </button>
+    {selected && voice.state.message && <span className={phase === "error" || (phase === "ready" && voice.state.message.includes("blocked")) ? "station-voice-feedback" : "station-voice-status"} role={phase === "error" ? "alert" : "status"}>{voice.state.message}</span>}
+  </span>;
 }

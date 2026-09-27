@@ -1,5 +1,4 @@
-import { isSuiteId } from "../src/suiteRecords.ts";
-import { isAnnouncementPriority } from "../src/stationAnnouncement.ts";
+import { parseAnnouncementRequest } from "../src/stationAnnouncement.ts";
 
 // Development only: retain the write-only ElevenLabs key in the production server.
 // No configurable destination, cookies, API keys, or arbitrary text are forwarded.
@@ -35,11 +34,11 @@ export function createLocalStationVoice(fetchRemote: typeof fetch = fetch) {
         for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
         let data;
         try { data = JSON.parse(new TextDecoder().decode(bytes)); } catch { return json({ error: "Invalid JSON." }, 400); }
-        if (!data || Array.isArray(data) || data.nonSensitiveConfirmed !== true || !isSuiteId(data.room) || !isAnnouncementPriority(data.priority)
-          || Object.keys(data).some(key => !["room", "priority", "nonSensitiveConfirmed"].includes(key))) {
+        const announcement = parseAnnouncementRequest(data);
+        if (!announcement) {
           return json({ error: "Only approved, non-sensitive suite announcements are supported." }, 400);
         }
-        body = JSON.stringify({ room: data.room, priority: data.priority, nonSensitiveConfirmed: true });
+        body = JSON.stringify(announcement);
         headers.set("content-type", "application/json");
         headers.set("x-voice-access-code", code);
         headers.set("origin", new URL(endpoint).origin);
@@ -51,7 +50,7 @@ export function createLocalStationVoice(fetchRemote: typeof fetch = fetch) {
       if (request.method === "GET") {
         if (!remote.ok) throw new Error("Voice server unavailable");
         const status = await remote.json();
-        return json({ configured: status.configured === true, provider: "ElevenLabs", connection: "production-relay",
+        return json({ configured: status.configured === true, updatesSupported: status.updatesSupported === true, provider: "ElevenLabs", connection: "production-relay",
           message: status.configured === true
             ? "Connected through Panoramic's production voice server. Use the same private voice access code."
             : "The production voice server is not configured." });
