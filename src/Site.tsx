@@ -34,6 +34,10 @@ export default function Site() {
       window.history.replaceState(null, "", "/app/spatial" + window.location.search + window.location.hash);
       setLocation(locationState());
     }
+    if (location.pathname.replace(/\/+$/, "") === "/app/history") {
+      window.history.replaceState(null, "", "/app/session/history" + window.location.search + window.location.hash);
+      setLocation(locationState());
+    }
   }, [location.pathname]);
   useEffect(() => {
     const update = () => setLocation(locationState());

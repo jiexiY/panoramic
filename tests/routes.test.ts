@@ -21,6 +21,7 @@ test("unknown and API paths are not silently treated as a workspace", () => {
   }
 });
 test("each surface has a useful document title", () => {
+  assert.equal(routeTitle(resolveRoute("/app")), "Home — Panoramic");
   assert.equal(routeTitle(resolveRoute("/app/spatial")), "Resident Floor — Panoramic");
   assert.match(routeTitle(resolveRoute("/")), /Open workspace/);
   assert.equal(routeTitle(resolveRoute("/welcome")), routeTitle(resolveRoute("/")));
@@ -33,12 +34,36 @@ test("production rewrites cover direct app entry without rewriting the API", () 
   assert.ok(config.rewrites.every((item: {destination: string}) => item.destination === "/index.html"));
 });
 
-test("legacy welcome and supervision links redirect to their current surfaces", () => {
+test("legacy welcome, supervision and history links redirect to their current surfaces", () => {
   const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
   assert.deepEqual(config.redirects, [
     { source: "/welcome", destination: "/", permanent: false },
     { source: "/app/supervision", destination: "/app/spatial", permanent: false },
+    { source: "/app/history", destination: "/app/session/history", permanent: false },
   ]);
+});
+
+test("session history is nested under Care session and retains legacy bookmarks", () => {
+  assert.equal(workspacePaths.history, "/app/session/history");
+  for (const path of ["/app/history", "/app/history/", "/app/session/history", "/app/session/history/"]) {
+    assert.deepEqual(resolveRoute(path), { surface: "workspace", page: "history" });
+    assert.equal(routeTitle(resolveRoute(path)), "Care session · Session history — Panoramic");
+  }
+  const site = readFileSync(new URL("../src/Site.tsx", import.meta.url), "utf8");
+  assert.ok(site.includes('"/app/session/history" + window.location.search + window.location.hash'));
+});
+
+test("Care session contains current and history views without duplicating navigation or clearing records", () => {
+  const workspace = readFileSync(new URL("../src/Workspace.tsx", import.meta.url), "utf8");
+  assert.match(workspace, /const isCareSession = page === "session" \|\| page === "history"/);
+  assert.match(workspace, /aria-current=\{isCareSession \? "page" : undefined\}/);
+  assert.match(workspace, /<nav className="care-session-tabs" aria-label="Care session views">/);
+  assert.match(workspace, /to=\{workspacePaths.session\}[^>]*>Current session<\/SiteLink>/);
+  assert.match(workspace, /to=\{workspacePaths.history\}/);
+  assert.match(workspace, /Session history <span className="count">\{rows.length\}<\/span>/);
+  assert.match(workspace, /setRow\(saved\);\s*setState\(saved.snapshot\);\s*setPage\("session"\)/);
+  assert.match(workspace, /const setPage = \(next: WorkspacePage\) => navigate\(workspacePaths\[next\]\)/);
+  assert.doesNotMatch(workspace, /Scene review/);
 });
 
 test("old supervision routes open Resident Floor and are not separate workspace categories", () => {

@@ -71,6 +71,7 @@ const date = (value: string) =>
   }).format(new Date(value));
 export default function Workspace({ page, navigate }: { page: WorkspacePage; navigate: Navigate }) {
   const setPage = (next: WorkspacePage) => navigate(workspacePaths[next]);
+  const isCareSession = page === "session" || page === "history";
   const [state, setState] = useState<State>(() => emptyState());
   const hasSession = state.events.length > 0;
   const [row, setRow] = useState<Row | null>(null);
@@ -350,24 +351,14 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
         <p className="nav-label">WORKSPACE</p>
         <nav aria-label="Main navigation">
           <button aria-current={page === "monitor" ? "page" : undefined} onClick={() => setPage("monitor")}>
-            Scene review
+            Home
           </button>
           <button aria-current={page === "spatial" ? "page" : undefined} onClick={() => setPage("spatial")}>Resident Floor</button>
           <button
-            aria-current={page === "session" ? "page" : undefined}
+            aria-current={isCareSession ? "page" : undefined}
             onClick={() => setPage("session")}
           >
             Care session
-          </button>
-          <button
-            aria-current={page === "history" ? "page" : undefined}
-            onClick={() => {
-              setPage("history");
-              if (owner) void refresh();
-            }}
-          >
-            Session history{" "}
-            <span className="count">{rows.length}</span>
           </button>
         </nav>
         <div className="rail-bottom">
@@ -379,9 +370,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           <div className="breadcrumbs">
             Workspace <ChevronRight size={14} />
             <b>
-              {page === "monitor" ? "Scene review" : page === "spatial" ? "Resident Floor" : page === "session"
-                ? "Care session"
-                : "Session history"}
+              {page === "monitor" ? "Home" : page === "spatial" ? "Resident Floor" : "Care session"}
             </b>
           </div>
           <div className="top-actions">
@@ -439,28 +428,25 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           {playback.active && <div className="playback-bar"><div><b>Recording playback · this browser</b><small>No care-team records or real notifications are created.</small></div><label>View as<select aria-label="Playback role" value={playback.actor} onChange={e=>playback.setActor(e.target.value)}><option value="supervisor">Supervisor</option><option value="caregiver-01">Caregiver 01</option><option value="nurse-01">Nurse 01</option></select></label><button className="text-button" onClick={playback.start}>Restart</button><button className="text-button" onClick={playback.stop}>Exit playback</button></div>}
           <div hidden={page !== "monitor"}><SceneMonitor key={`${owner ?? 'signed-out'}:${playback.active}`} team={careTeam} onSignIn={() => setAuthOpen(true)} /></div>
           <div hidden={page !== "spatial"}><FacilityWorkspace key={owner ?? 'signed-out'} workflowScanning={playback.scanning} onStopWorkflow={playback.pause} onMonitorFrame={playback.monitorFrame} team={careTeam} onSignIn={() => setAuthOpen(true)} active={page === "spatial"} /></div>
+          {isCareSession && <>
+            <section className="page-heading">
+              <h1>Care session</h1>
+              <button className="secondary" onClick={() => setNewOpen(true)} disabled={busy || restoring}>
+                <Plus size={17} /> New session
+              </button>
+            </section>
+            <nav className="care-session-tabs" aria-label="Care session views">
+              <SiteLink to={workspacePaths.session} navigate={navigate} aria-current={page === "session" ? "page" : undefined}>Current session</SiteLink>
+              <SiteLink to={workspacePaths.history} navigate={navigate} aria-current={page === "history" ? "page" : undefined} onClick={() => { if (owner) void refresh(); }}>
+                Session history <span className="count">{rows.length}</span>
+              </SiteLink>
+            </nav>
+          </>}
           {page === "session" && !hasSession && <>
-            <section className="page-heading"><h1>Care session</h1></section>
             <section className="card session-empty"><HandHeart size={34} /><h2>No care session yet</h2><button className="primary" onClick={() => setNewOpen(true)} disabled={busy || restoring}><Plus size={17} /> New session</button></section>
           </>}
           {page === "session" && hasSession && (
             <>
-              <section className="page-heading">
-                <div>
-                  <p className="eyebrow">BATHING SUPPORT</p>
-                  <h1>Care session</h1>
-                  <p className="intro">
-                    Complete room checks, confirm available support, and record the session.
-                  </p>
-                </div>
-                <button
-                  className="secondary"
-                  onClick={() => setNewOpen(true)}
-                  disabled={busy}
-                >
-                  <Plus size={17} /> New session
-                </button>
-              </section>
               <div className="session-grid">
                 <div className="flow-column">
                   <section className="resident-strip">
@@ -1032,20 +1018,7 @@ export default function Workspace({ page, navigate }: { page: WorkspacePage; nav
           )}
           {page === "history" && (
             <>
-              <section className="page-heading">
-                <div>
-                  <p className="eyebrow">SAVED CARE RECORDS</p>
-                  <h1>Session history</h1>
-                </div>
-                <button
-                  className="secondary"
-                  disabled={busy}
-                  onClick={() => setNewOpen(true)}
-                >
-                  <Plus size={16} /> New session
-                </button>
-              </section>
-              <section className="card history-list">
+              <section className="card history-list" aria-label="Session history">
                 {!owner && hasSession ? (
                   <div className="empty-state">
                     <CloudOff size={38} />

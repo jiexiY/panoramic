@@ -8,13 +8,14 @@ export const workspacePaths: Record<WorkspacePage, string> = {
   monitor: "/app",
   spatial: "/app/spatial",
   session: "/app/session",
-  history: "/app/history",
+  history: "/app/session/history",
 };
 
 export function resolveRoute(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "") || "/";
   if (path === "/" || path === "/welcome") return { surface: "entry" };
   if (path === "/app/supervision") return { surface: "workspace", page: "spatial" };
+  if (path === "/app/history") return { surface: "workspace", page: "history" };
   for (const [page, url] of Object.entries(workspacePaths)) {
     if (path === url) return { surface: "workspace", page: page as WorkspacePage };
   }
@@ -24,6 +25,6 @@ export function resolveRoute(pathname: string): Route {
 export function routeTitle(route: Route): string {
   if (route.surface === "entry") return "Panoramic — Open workspace";
   if (route.surface === "not-found") return "Page not found — Panoramic";
-  const labels = { monitor: "Living area review", spatial: "Resident Floor", session: "Care session", history: "Session history" };
+  const labels = { monitor: "Home", spatial: "Resident Floor", session: "Care session", history: "Care session · Session history" };
   return labels[route.page] + " — Panoramic";
 }

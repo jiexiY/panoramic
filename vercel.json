@@ -4,13 +4,14 @@
   "outputDirectory": "dist",
   "redirects": [
     { "source": "/welcome", "destination": "/", "permanent": false },
-    { "source": "/app/supervision", "destination": "/app/spatial", "permanent": false }
+    { "source": "/app/supervision", "destination": "/app/spatial", "permanent": false },
+    { "source": "/app/history", "destination": "/app/session/history", "permanent": false }
   ],
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/spatial", "destination": "/index.html" },
     { "source": "/app/session", "destination": "/index.html" },
-    { "source": "/app/history", "destination": "/index.html" }
+    { "source": "/app/session/history", "destination": "/index.html" }
   ],
   "functions": { "api/gemini.ts": { "maxDuration": 45 } },
   "headers": [{ "source": "/(.*)", "headers": [

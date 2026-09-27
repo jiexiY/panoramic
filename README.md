@@ -6,7 +6,7 @@
 
 ## Product entry and home
 
-The application has two main surfaces: the project entrance at `/` and the caregiver home at `/app`. **Open Workplace** enters the product directly. There is no advertising page, sales CTA, founder story, or technology explainer in the running application. The former `/welcome` URL redirects to `/` so old links still work. Care sessions and history remain tabs within the workspace at `/app/session` and `/app/history`; all workspace URLs support direct entry and refresh.
+The application has two main surfaces: the project entrance at `/` and **Home** at `/app`. **Open Workplace** enters the product directly. There is no advertising page, sales CTA, founder story, or technology explainer in the running application. The former `/welcome` URL redirects to `/` so old links still work. The sidebar contains Home, Resident Floor, and Care session. Inside **Care session**, Current session and Session history use `/app/session` and `/app/session/history`. Old `/app/history` links redirect to the nested history view; all workspace URLs support direct entry and refresh. Switching views preserves the current session and saved records.
 
 Navigating between the entrance and workspace retains an opened workspace in tab memory. Unsaved local media clears on refresh; shared incidents restore from Supabase after sign-in. The entrance does not mount the workspace or initiate its provider-readiness check. Concise privacy, recording-source, save and connection statuses remain next to the relevant actions. No visitor analytics or tracking were added.
 
