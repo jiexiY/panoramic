@@ -47,7 +47,7 @@ export default function RoomMonitoring({ room, priority, active, workflowScannin
         <section className="room-monitor-zone" aria-label={`${room} bathroom monitoring`}>
           <div className="room-zone-heading">
             <h3><ShowerHead size={16} /> Bathroom monitoring</h3>
-            <ObservationStatus on={observing || workflowObserving} pending={active && room === "A101" && recording.mode === "loading"} playback />
+            <ObservationStatus on={observing || workflowObserving} pending={active && room === "A101" && recording.mode === "loading"} />
           </div>
           {room === "A101" ? (
               <section className="facility-evidence" aria-label="Bathroom image data">

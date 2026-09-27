@@ -34,8 +34,8 @@ test("Resident Floor omits duplicate labels and sidebar cards while retaining re
   assert.match(facility, /<IncidentDesk/);
   assert.match(source("FacilityMap.tsx"), /suite labels or room tabs/);
   assert.match(source("SceneMonitor.tsx"), /<CareTeamPanel/);
-  assert.match(source("Workspace.tsx"), /Recording playback · this browser/);
-  assert.match(source("RoomMonitoring.tsx"), /<ObservationStatus[^>]* playback \/>/);
+  assert.match(source("Workspace.tsx"), /Monitoring Resident Floor now/);
+  assert.doesNotMatch(source("RoomMonitoring.tsx"), /<ObservationStatus[^>]* playback \/>/);
 });
 
 test("sidebar uses text labels and a selected vertical marker without icons or a filled highlight", () => {
@@ -88,10 +88,22 @@ test("manual observation controls real playback state and stops it when hidden",
   const status = source("ObservationStatus.tsx");
   assert.match(status, /Observation:/);
   assert.match(status, /on \? "On" : "Off"/);
-  assert.match(status, /\(on \|\| pending\) && playback/);
+  assert.doesNotMatch(status, /Playback|observation-source/);
   assert.match(status, /role="switch" aria-label="Floor observation" aria-checked=\{on \|\| pending\}/);
   assert.match(status, /aria-hidden="true"/);
   const css = source("room-monitoring.css");
   assert.match(css, /is-on i \{ background: #22e65f/);
   assert.match(css, /is-off i \{ background: #ff303b/);
+});
+
+test("monitoring banner omits restart, exit and helper copy, and does not claim monitoring while paused", () => {
+  const workspace = source("Workspace.tsx");
+  const banner = workspace.match(/<div className="playback-bar">([\s\S]*?)<\/label><\/div>/)?.[1];
+  assert.ok(banner);
+  assert.match(banner, /floorObserving \? "Monitoring Resident Floor now" : "Resident Floor monitoring paused"/);
+  assert.match(banner, /View as<select aria-label="Monitoring role"/);
+  assert.doesNotMatch(banner, /Restart|Exit playback|Recording playback|No care-team records|<small|<button/);
+  assert.match(workspace, /onObservationChange=\{setFloorObserving\}/);
+  assert.match(source("FacilityWorkspace.tsx"), /onObservationChange\(observationOn\)/);
+  assert.match(source("RoomMonitoring.tsx"), /not a live cleanup detection/);
 });

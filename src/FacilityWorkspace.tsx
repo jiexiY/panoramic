@@ -23,6 +23,7 @@ type Props = {
   navigate: Navigate;
   active: boolean;
   workflowScanning: boolean;
+  onObservationChange: (on: boolean) => void;
   onStopWorkflow: () => void;
   onMonitorFrame: (value: "hazard" | "clear" | "unknown") => void;
   team: CareTeam;
@@ -33,6 +34,7 @@ export default function FacilityWorkspace({
   navigate,
   active,
   workflowScanning,
+  onObservationChange,
   onStopWorkflow,
   onMonitorFrame,
   team,
@@ -60,6 +62,7 @@ export default function FacilityWorkspace({
   }
   const recordingPending = active && monitoringRoom === "A101" && recording.mode === "loading";
   const observationOn = active && monitoringRoom === "A101" && (workflowScanning || recordingIsOn(recording, active, monitoringRoom));
+  useEffect(() => { onObservationChange(observationOn); }, [observationOn, onObservationChange]);
   useEffect(() => { if (!active) { recordingAction({ type: "pause" }); onStopWorkflow(); } }, [active]);
   useEffect(() => { if (monitoringRoom !== "A101") { recordingAction({ type: "close" }); onStopWorkflow(); } }, [monitoringRoom]);
   const roomOpen = open;

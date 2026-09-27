@@ -21,7 +21,6 @@
 .map-suite-label:hover { outline: 2px solid #6e828c; outline-offset: 2px; }
 .map-suite-label:focus-visible { outline: 3px solid #466879; outline-offset: 3px; }
 .map-controls { z-index: 3; }
-.observation-source { display: inline-block; margin: 0; padding: 3px 5px; border-radius: 3px; background: #edf1eb; color: #5a6c62; font-size: 9px; font-weight: 500; }
 .room-monitor-workspace { border: 1px solid #dde1d7; border-radius: 9px; background: #fffefb; overflow: hidden; scroll-margin-top: 20px; }
 .room-monitor-selector { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 6px; border-bottom: 1px solid #e4e6df; background: #f6f7f2; }
 .room-monitor-selector a { border: 1px solid transparent; background: transparent; padding: 11px 5px; border-radius: 5px; color: #64766b; font-size: 12px; text-align: center; text-decoration: none; }

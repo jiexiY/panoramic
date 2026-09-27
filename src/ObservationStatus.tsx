@@ -1,6 +1,6 @@
-type Props = { on: boolean; playback?: boolean; pending?: boolean; onToggle?: () => void };
+type Props = { on: boolean; pending?: boolean; onToggle?: () => void };
 
-export default function ObservationStatus({ on, playback = false, pending = false, onToggle }: Props) {
+export default function ObservationStatus({ on, pending = false, onToggle }: Props) {
   const stateClass = `observation-state ${pending ? "is-pending" : on ? "is-on" : "is-off"}`;
   const label = pending ? "Starting…" : on ? "On" : "Off";
   return (
@@ -13,7 +13,6 @@ export default function ObservationStatus({ on, playback = false, pending = fals
           <i aria-hidden="true" /> {label}
         </button>
       ) : <span className={stateClass}><i aria-hidden="true" /> {label}</span>}
-      {(on || pending) && playback && <small className="observation-source">Playback</small>}
     </span>
   );
 }
