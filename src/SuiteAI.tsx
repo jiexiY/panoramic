@@ -40,13 +40,13 @@ export default function SuiteAI({ room, team, selectedId, onSelect, onSignIn, pr
     } catch { setExportError("The PDF could not be exported. Your report is unchanged; please try again."); }
     finally { setExporting(false); }
   };
-  return <section className="suite-ai card" aria-label={`Panoramic AI · Suite ${room}`}>
-    <header className="suite-ai-heading"><div><h2>Panoramic AI</h2></div><span>Suite {room}</span></header>
+  return <section className="suite-ai card" aria-label={`Panoramic · Suite ${room}`}>
+    <header className="suite-ai-heading"><div><h2>Panoramic</h2></div><span>Suite {room}</span></header>
     <StationVoiceSettings />
     <ol className="suite-ai-flow" aria-label="Hazard response sequence">
       <li data-complete>Monitor</li><li data-complete={!!current || processing}>Detect</li><li data-complete={!!current}>Alert</li><li data-complete={!!current?.assigned_to}>Response</li>
     </ol>
-    <nav className="suite-ai-tabs" aria-label={`Suite ${room} AI sections`}>
+    <nav className="suite-ai-tabs" aria-label={`Suite ${room} sections`}>
       {([["station", "Station response"], ["activity", "Activity"], ["report", "Suite report"], ["chat", "Chat"]] as const).map(([value, label]) => <button key={value} aria-current={tab === value ? "page" : undefined} onClick={() => setTab(value)}>{label}</button>)}
     </nav>
     <div ref={contentRef} className="suite-ai-content" data-view={tab} tabIndex={tab === "report" ? 0 : undefined} role={tab === "report" ? "region" : undefined} aria-label={tab === "report" ? `Suite ${room} scrollable report` : undefined}>

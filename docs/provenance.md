@@ -7,7 +7,7 @@ On September 26, 2026, the product and its existing GitHub and Vercel projects w
 ## Implementation record
 
 - This repository's React interface, TypeScript transition implementation, Supabase schema, and tests were written anew. No earlier app source, video, soundtrack, or graphical assets were copied into it.
-- Codex assisted with implementation, research, documentation, and testing. Third-party libraries and icons are listed in the README and lockfile.
+- Third-party libraries and icons are listed in the README and lockfile.
 
 ## What the rules say
 

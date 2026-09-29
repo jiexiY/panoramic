@@ -15,16 +15,16 @@ export async function requestGemini<T>(request: typeof fetch, init: RequestInit 
     try { result = await response.json(); }
     catch (error) {
       if (signal.aborted) throw error;
-      throw new GeminiRequestError("The AI server returned an unreadable response. Try again; no action was taken.", response.status);
+      throw new GeminiRequestError("The server returned an unreadable response. Try again; no action was taken.", response.status);
     }
-    if (!result || typeof result !== "object" || Array.isArray(result)) throw new GeminiRequestError("The AI server returned an invalid response. Try again; no action was taken.", response.status);
-    if (!response.ok) throw new GeminiRequestError(typeof result.error === "string" ? result.error : "The AI request failed. Try again; no action was taken.", response.status);
+    if (!result || typeof result !== "object" || Array.isArray(result)) throw new GeminiRequestError("The server returned an invalid response. Try again; no action was taken.", response.status);
+    if (!response.ok) throw new GeminiRequestError(typeof result.error === "string" ? result.error : "The request failed. Try again; no action was taken.", response.status);
     return result as T;
   } catch (error) {
     // Caller cancellation belongs to the component lifecycle, not a visible error.
     if (init.signal?.aborted) throw error;
-    if (deadline.signal.aborted) throw new GeminiRequestError("Gemini took too long to respond. You can send the question again. No automatic retry or action was made.", 504);
+    if (deadline.signal.aborted) throw new GeminiRequestError("The response took too long. You can send the question again. No automatic retry or action was made.", 504);
     if (error instanceof GeminiRequestError) throw error;
-    throw new GeminiRequestError("Could not reach the AI server. Check your connection and try again. No action was taken.");
+    throw new GeminiRequestError("Could not reach the server. Check your connection and try again. No action was taken.");
   } finally { clearTimeout(timer); }
 }

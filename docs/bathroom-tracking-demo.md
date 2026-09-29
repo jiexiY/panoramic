@@ -4,7 +4,7 @@
 
 The user's original source is `C:/Users/jessi/OneDrive/Desktop/retirement home or nursing home.jpg` (761 × 480). The original is unchanged.
 
-On September 26, 2026, the user supplied the finished water edit, `C:/Users/jessi/OneDrive/Desktop/gemini_image_restroom_water_scene.jpg` (1264 × 848), and asked to use it. It is stored at `public/demo/bathroom-water.jpg`. The specific generation model is not independently verified; the assistant did not run or charge for another generation. Source-image ownership was not independently established.
+On September 26, 2026, the user supplied the finished water edit, `C:/Users/jessi/OneDrive/Desktop/gemini_image_restroom_water_scene.jpg` (1264 × 848), and asked to use it. It is stored at `public/demo/bathroom-water.jpg`. The specific generation model is not independently verified; no additional generation was run for this import. Source-image ownership was not independently established.
 
 The finished `public/demo/bathroom-tracking.gif` is a 12-second, 120-frame OpenCV demonstration based on that wet image. `public/demo/bathroom-tracking-poster.png` is the still preview. The earlier dry preview remains separate under ignored `output/bathroom-demo/` and is not used by the website.
 
@@ -37,12 +37,12 @@ The output JSON records the algorithm, provenance, annotations and per-frame mea
 
 ## Render
 
-Python runtime used: `C:/Users/jessi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe`.
+Use a Python environment with OpenCV, Pillow, and NumPy available.
 
-OpenCV is locally installed under the ignored `output/bathroom-demo/python-packages` directory. Pillow and NumPy come from the bundled runtime.
+The script also checks the ignored `output/bathroom-demo/python-packages` directory for local dependencies.
 
 ```powershell
-& 'C:/Users/jessi/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe' scripts/render-bathroom-tracking.py --source 'C:/Users/jessi/OneDrive/Desktop/retirement home or nursing home.jpg' --wet-image 'public/demo/bathroom-water.jpg' --spill-box 0.339 0.805 0.790 0.997
+python scripts/render-bathroom-tracking.py --source 'C:/Users/jessi/OneDrive/Desktop/retirement home or nursing home.jpg' --wet-image 'public/demo/bathroom-water.jpg' --spill-box 0.339 0.805 0.790 0.997
 ```
 
 The output JSON at `output/bathroom-demo/panoramic-bathroom-tracking.json` records per-frame tracking evidence. The current 1040-pixel-wide rendering retained 240 features; maximum median affine-fit error was 0.056 pixels. These figures verify the synthetic rendering pipeline only, not water-recognition accuracy. Source aspect ratio is preserved. The script reopens the encoded GIF to verify its frame count, dimensions, and exact saturated overlay colors. Copies of the GIF and poster are served by the app's spatial-view bathroom panel.

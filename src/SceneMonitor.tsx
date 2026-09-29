@@ -3,7 +3,6 @@ import {
   ScanLine,
   Upload,
   AlertTriangle,
-  Sparkles,
   LoaderCircle,
   Image as ImageIcon,
   X,
@@ -518,7 +517,7 @@ export default function SceneMonitor({
                 {busy ? (
                   <LoaderCircle className="spin" size={17} />
                 ) : (
-                  <Sparkles size={17} />
+                  <ScanLine size={17} />
                 )}{" "}
                 Analyze frame
               </button>

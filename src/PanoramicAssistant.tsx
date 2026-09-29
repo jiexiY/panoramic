@@ -57,12 +57,12 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
       if (!controller.signal.aborted) setTurns(t => t.map(turn => turn.id === id ? { ...turn, error: e instanceof Error ? e.message : "Request failed. No action was taken." } : turn));
     } finally { if (!controller.signal.aborted) { setBusy(false); inFlight.current = false; } }
   };
-  return <section className="panoramic-assistant card" aria-label="Panoramic AI">
-    <header className="assistant-heading"><div><MessageSquare size={19} /><h2>Panoramic AI</h2></div>
-      <div><button className="text-button" aria-label="AI connection settings" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={16} /></button>
+  return <section className="panoramic-assistant card" aria-label="Panoramic chat">
+    <header className="assistant-heading"><div><MessageSquare size={19} /><h2>Panoramic</h2></div>
+      <div><button className="text-button" aria-label="Chat connection settings" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={16} /></button>
         <button className="text-button" aria-label="Clear conversation" disabled={busy || !turns.length} onClick={() => setTurns([])}><Trash2 size={15} /></button></div>
     </header>
-    <div className="assistant-scope"><FileText size={14} /><select aria-label="AI record scope" value={scopeId} onChange={e => setScopeId(e.target.value)} disabled={busy}>
+    <div className="assistant-scope"><FileText size={14} /><select aria-label="Record scope" value={scopeId} onChange={e => setScopeId(e.target.value)} disabled={busy}>
       <option value="">{room ? `Suite ${room} · ${demo ? "demo records" : "open concerns"}` : "Open concerns"}</option>{incidents.map(i => <option key={i.id} value={i.id}>{i.room} · {i.zone} · {new Date(i.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</option>)}
     </select><ChevronDown size={12} /></div>
     {settings && <div className="assistant-settings"><label className="team-field">Workspace access code<input type="password" autoComplete="off" value={code} onChange={e => access.setCode(e.target.value)} disabled={busy} placeholder="Your private Panoramic code" /></label>
@@ -85,7 +85,7 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
         const outdated = !!result && Object.entries(result.versions).some(([id, version]) => incidents.find(i => i.id === id)?.version !== version);
         return <div key={turn.id} className="assistant-turn"><p className="assistant-question">{turn.question}</p>
           {turn.error && <div><p className="form-error" role="alert">{turn.error}</p><button type="button" className="text-button" disabled={busy} onClick={() => { setQuestion(turn.question); if (!verified || !consent) setSettings(true); }}>Use question again</button></div>}
-          {result && <div className="assistant-answer"><small>Panoramic AI · Gemini · {new Date(result.analyzedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
+          {result && <div className="assistant-answer"><small>Panoramic · {new Date(result.analyzedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
             {result.paragraphs.map((p, n) => <div key={n}><p>{p.text}</p><div className="assistant-citations">{p.sourceIds.map(id => { const source = result.sources.find(s => s.id === id); if (!source) return null; return <details key={id}><summary>{source.title}</summary><p>{source.text}</p>{source.incidentId && <button className="text-button" onClick={() => { const i = incidents.find(i => i.id === source.incidentId); if (i) onSelect(i.id, i.room); }}>Open response record</button>}{source.url && <a href={source.url} target="_blank" rel="noreferrer">Read source</a>}</details>; })}</div></div>)}
             <details className="assistant-evidence"><summary>Records used</summary><p>{result.scope}</p><p>Retrieved {new Date(result.snapshotAt).toLocaleString()} · {result.model}</p></details>
             {outdated && <p className="assistant-stale">Records have changed since this answer. Ask again for an updated summary.</p>}
@@ -94,12 +94,12 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
           </div>}
         </div>;
       })}
-      {busy && <p className="assistant-thinking" role="status">Gemini is reviewing the selected suite…</p>}<div ref={endRef} />
+      {busy && <p className="assistant-thinking" role="status">Reviewing the selected suite…</p>}<div ref={endRef} />
     </div>
     <form className="assistant-composer" onSubmit={e => { e.preventDefault(); void ask(question); }}>
-      <textarea aria-label="Ask Panoramic AI" value={question} onChange={e => setQuestion(e.target.value)} maxLength={1200} placeholder="Ask about your care workspace…" rows={2} disabled={!team.facility || busy} />
+      <textarea aria-label="Ask Panoramic" value={question} onChange={e => setQuestion(e.target.value)} maxLength={1200} placeholder="Ask about your care workspace…" rows={2} disabled={!team.facility || busy} />
       <button className="primary" type="submit" aria-label="Send question" disabled={!canAsk || !question.trim()}><ArrowUp size={17} /></button>
     </form>
-    {team.facility && !canAsk && !busy && <button className="assistant-unlock text-button" onClick={() => setSettings(true)}>{team.stale ? "Reconnect care team to continue" : !ready ? status : "Set up AI access"}</button>}
+    {team.facility && !canAsk && !busy && <button className="assistant-unlock text-button" onClick={() => setSettings(true)}>{team.stale ? "Reconnect care team to continue" : !ready ? status : "Set up chat access"}</button>}
   </section>;
 }

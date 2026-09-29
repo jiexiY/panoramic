@@ -55,7 +55,7 @@ test("five unique generated stills fill the other suite zones without replacing 
     assert.equal(image.origin, "generated");
     assert.equal(image.src, `/demo/${room.toLowerCase()}-${zone}-google.jpg`);
     assert.ok(image.alt.includes(room));
-    assert.match(image.details, /AI-generated demonstration still/);
+    assert.match(image.details, /Synthetic demonstration still/);
     assert.match(image.details, /not undergone automated hazard assessment/);
     assert.match(image.details, /not a live camera feed/);
     const bytes = readFileSync(new URL(`../public${image.src}`, import.meta.url));
@@ -91,7 +91,7 @@ test("still image rendering has local load/retry feedback without workflow side 
   assert.match(component, /onError=\{\(\) => setStatus\("error"\)\}/);
   assert.match(component, /Retry image/);
   assert.match(component, /width=\{image.width\} height=\{image.height\}/);
-  assert.match(component, /AI-GENERATED STILL/);
+  assert.match(component, /SYNTHETIC STILL/);
   assert.doesNotMatch(component, /onRecordingAction|onMonitorFrame|onClearFrame|fetch\(/);
 });
 

@@ -8,7 +8,7 @@ export default function ImportedMonitorImage({ image, label }: { image: Monitori
   const [attempt, setAttempt] = useState(0);
   return <section className="facility-evidence imported-monitor-image" aria-label={label}>
     <div className="facility-panel-header">
-      <span>{image.origin === "generated" ? "AI-GENERATED STILL" : "STILL IMAGE"}</span>
+      <span>{image.origin === "generated" ? "SYNTHETIC STILL" : "STILL IMAGE"}</span>
       <a className="text-button" href={image.src} download><Download size={14} /> Download</a>
     </div>
     {status === "loading" && <p className="monitor-image-message" role="status">Loading image…</p>}

@@ -9,7 +9,7 @@ export function AssistantAccessProvider({ children }: { children: ReactNode }) {
 }
 export function useAssistantAccess() {
   const access = useContext(AssistantAccessContext);
-  if (!access) throw new Error("Panoramic AI requires its workspace access provider.");
+  if (!access) throw new Error("Panoramic chat requires its workspace access provider.");
   const state = useSyncExternalStore(access.subscribe, access.getSnapshot);
   return { access, ...state };
 }

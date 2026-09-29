@@ -77,7 +77,7 @@ export default function RoomMonitoring({ room, priority, recording, onRecordingA
                 {mediaError && <div className="notice error" role="alert">Bathroom image unavailable. <button className="text-button" onClick={() => onRecordingAction({ type: "close" })}>Retry image</button></div>}
                 <details className="evidence-caption">
                   <summary>Image details</summary>
-                  <p>AI-edited water image with manually annotated regions. The local workspace starts all configured sources automatically, including this recording. Dashboard displays the previews; Resident Floor holds the map and Panoramic AI response workflow. Its hazard event enters a browser-local response workflow, not the connected care team's records. The dry reference is the original image, not a live cleanup detection. No external nursing-home system is connected.</p>
+                  <p>Synthetic water image with manually annotated regions. The local workspace starts all configured sources automatically, including this recording. Dashboard displays the previews; Resident Floor holds the map and Panoramic response workflow. Its hazard event enters a browser-local response workflow, not the connected care team's records. The dry reference is the original image, not a live cleanup detection. No external nursing-home system is connected.</p>
                 </details>
               </section>
           ) : bathroomTracking ? <SuiteTrackingMonitor key={bathroomTracking.stem} source={bathroomTracking} enabled={demoEnabled} onMeasured={onTracking} /> : bathroomImage

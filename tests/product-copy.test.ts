@@ -84,3 +84,29 @@ test("bathroom playback and still use native OpenCV overlay styling", () => {
   assert.match(facility, /bathroom-tracking-poster\.png\?v=opencv-2/);
   assert.doesNotMatch(facility, /className="bathroom-scene"/);
 });
+
+test("suite and chat surfaces use product branding, including accessible labels", () => {
+  const panel = source("src/SuiteAI.tsx"), chat = source("src/PanoramicAssistant.tsx");
+  assert.match(panel, /<h2>Panoramic<\/h2>/);
+  assert.match(chat, /<h2>Panoramic<\/h2>/);
+  assert.match(chat, /aria-label="Ask Panoramic"/);
+  assert.match(chat, /aria-label="Chat connection settings"/);
+  assert.match(chat, /aria-label="Record scope"/);
+  assert.match(chat, /<small>Panoramic · /);
+  assert.match(chat, /Reviewing the selected suite…/);
+  assert.doesNotMatch(panel + chat, /Panoramic AI|AI sections|AI record scope|AI connection settings|Set up AI access/);
+  assert.doesNotMatch(source("src/SceneMonitor.tsx"), /Sparkles/);
+});
+
+test("product wording preserves provider consent, model details and sample limitations", () => {
+  const chat = source("src/PanoramicAssistant.tsx");
+  assert.match(chat, /Allow their text to be sent to Google when I ask/);
+  assert.match(chat, /Free-tier content may be used to improve Google/);
+  assert.match(chat, /<summary>Records used<\/summary>/);
+  assert.match(chat, /\{result.model\}/);
+  assert.match(source("src/StationVoice.tsx"), /Send fixed, non-sensitive station response text to ElevenLabs/);
+  assert.match(source("src/ImportedMonitorImage.tsx"), /SYNTHETIC STILL/);
+  assert.match(source("src/monitoringImages.ts"), /Synthetic demonstration still/);
+  assert.match(source("src/monitoringImages.ts"), /not a live camera feed/);
+  assert.match(source("src/RoomMonitoring.tsx"), /Synthetic water image with manually annotated regions/);
+});

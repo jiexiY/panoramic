@@ -27,7 +27,7 @@ export function leakScene(step: LeakStep): Scene {
   return parseScene({
     observations: step.boxes.map(box => ({ box, kind: "possible_spill", label: "Changed floor region", evidence: `OpenCV measured ${step.changed_pixels} changed floor pixels and ${step.route_overlap_pixels} route-overlap pixels. The water-leak scenario is authored; material is not classified.` })),
     brief: "Review the changing floor area in the A104 bathroom before the resident uses the marked route. Possible spill in a synthetic Google Studio sequence.",
-    uncertainty: "Offline OpenCV appearance-change measurements on four AI-generated stills, not live footage or a water classifier. Floor area and route are human-marked; generated reflections can also trigger change. Physical inspection is required.",
+    uncertainty: "Offline OpenCV appearance-change measurements on four synthetic stills, not live footage or a water classifier. Floor area and route are human-marked; generated reflections can also trigger change. Physical inspection is required.",
   });
 }
 

@@ -14,7 +14,7 @@ export const bathroomScene: Scene = {
     { label: "Shower seat", box: [448, 77, 723, 218], kind: "object", evidence: "A wall-mounted folding shower seat." },
     { label: "Grab rail", box: [458, 598, 605, 940], kind: "object", evidence: "A support rail alongside the toilet." },
     { label: "Toilet", box: [597, 619, 842, 827], kind: "object", evidence: "A wall-mounted toilet." },
-    { label: "Possible water", box: [805, 339, 997, 790], kind: "possible_spill", evidence: "A reflective liquid-like area crosses the foreground floor in the supplied AI-edited image." },
+    { label: "Possible water", box: [805, 339, 997, 790], kind: "possible_spill", evidence: "A reflective liquid-like area crosses the foreground floor in the supplied synthetic image." },
   ],
   brief: "Check the possible water on the bathroom floor before the resident uses the marked route.",
   uncertainty: "Human-marked demonstration regions on a user-supplied Gemini-edited still. Not an automatic water-detection result.",

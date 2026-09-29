@@ -38,7 +38,7 @@ test("all follow-up UI is housed in the suite AI system and demo chat is clearly
   const read=(f:string)=>readFileSync(new URL(`../src/${f}`,import.meta.url),"utf8");
   assert.doesNotMatch(read("FacilityWorkspace.tsx"),/facility-bottom-grid|<IncidentDesk|Active concerns/);
   const panel=read("SuiteAI.tsx"); for(const label of ["Active concerns","Activity","Suite report","<IncidentDesk","<PanoramicAssistant","<StationVoice","<DispatchResponse"]) assert.ok(panel.includes(label));
-  assert.match(panel, /<header className="suite-ai-heading"><div><h2>Panoramic AI<\/h2><\/div>/);
+  assert.match(panel, /<header className="suite-ai-heading"><div><h2>Panoramic<\/h2><\/div>/);
   assert.doesNotMatch(panel, /Sparkles/);
   assert.doesNotMatch(read("PanoramicAssistant.tsx"),/if \(team.mode === "playback"\) return/);
   assert.doesNotMatch(read("PanoramicAssistant.tsx"),/assistant-demo-note/);

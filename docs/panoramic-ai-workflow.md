@@ -1,4 +1,4 @@
-# Panoramic AI and supervision-first response
+# Panoramic and supervision-first response
 
 Prevention-focused release, 26 September 2026. Live provider output remains unverified. See [release checks](prevention-release.md).
 
@@ -6,7 +6,7 @@ Prevention-focused release, 26 September 2026. Live provider output remains unve
 
 Scene review → supervision queue → supervisor confirms assignment → caregiver accepts → confirms arrival → records outcome → handoff.
 
-Panoramic AI reads this same record. It does not run a second, disconnected workflow. The chat can explain the observation, list recorded availability, summarize the timeline and propose an assignment. `DispatchResponse` renders the proposed caregiver and requires an explicit confirmation before invoking `care_command`. SQL rechecks role, availability lease, qualification, competing assignments and record version. A model response is never proof of a saved action.
+Panoramic reads this same record. It does not run a second, disconnected workflow. The chat can explain the observation, list recorded availability, summarize the timeline and propose an assignment. `DispatchResponse` renders the proposed caregiver and requires an explicit confirmation before invoking `care_command`. SQL rechecks role, availability lease, qualification, competing assignments and record version. A model response is never proof of a saved action.
 
 ## Data flow
 
