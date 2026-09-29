@@ -7,6 +7,7 @@ import DispatchResponse from "./DispatchResponse";
 import type { SuiteId } from "./suiteRecords";
 import { buildDemoSnapshot } from "./demoAssistant";
 import { useAssistantAccess } from "./AssistantAccessProvider";
+import { GeminiRequestError, requestGemini } from "./geminiRequest";
 import "./assistant.css";
 
 type Turn = { id: string; question: string; result?: AssistantResult; error?: string };
@@ -46,17 +47,13 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
         headers.Authorization = `Bearer ${session.data.session.access_token}`;
         body = { operation: "assistant", question: text.trim(), facilityId: team.facilityId, room, incidentId: scopeId, nonSensitiveConfirmed: consent };
       }
-      const response = await fetch("/api/gemini", {
+      const result = await requestGemini<AssistantResult>(fetch, {
         method: "POST", signal: controller.signal,
         headers, body: JSON.stringify(body),
       });
-      const result = await response.json();
-      if (!response.ok) {
-        if (response.status === 401 && !controller.signal.aborted) { access.invalidate(result.error || "Reconnect workspace access."); setSettings(true); }
-        throw new Error(result.error || "The request could not be completed.");
-      }
       if (!controller.signal.aborted) { access.answerReceived(); setSettings(false); setTurns(t => t.map(turn => turn.id === id ? { ...turn, result } : turn)); }
     } catch (e) {
+      if (e instanceof GeminiRequestError && e.status === 401 && !controller.signal.aborted) { access.invalidate(e.message); setSettings(true); }
       if (!controller.signal.aborted) setTurns(t => t.map(turn => turn.id === id ? { ...turn, error: e instanceof Error ? e.message : "Request failed. No action was taken." } : turn));
     } finally { if (!controller.signal.aborted) { setBusy(false); inFlight.current = false; } }
   };
@@ -87,7 +84,7 @@ export default function PanoramicAssistant({ team, room, selectedId, onSelect, o
         const target = result && incidents.find(i => i.id === result.action.incidentId);
         const outdated = !!result && Object.entries(result.versions).some(([id, version]) => incidents.find(i => i.id === id)?.version !== version);
         return <div key={turn.id} className="assistant-turn"><p className="assistant-question">{turn.question}</p>
-          {turn.error && <p className="form-error" role="alert">{turn.error}</p>}
+          {turn.error && <div><p className="form-error" role="alert">{turn.error}</p><button type="button" className="text-button" disabled={busy} onClick={() => { setQuestion(turn.question); if (!verified || !consent) setSettings(true); }}>Use question again</button></div>}
           {result && <div className="assistant-answer"><small>Panoramic AI · Gemini · {new Date(result.analyzedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
             {result.paragraphs.map((p, n) => <div key={n}><p>{p.text}</p><div className="assistant-citations">{p.sourceIds.map(id => { const source = result.sources.find(s => s.id === id); if (!source) return null; return <details key={id}><summary>{source.title}</summary><p>{source.text}</p>{source.incidentId && <button className="text-button" onClick={() => { const i = incidents.find(i => i.id === source.incidentId); if (i) onSelect(i.id, i.room); }}>Open response record</button>}{source.url && <a href={source.url} target="_blank" rel="noreferrer">Read source</a>}</details>; })}</div></div>)}
             <details className="assistant-evidence"><summary>Records used</summary><p>{result.scope}</p><p>Retrieved {new Date(result.snapshotAt).toLocaleString()} · {result.model}</p></details>

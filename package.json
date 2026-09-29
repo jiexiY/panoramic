@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/dev.mjs",
-    "build": "tsc --noEmit && vite build",
+    "build": "node --experimental-strip-types scripts/verify-gemini.mjs && tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --experimental-strip-types --test --test-isolation=none tests/*.test.ts",
     "test:cloud": "node --env-file=.env.local scripts/verify-cloud.mjs"

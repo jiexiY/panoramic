@@ -75,7 +75,7 @@ test("Gemini receives cited demo text with a server-only key and never queries S
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.source, "gemini");
-  assert.equal(result.model, "gemini-3.8-flash");
+  assert.equal(result.model, "gemini-3.5-flash-lite");
   assert.equal(result.snapshotAt, new Date(now).toISOString());
   assert.equal(result.action.kind, "none");
   assert.equal(calls, 1);

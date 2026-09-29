@@ -46,17 +46,45 @@ test("reject non-staged material, arbitrary URLs, invalid formats and oversized 
 test("send inline image and JSON schema with key in header, returning validated provenance", async () => {
   let calls = 0;
   const fakeFetch: typeof fetch = async (url, options) => {
-    calls++; assert.equal(String(url), "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent");
+    calls++; assert.equal(String(url), "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent");
     const headers = new Headers(options?.headers); assert.equal(headers.get("x-goog-api-key"), env.GEMINI_API_KEY);
     const sent = JSON.parse(String(options?.body));
     assert.equal(sent.contents[0].parts[0].inlineData.mimeType, "image/png");
     assert.ok(sent.generationConfig.responseJsonSchema); assert.equal(sent.tools, undefined);
+    assert.deepEqual(sent.generationConfig.thinkingConfig, { thinkingLevel: "MINIMAL" });
     assert.doesNotMatch(String(options?.body), /test-private-code|test-key/);
     return response();
   };
   const result = await createGeminiHandler({ fetch: fakeFetch })(request(), env);
   assert.equal(result.status, 200); const value = await result.json();
   assert.deepEqual(value.scene, rehearsalScene); assert.equal(value.source, "gemini"); assert.equal(calls, 1);
+});
+
+test("older configured models are not sent unsupported thinking levels", async () => {
+  const result = await createGeminiHandler({ fetch: async (_url, options) => {
+    assert.equal(JSON.parse(String(options?.body)).generationConfig.thinkingConfig, undefined);
+    return response();
+  } })(request(), { ...env, GEMINI_MODEL: "gemini-2.5-flash" });
+  assert.equal(result.status, 200);
+});
+
+test("Gemini 3.8 overrides use LOW because MINIMAL is unsupported", async () => {
+  const result = await createGeminiHandler({ fetch: async (_url, options) => {
+    assert.deepEqual(JSON.parse(String(options?.body)).generationConfig.thinkingConfig, { thinkingLevel: "LOW" });
+    return response();
+  } })(request(), { ...env, GEMINI_MODEL: "gemini-3.8-flash" });
+  assert.equal(result.status, 200);
+});
+
+test("cancelled client requests cancel the upstream generation", async () => {
+  const controller = new AbortController();
+  const handle = createGeminiHandler({ fetch: async (_url, options) => {
+    controller.abort();
+    assert.equal(options?.signal?.aborted, true);
+    throw new DOMException("cancelled", "AbortError");
+  } });
+  const result = await handle(new Request(request(), { signal: controller.signal }), env);
+  assert.equal(result.status, 504);
 });
 test("quota exhaustion does not retry, upgrade, or fabricate a result", async () => {
   let calls = 0;

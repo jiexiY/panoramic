@@ -7,7 +7,7 @@ import { DemoContextError, demoCareContext } from "../src/demoAssistant.ts";
 
 type Env = Record<string, string | undefined>;
 type Dependencies = { fetch?: typeof fetch; now?: () => number };
-const MODEL = "gemini-3.8-flash";
+const MODEL = "gemini-3.5-flash-lite";
 const MAX_BODY = 2_100_000;
 class ApiError extends Error {
   status: number;
@@ -136,9 +136,14 @@ export function createGeminiHandler(deps: Dependencies = {}) {
       active = true; ownsRequest = true; minuteCalls++; dayCalls++;
       if (!/^gemini-[a-z0-9.-]+$/.test(model)) throw new ApiError(503, "Invalid server model configuration.");
       const upstream = await requestFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: "POST", signal: AbortSignal.timeout(35_000),
+        method: "POST", signal: AbortSignal.any([request.signal, AbortSignal.timeout(35_000)]),
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY! },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: instruction }] }, contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 4096 } }),
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: instruction }] }, contents: [{ role: "user", parts }], generationConfig: {
+          responseMimeType: "application/json", responseJsonSchema: schema, maxOutputTokens: 4096,
+          // Flash-Lite supports MINIMAL for short, grounded replies. Other Gemini
+          // 3 overrides use LOW (3.8 rejects MINIMAL); older models omit the field.
+          ...(/^gemini-3[.-]/.test(model) ? { thinkingConfig: { thinkingLevel: model === MODEL ? "MINIMAL" : "LOW" } } : {}),
+        } }),
       });
       if (upstream.status === 429) throw new ApiError(429, "Google's quota is exhausted. No automatic retry or paid upgrade was attempted.");
       if (!upstream.ok) throw new ApiError(502, await providerRejection(upstream));

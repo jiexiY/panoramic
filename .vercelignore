@@ -5,7 +5,8 @@ node_modules
 dist
 output
 tests
-scripts
+scripts/*
+!scripts/verify-gemini.mjs
 devpost-*.png
 devpost-submission.md
 .devpost-hackathon-state.json

@@ -1,3 +1,5 @@
+import { requestGemini } from "./geminiRequest.ts";
+
 export type AssistantAccessState = {
   code: string; consent: boolean; ready: boolean; verified: boolean; checking: boolean;
   verifying: boolean; model: string; status: string; error: string;
@@ -18,10 +20,8 @@ export function createAssistantAccess(request: typeof fetch) {
       connection?.abort(); const controller = new AbortController(); connection = controller;
       set({ checking: true, error: "" });
       try {
-        const response = await request("/api/gemini", { signal: controller.signal });
-        const result = await response.json();
+        const result = await requestGemini<{ configured: boolean; model?: string }>(request, { signal: controller.signal }, 12_000);
         if (controller.signal.aborted) return;
-        if (!response.ok) throw new Error("AI connection unavailable. Check the connection and try again.");
         set({ ready: result.configured === true, model: result.model || "Gemini", checking: false,
           status: result.configured === true ? "Server ready. Verify your workspace code to connect." : "AI connection is not configured." });
       } catch (error) {
@@ -37,12 +37,11 @@ export function createAssistantAccess(request: typeof fetch) {
       const controller = new AbortController(); verification = controller;
       set({ verifying: true, verified: false, error: "" });
       try {
-        const response = await request("/api/gemini", { method: "POST", signal: controller.signal,
+        const result = await requestGemini<{ verified: boolean }>(request, { method: "POST", signal: controller.signal,
           headers: { "Content-Type": "application/json", "x-demo-access-code": state.code.trim() },
-          body: JSON.stringify({ operation: "verify_access" }) });
-        const result = await response.json();
+          body: JSON.stringify({ operation: "verify_access" }) }, 12_000);
         if (controller.signal.aborted) return false;
-        if (!response.ok || result.verified !== true) throw new Error(result.error || "Workspace access could not be verified.");
+        if (result.verified !== true) throw new Error("Workspace access could not be verified.");
         set({ verified: true, verifying: false, status: "Workspace access verified. Gemini is checked when you send a question." });
         return true;
       } catch (error) {

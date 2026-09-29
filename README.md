@@ -2,7 +2,7 @@
 
 [Open Panoramic](https://panoramic-app.vercel.app) · [Caregiver workspace](https://panoramic-app.vercel.app/app) · [GitHub](https://github.com/jiexiY/panoramic)
 
-**Release focus:** Hazard event → route level → active concern + activity → supervision assignment → caregiver acceptance + arrival → follow-up observation → supervision check → independent nursing sign-off → closed activity. Daily notes and audio capture remain deferred. The station-signoff database upgrade is applied; 141 local tests pass. Bathroom playback runs without accounts or provider calls. Live Gemini output and authenticated multi-client behavior remain unverified. See [prevention loop](docs/prevention-loop.md).
+**Release focus:** Hazard event → route level → active concern + activity → supervision assignment → caregiver acceptance + arrival → follow-up observation → supervision check → independent nursing sign-off → closed activity. Daily notes and audio capture remain deferred. The station-signoff database upgrade is applied; 259 local tests pass. Bathroom playback runs without accounts or provider calls. Gemini synthetic-text chat is live-verified; visual accuracy and authenticated multi-client behavior remain unverified. See [prevention loop](docs/prevention-loop.md).
 
 ## Product entry and home
 
@@ -14,7 +14,7 @@ The entrance contains a centered care icon above the bold product name and the w
 
 The removed marketing page's source and styling are preserved in `docs/archive/` for recovery and excluded from deployment. Project background and technical documentation remain in this repository, outside the product UI.
 
-Release status: the care-session walkthrough and scene-review interface are live. The Gemini integration is implemented and deployed; all three server configuration checks now pass. Two explicitly approved requests used a non-sensitive illustrated screenshot, but no successful model analysis has been received. The diagnostic retry returned Google HTTP 503 `UNAVAILABLE`; billing remains unchanged. This is a provider availability error, not evidence that payment is required. No visual accuracy is claimed. Supabase schema and client wiring are deployed; guest cloud saving and cross-user API tests remain unverified because anonymous sign-in is disabled. Existing email/password sign-in has not been exercised with a real account in this build.
+Release status (September 29): Panoramic AI chat is deployed with `gemini-3.5-flash-lite`. After repeated Gemini 3.8 Flash `503 UNAVAILABLE` responses, the replacement returned a real cited answer through the candidate handler and then through the production `/api/gemini` endpoint. The production test used a synthetic A101 text snapshot and returned HTTP 200 in 1.265 seconds; this is one connectivity result, not a performance guarantee. Existing credentials stayed inside Vercel and billing was unchanged. Visual analysis accuracy is not verified. Supabase schema and client wiring are deployed; authenticated multi-client and real-account behavior remain unverified in this build.
 
 A caregiver-facing prototype for noticing possible environmental hazards, bringing available caregivers the context, and preserving the response in handoff. It includes a staged scene-review workflow and the existing preparation/support care session. Built with React, TypeScript, a server-side Gemini integration, Supabase, and Vercel. This repository is a new implementation, not a renamed copy of the earlier shower simulator.
 
@@ -85,9 +85,9 @@ Care sessions use neutral role labels and operator-entered confirmations, withou
 | Updates and escalation | Supabase Realtime + pg_cron | Notify open clients of saved changes; check response deadlines every 30 seconds |
 | Concurrent editing | PostgreSQL revision trigger + conditional updates | Reject stale-tab overwrites instead of silently losing a newer record |
 | Hosting | Vercel | Serve the frontend and server-only Gemini endpoint; care-session data uses authenticated Supabase requests |
-| Verification | Node test runner + isolated PGlite PostgreSQL | 141 passing local tests; hosted multi-client and provider checks remain pending |
+| Verification | Node test runner + isolated PGlite PostgreSQL | 259 passing local tests; live synthetic-text Gemini reply verified; hosted multi-client checks remain pending |
 
-The Gemini integration is **implemented but not live-verified**. Do not present the annotated recording or mocked tests as model performance. Daily notes and audio capture are deferred. Always-on listening, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
+Gemini **synthetic-text chat is live-verified**; image analysis accuracy is not. Do not present the annotated recording or mocked tests as model performance. Daily notes and audio capture are deferred. Always-on listening, sensors, continuous camera feeds, automatic water controls, and external emergency notifications remain unimplemented. No other provider is required for the Gemini demonstration.
 
 ## Run locally
 
